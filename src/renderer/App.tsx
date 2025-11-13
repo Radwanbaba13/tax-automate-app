@@ -3,6 +3,7 @@ import { ChakraProvider } from '@chakra-ui/react';
 
 import SummaryComponent from './Components/SummaryComponent';
 import ConfirmationComponent from './Components/ConfirmationComponent';
+import UpdateModal from './Components/UpdateModal';
 
 import './App.css';
 
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="/confirmation" element={<ConfirmationComponent />} />
         </Routes>
       </Router>
+      <UpdateModal />
     </ChakraProvider>
   );
 }

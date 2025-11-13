@@ -8,4 +8,23 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.on('python-result', (event, data) => callback(data)),
   selectDirectory: () => ipcRenderer.invoke('select-directory'),
   selectFiles: () => ipcRenderer.invoke('select-files'),
+
+  // Auto-update API
+  checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
+  downloadUpdate: () => ipcRenderer.invoke('download-update'),
+  installUpdate: () => ipcRenderer.invoke('install-update'),
+  onUpdateChecking: (callback) =>
+    ipcRenderer.on('update-checking', () => callback()),
+  onUpdateAvailable: (callback) =>
+    ipcRenderer.on('update-available', (event, info) => callback(info)),
+  onUpdateNotAvailable: (callback) =>
+    ipcRenderer.on('update-not-available', (event, info) => callback(info)),
+  onUpdateError: (callback) =>
+    ipcRenderer.on('update-error', (event, error) => callback(error)),
+  onUpdateDownloadProgress: (callback) =>
+    ipcRenderer.on('update-download-progress', (event, progress) =>
+      callback(progress),
+    ),
+  onUpdateDownloaded: (callback) =>
+    ipcRenderer.on('update-downloaded', (event, info) => callback(info)),
 });

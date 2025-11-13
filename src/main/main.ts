@@ -10,7 +10,58 @@ class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
-    autoUpdater.checkForUpdatesAndNotify();
+
+    // Configure auto-updater
+    autoUpdater.autoDownload = false;
+    autoUpdater.autoInstallOnAppQuit = true;
+
+    // Set up event handlers
+    autoUpdater.on('checking-for-update', () => {
+      log.info('Checking for updates...');
+      if (mainWindow) {
+        mainWindow.webContents.send('update-checking');
+      }
+    });
+
+    autoUpdater.on('update-available', (info) => {
+      log.info('Update available:', info);
+      if (mainWindow) {
+        mainWindow.webContents.send('update-available', info);
+      }
+    });
+
+    autoUpdater.on('update-not-available', (info) => {
+      log.info('Update not available:', info);
+      if (mainWindow) {
+        mainWindow.webContents.send('update-not-available', info);
+      }
+    });
+
+    autoUpdater.on('error', (err) => {
+      log.error('Error in auto-updater:', err);
+      if (mainWindow) {
+        mainWindow.webContents.send('update-error', err);
+      }
+    });
+
+    autoUpdater.on('download-progress', (progressObj) => {
+      log.info('Download progress:', progressObj);
+      if (mainWindow) {
+        mainWindow.webContents.send('update-download-progress', progressObj);
+      }
+    });
+
+    autoUpdater.on('update-downloaded', (info) => {
+      log.info('Update downloaded:', info);
+      if (mainWindow) {
+        mainWindow.webContents.send('update-downloaded', info);
+      }
+    });
+
+    // Check for updates on startup (only in production)
+    if (app.isPackaged) {
+      autoUpdater.checkForUpdates();
+    }
   }
 }
 
@@ -39,19 +90,63 @@ ipcMain.handle('dialog:openFile', async () => {
   return result.filePaths;
 });
 
-ipcMain.on('run-python', (event, scriptName, args) => {
-  const scriptPath = path.join(
-    __dirname,
-    '../../../Python',
-    `${scriptName}.py`,
-  );
+// Auto-update IPC handlers
+ipcMain.handle('check-for-updates', async () => {
+  if (!app.isPackaged) {
+    return { available: false, message: 'Updates only available in production build' };
+  }
+  try {
+    const result = await autoUpdater.checkForUpdates();
+    return { available: true, info: result };
+  } catch (error) {
+    log.error('Error checking for updates:', error);
+    return { available: false, error };
+  }
+});
 
-  execFile('python', [scriptPath, ...args], (error, stdout, stderr) => {
+ipcMain.handle('download-update', async () => {
+  try {
+    await autoUpdater.downloadUpdate();
+    return { success: true };
+  } catch (error) {
+    log.error('Error downloading update:', error);
+    return { success: false, error };
+  }
+});
+
+ipcMain.handle('install-update', () => {
+  autoUpdater.quitAndInstall(false, true);
+});
+
+ipcMain.on('run-python', (event, scriptName, args) => {
+  // Determine Python executable path based on environment
+  let pythonPath: string;
+
+  if (app.isPackaged) {
+    // Production: Use bundled Python executables
+    const exeName = process.platform === 'win32'
+      ? `${scriptName}.exe`
+      : scriptName;
+    pythonPath = path.join(process.resourcesPath, 'Python', exeName);
+  } else {
+    // Development: Use Python scripts
+    const scriptPath = path.join(__dirname, '../../../Python', `${scriptName}.py`);
+    pythonPath = scriptPath;
+  }
+
+  // Execute Python script or executable
+  const execArgs = app.isPackaged ? args : [pythonPath, ...args];
+  const execCommand = app.isPackaged ? pythonPath : 'python';
+
+  log.info(`Executing Python: ${execCommand} with args:`, execArgs);
+
+  execFile(execCommand, execArgs, (error, stdout, stderr) => {
     if (error) {
-      console.error(`Error executing script: ${stderr}`);
+      log.error(`Error executing script: ${stderr}`);
       event.reply('python-result', { success: false, error: stderr });
       return;
     }
+    log.info('Python script executed successfully');
     event.reply('python-result', { success: true, result: stdout });
   });
 });

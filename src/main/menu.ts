@@ -1,4 +1,6 @@
-const { app, Menu, BrowserWindow } = require('electron');
+const { app, Menu, BrowserWindow, dialog } = require('electron');
+const { autoUpdater } = require('electron-updater');
+const log = require('electron-log');
 
 // Function to toggle fullscreen
 function toggleFullscreen() {
@@ -16,10 +18,52 @@ function toggleDevTools() {
   }
 }
 
+// Function to manually check for updates
+async function checkForUpdates() {
+  const focusedWindow = BrowserWindow.getFocusedWindow();
+
+  if (!app.isPackaged) {
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Development Mode',
+      message: 'Update checks are only available in production builds.',
+      buttons: ['OK'],
+    });
+    return;
+  }
+
+  try {
+    log.info('Manual update check triggered');
+    const result = await autoUpdater.checkForUpdates();
+
+    if (!result || !result.updateInfo) {
+      dialog.showMessageBox({
+        type: 'info',
+        title: 'No Updates',
+        message: 'You are running the latest version.',
+        buttons: ['OK'],
+      });
+    }
+  } catch (error) {
+    log.error('Error checking for updates:', error);
+    dialog.showMessageBox({
+      type: 'error',
+      title: 'Update Check Failed',
+      message: 'Unable to check for updates. Please try again later.',
+      buttons: ['OK'],
+    });
+  }
+}
+
 const template = [
   {
     label: 'File',
     submenu: [
+      {
+        label: 'Check for Updates...',
+        click: checkForUpdates,
+      },
+      { type: 'separator' },
       {
         label: 'Quit',
         accelerator: 'CmdOrCtrl+Q',

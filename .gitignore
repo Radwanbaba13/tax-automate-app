@@ -31,5 +31,22 @@ npm-debug.log.*
 # Python virtual environment
 .venv/
 
+# Python build artifacts
+Python/dist/
+Python/build/
+Python/__pycache__/
+*.spec.backup
+*.pyc
+*.pyo
+*.pyd
+
+# Electron build artifacts
+dist/
+release/
+.erb/dll
+
 # Claude Code settings
 .claude/
+
+# Documentation
+docs/
