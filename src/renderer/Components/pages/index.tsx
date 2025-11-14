@@ -113,6 +113,14 @@ function HomePage() {
     },
   ];
 
+  const [version, setVersion] = React.useState('');
+
+  React.useEffect(() => {
+    window.electron.getAppVersion().then((v: any) => {
+      setVersion(v);
+    });
+  }, []);
+
   return (
     <Box mx="auto">
       <VStack spacing={8} align="stretch">
@@ -120,6 +128,10 @@ function HomePage() {
           <Heading size="2xl" color="gray.800" mb={4}>
             Tax Automation Modules
           </Heading>
+          <Text fontSize="md" color="gray.500" mb={4}>
+            Version {version}
+          </Text>
+
           <Text fontSize="lg" color="gray.600">
             Select a module below to get started
           </Text>

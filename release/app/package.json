@@ -2,7 +2,7 @@
   "name": "sankari-tax-summary",
   "description": "An application to automate the process of generating tax summary for Sankari Fiscal and Finance",
 
-  "version": "1.0.1",
+  "version": "1.0.2",
   "author": {
     "name": "Radwan Baba",
     "email": "radwangbaba@gmail.com",

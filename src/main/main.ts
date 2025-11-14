@@ -121,6 +121,11 @@ ipcMain.handle('install-update', () => {
   autoUpdater.quitAndInstall(false, true);
 });
 
+ipcMain.handle('get-app-version', () => {
+  return app.getVersion();
+});
+
+
 ipcMain.on('run-python', (event, scriptName, args) => {
   // Determine Python executable path based on environment
   let pythonPath: string;
