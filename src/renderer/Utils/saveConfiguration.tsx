@@ -5,9 +5,8 @@ export const validateSection = (section) => {
   return section.every((item) => {
     if (typeof item === 'object') {
       return isValidString(item.en) && isValidString(item.fr);
-    } else {
-      return isValidString(item);
     }
+    return isValidString(item);
   });
 };
 
@@ -29,12 +28,10 @@ export const findDuplicates = (section) => {
       } else {
         seenFr.add(item.fr);
       }
+    } else if (isValidString(item) && seenEn.has(item)) {
+      duplicates.en.push({ value: item, index });
     } else {
-      if (isValidString(item) && seenEn.has(item)) {
-        duplicates.en.push({ value: item, index });
-      } else {
-        seenEn.add(item);
-      }
+      seenEn.add(item);
     }
   });
 

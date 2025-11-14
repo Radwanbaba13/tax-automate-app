@@ -2,9 +2,9 @@ import path from 'path';
 import { app, BrowserWindow, shell, ipcMain, dialog } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
+import { execFile } from 'child_process';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
-import { execFile } from 'child_process';
 
 class AppUpdater {
   constructor() {
@@ -93,7 +93,10 @@ ipcMain.handle('dialog:openFile', async () => {
 // Auto-update IPC handlers
 ipcMain.handle('check-for-updates', async () => {
   if (!app.isPackaged) {
-    return { available: false, message: 'Updates only available in production build' };
+    return {
+      available: false,
+      message: 'Updates only available in production build',
+    };
   }
   try {
     const result = await autoUpdater.checkForUpdates();
@@ -124,13 +127,16 @@ ipcMain.on('run-python', (event, scriptName, args) => {
 
   if (app.isPackaged) {
     // Production: Use bundled Python executables
-    const exeName = process.platform === 'win32'
-      ? `${scriptName}.exe`
-      : scriptName;
+    const exeName =
+      process.platform === 'win32' ? `${scriptName}.exe` : scriptName;
     pythonPath = path.join(process.resourcesPath, 'Python', exeName);
   } else {
     // Development: Use Python scripts
-    const scriptPath = path.join(__dirname, '../../../Python', `${scriptName}.py`);
+    const scriptPath = path.join(
+      __dirname,
+      '../../../Python',
+      `${scriptName}.py`,
+    );
     pythonPath = scriptPath;
   }
 

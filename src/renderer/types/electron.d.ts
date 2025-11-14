@@ -22,17 +22,30 @@ export interface ElectronAPI {
 
   // Python execution
   runPythonScript: (scriptName: string, args: string[]) => void;
-  onPythonResult: (callback: (data: { success: boolean; result?: string; error?: string }) => void) => void;
+  onPythonResult: (
+    callback: (data: {
+      success: boolean;
+      result?: string;
+      error?: string;
+    }) => void,
+  ) => void;
 
   // Auto-update API
-  checkForUpdates: () => Promise<{ available: boolean; info?: any; message?: string; error?: any }>;
+  checkForUpdates: () => Promise<{
+    available: boolean;
+    info?: any;
+    message?: string;
+    error?: any;
+  }>;
   downloadUpdate: () => Promise<{ success: boolean; error?: any }>;
   installUpdate: () => void;
   onUpdateChecking: (callback: () => void) => void;
   onUpdateAvailable: (callback: (info: UpdateInfo) => void) => void;
   onUpdateNotAvailable: (callback: (info: UpdateInfo) => void) => void;
   onUpdateError: (callback: (error: Error) => void) => void;
-  onUpdateDownloadProgress: (callback: (progress: ProgressInfo) => void) => void;
+  onUpdateDownloadProgress: (
+    callback: (progress: ProgressInfo) => void,
+  ) => void;
   onUpdateDownloaded: (callback: (info: UpdateInfo) => void) => void;
 }
 

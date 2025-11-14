@@ -1,15 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box,
-  Text,
-  Select,
-  VStack,
-  Input,
   HStack,
-  useToast,
   IconButton,
+  Input,
+  Select,
+  Text,
+  VStack,
 } from '@chakra-ui/react';
-import { MdAdd, MdClose, MdDragIndicator } from 'react-icons/md';
+import { MdClose, MdDragIndicator } from 'react-icons/md';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 
 interface PriceListItem {
@@ -19,6 +18,20 @@ interface PriceListItem {
   quantity: number;
 }
 
+interface TaxRate {
+  fedRate: number;
+  provRate: number;
+}
+
+interface PriceSelectionProps {
+  prices: PriceListItem[];
+  selectedPrices: PriceListItem[];
+  setSelectedPrices: (prices: PriceListItem[]) => void;
+  language: string;
+  taxRates: TaxRate[];
+  includeTaxes: boolean;
+}
+
 function PriceSelection({
   prices,
   selectedPrices,
@@ -26,20 +39,12 @@ function PriceSelection({
   language,
   taxRates,
   includeTaxes,
-}) {
-  const [customService, setCustomService] = useState({
-    name: '',
-    amount: '',
-    type: 'number',
-    quantity: 1,
-  });
-  const [selectedService, setSelectedService] = useState(null);
-  const toast = useToast();
+}: PriceSelectionProps) {
   const [totals, setTotals] = useState({
     subtotal: '',
     total: '',
-    fedTax: '',
-    provTax: '',
+    fedRate: 0,
+    provRate: 0,
   });
 
   // Get tax rates for the selected province
@@ -54,8 +59,8 @@ function PriceSelection({
   // Calculate subtotal, total, and tax amounts
   const calculateTotals = () => {
     let subtotal = 0;
-    const taxRates = getTaxRates();
-    const { fedRate, provRate } = taxRates;
+    const rates = getTaxRates();
+    const { fedRate, provRate } = rates;
 
     selectedPrices.forEach((price) => {
       if (price.type === 'number') {
@@ -88,53 +93,20 @@ function PriceSelection({
     };
   };
 
-  // Handle adding a selected service to the selected prices
-  const handleAddService = () => {
-    if (selectedService) {
-      const newService = {
-        service: selectedService.service,
-        amount: parseFloat(selectedService.amount),
-        type: selectedService.type,
-        quantity: 1,
-      };
-
-      setSelectedPrices([...selectedPrices, newService]);
-      setSelectedService(null);
-    } else if (customService.name && customService.amount) {
-      const newService = {
-        service: { en: customService.name, fr: customService.name },
-        amount: parseFloat(customService.amount),
-        type: customService.type,
-        quantity: 1,
-      };
-
-      setSelectedPrices([...selectedPrices, newService]);
-      setCustomService({ name: '', amount: '', type: 'amount', quantity: 1 });
-    } else {
-      toast({
-        title: 'Invalid Input',
-        description:
-          'Please select a service or enter a custom service name and amount.',
-        status: 'warning',
-        duration: 3000,
-        isClosable: true,
-      });
-    }
-  };
-  const handlePriceRemove = (priceToRemove) => {
+  const handlePriceRemove = (priceToRemove: PriceListItem) => {
     setSelectedPrices(
       selectedPrices.filter((price) => price !== priceToRemove),
     );
   };
 
-  const handleEditPrice = (index, field, value) => {
+  const handleEditPrice = (index: number, field: string, value: any) => {
     const updatedPrices = [...selectedPrices];
     updatedPrices[index] = { ...updatedPrices[index], [field]: value };
     setSelectedPrices(updatedPrices);
   };
 
   // Handle drag end
-  const onDragEnd = (result) => {
+  const onDragEnd = (result: any) => {
     if (!result.destination) return;
 
     const items = Array.from(selectedPrices);
@@ -147,16 +119,17 @@ function PriceSelection({
   useEffect(() => {
     const { subtotal, total, fedRate, provRate } = calculateTotals();
     setTotals({ subtotal, total, fedRate, provRate });
-  }, [includeTaxes, selectedPrices]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [includeTaxes, selectedPrices, taxRates]);
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <Box>
-        <HStack spacing={2} mb={'20px'}>
+        <HStack spacing={2} mb="20px">
           <Select
             placeholder="Select Service to Add"
             onChange={(e) => {
-              const value = e.target.value;
+              const { value } = e.target;
               if (value) {
                 const selectedService = JSON.parse(value);
                 const newService = {
@@ -166,12 +139,9 @@ function PriceSelection({
                   quantity: 1,
                 };
                 setSelectedPrices([...selectedPrices, newService]);
-                setSelectedService(null);
-              } else {
-                setSelectedService(null);
               }
             }}
-            value={selectedService ? JSON.stringify(selectedService) : ''}
+            value=""
             border="none"
             borderRadius="0px"
             color="#386498"
@@ -191,6 +161,7 @@ function PriceSelection({
               fontSize: '12px',
             }}
           >
+            {/* eslint-disable react/no-array-index-key */}
             {prices.map((price, index) => (
               <option key={index} value={JSON.stringify(price)}>
                 {language === 'en' ? price.service.en : price.service.fr}:{' '}
@@ -213,28 +184,37 @@ function PriceSelection({
           </Select>
         </HStack>
 
-        <Droppable droppableId="droppable-prices">
-          {(provided) => (
+        <Droppable
+          droppableId="droppable-prices"
+          isDropDisabled={false}
+          isCombineEnabled={false}
+          ignoreContainerClipping={false}
+        >
+          {(droppableProvided) => (
             <VStack
               spacing={4}
-              {...provided.droppableProps}
-              ref={provided.innerRef}
+              // eslint-disable-next-line react/jsx-props-no-spreading
+              {...droppableProvided.droppableProps}
+              ref={droppableProvided.innerRef}
             >
+              {/* eslint-disable react/no-array-index-key */}
               {selectedPrices.map((price, index) => (
                 <Draggable
-                  key={index}
+                  key={`price-${index}`}
                   draggableId={`price-${index}`}
                   index={index}
                 >
-                  {(provided) => (
+                  {(draggableProvided) => (
                     <HStack
                       justify="space-between"
                       w="100%"
-                      ref={provided.innerRef}
-                      {...provided.draggableProps}
+                      ref={draggableProvided.innerRef}
+                      // eslint-disable-next-line react/jsx-props-no-spreading
+                      {...draggableProvided.draggableProps}
                     >
                       <IconButton
-                        {...provided.dragHandleProps}
+                        // eslint-disable-next-line react/jsx-props-no-spreading
+                        {...draggableProvided.dragHandleProps}
                         aria-label="Drag Price"
                         icon={<MdDragIndicator color="#cf3350" size="20px" />}
                         variant="ghost"
@@ -266,7 +246,7 @@ function PriceSelection({
                           handleEditPrice(
                             index,
                             'quantity',
-                            parseInt(e.target.value),
+                            parseInt(e.target.value, 10),
                           )
                         }
                         width="65px"
@@ -373,7 +353,7 @@ function PriceSelection({
                   )}
                 </Draggable>
               ))}
-              {provided.placeholder}
+              {droppableProvided.placeholder}
             </VStack>
           )}
         </Droppable>
@@ -387,15 +367,21 @@ function PriceSelection({
               {totals.fedRate > 0 && (
                 <Text fontSize="14px" textAlign="right" color="gray.600">
                   Federal Tax ({totals.fedRate}%): $
-                  {((totals.subtotal * totals.fedRate) / 100).toFixed(2)}
+                  {(
+                    (parseFloat(totals.subtotal) * totals.fedRate) /
+                    100
+                  ).toFixed(2)}
                 </Text>
               )}
               {totals.provRate > 0 && (
                 <Text fontSize="14px" textAlign="right" color="gray.600">
                   Provincial Tax ({totals.provRate}%): $
-                  {((totals.subtotal * totals.provRate) / 100).toFixed(2)}
+                  {(
+                    (parseFloat(totals.subtotal) * totals.provRate) /
+                    100
+                  ).toFixed(2)}
                 </Text>
-              )}{' '}
+              )}
               <Text
                 fontSize="18px"
                 fontWeight="bold"

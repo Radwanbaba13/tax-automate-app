@@ -2,26 +2,23 @@ import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
-  Input,
-  VStack,
   HStack,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  Text,
-  TabPanel,
   IconButton,
+  Input,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  VStack,
   useToast,
-  Checkbox,
-  Select,
 } from '@chakra-ui/react';
-import { supabase } from '../Utils/supabaseClient';
 import { FaPlus } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import { MdDragHandle } from 'react-icons/md';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { validateConfig } from '../Utils/saveConfiguration';
+import { supabase } from '../../Utils/supabaseClient';
+import { validateConfig } from '../../Utils/saveConfiguration';
 
 interface SummaryConfiguration {
   fedAuthSection: { en: string[]; fr: string[] };
@@ -53,13 +50,19 @@ function SummaryConfig() {
             summarySection: sectionData.summary_section || { en: [], fr: [] },
           });
         }
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      } catch {
+        toast({
+          title: 'Error fetching data',
+          description: 'Could not fetch summary configuration.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
       }
     };
 
     fetchData();
-  }, []);
+  }, [toast]);
 
   const handleUpdateText = (
     lang: 'en' | 'fr',
@@ -70,7 +73,7 @@ function SummaryConfig() {
     const updatedConfig = { ...config };
 
     if (section === 'fedAuth' || section === 'qcAuth') {
-      updatedConfig[section + 'Section'][lang][index] = value;
+      updatedConfig[`${section}Section`][lang][index] = value;
     } else if (section === 'summary') {
       updatedConfig.summarySection[lang][index] = value;
     }
@@ -83,11 +86,11 @@ function SummaryConfig() {
     const updatedConfig = { ...config };
 
     if (section === 'fedAuth' || section === 'qcAuth') {
-      updatedConfig[section + 'Section']['en'].push('');
-      updatedConfig[section + 'Section']['fr'].push('');
+      updatedConfig[`${section}Section`].en.push('');
+      updatedConfig[`${section}Section`].fr.push('');
     } else {
-      updatedConfig.summarySection['en'].push('');
-      updatedConfig.summarySection['fr'].push('');
+      updatedConfig.summarySection.en.push('');
+      updatedConfig.summarySection.fr.push('');
     }
 
     setConfig(updatedConfig);
@@ -101,11 +104,11 @@ function SummaryConfig() {
     const updatedConfig = { ...config };
 
     if (section === 'fedAuth' || section === 'qcAuth') {
-      updatedConfig[section + 'Section']['en'].splice(index, 1);
-      updatedConfig[section + 'Section']['fr'].splice(index, 1);
+      updatedConfig[`${section}Section`].en.splice(index, 1);
+      updatedConfig[`${section}Section`].fr.splice(index, 1);
     } else {
-      updatedConfig.summarySection['en'].splice(index, 1);
-      updatedConfig.summarySection['fr'].splice(index, 1);
+      updatedConfig.summarySection.en.splice(index, 1);
+      updatedConfig.summarySection.fr.splice(index, 1);
     }
 
     setConfig(updatedConfig);
@@ -139,8 +142,7 @@ function SummaryConfig() {
         duration: 5000,
         isClosable: true,
       });
-    } catch (error) {
-      console.error('Error saving changes');
+    } catch {
       toast({
         title: 'Error!',
         description: 'Failed to save changes',
@@ -338,8 +340,8 @@ function SummaryConfig() {
                       variant="ghost"
                       borderRadius="25px"
                       onClick={() => handleAddInput('fedAuth')}
-                      ml={'15px'}
-                      fontWeight={'bold'}
+                      ml="15px"
+                      fontWeight="bold"
                       color="#cf3350"
                     >
                       Add New Row
@@ -454,8 +456,8 @@ function SummaryConfig() {
                       variant="ghost"
                       borderRadius="25px"
                       onClick={() => handleAddInput('qcAuth')}
-                      ml={'15px'}
-                      fontWeight={'bold'}
+                      ml="15px"
+                      fontWeight="bold"
                       color="#cf3350"
                     >
                       Add New Row
@@ -578,8 +580,8 @@ function SummaryConfig() {
                       variant="ghost"
                       borderRadius="25px"
                       onClick={() => handleAddInput('summary')}
-                      ml={'15px'}
-                      fontWeight={'bold'}
+                      ml="15px"
+                      fontWeight="bold"
                       color="#cf3350"
                     >
                       Add New Row

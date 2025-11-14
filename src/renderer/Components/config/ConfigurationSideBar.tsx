@@ -18,13 +18,21 @@ import {
   Heading,
   useToast,
 } from '@chakra-ui/react';
+import { HiEye, HiEyeOff } from 'react-icons/hi';
 import { IoClose } from 'react-icons/io5';
-import { supabase } from '../Utils/supabaseClient';
+import { supabase } from '../../Utils/supabaseClient';
 import SummaryConfig from './SummaryConfig';
 import PriceListConfig from './PriceListConfig';
-import { HiEye, HiEyeOff } from 'react-icons/hi'; // Import eye icons
 
-function ConfigurationSidebar({ isSidebarOpen, setIsSidebarOpen }) {
+interface ConfigurationSidebarProps {
+  isSidebarOpen: boolean;
+  setIsSidebarOpen: (isOpen: boolean) => void;
+}
+
+function ConfigurationSidebar({
+  isSidebarOpen,
+  setIsSidebarOpen,
+}: ConfigurationSidebarProps) {
   // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState('summary');
@@ -59,7 +67,6 @@ function ConfigurationSidebar({ isSidebarOpen, setIsSidebarOpen }) {
       .single();
 
     if (error) {
-      console.log('Error: ', error);
       setWrongPassword(true);
       setIsAuthenticated(false);
       setIsSidebarOpen(false);
@@ -102,7 +109,6 @@ function ConfigurationSidebar({ isSidebarOpen, setIsSidebarOpen }) {
       .single();
 
     if (error || !data) {
-      console.log('Error: ', error);
       setPasswordChangeError('Error fetching user data.');
       return;
     }
@@ -119,7 +125,6 @@ function ConfigurationSidebar({ isSidebarOpen, setIsSidebarOpen }) {
       .eq('username', 'admin');
 
     if (updateError) {
-      console.log('Error updating password: ', updateError);
       setPasswordChangeError('Error updating password.');
     } else {
       setOldPassword('');
@@ -145,7 +150,7 @@ function ConfigurationSidebar({ isSidebarOpen, setIsSidebarOpen }) {
     if (isSidebarOpen && !isAuthenticated) {
       onOpen();
     }
-  }, [isSidebarOpen]);
+  }, [isSidebarOpen, isAuthenticated, onOpen]);
 
   return (
     <Box
@@ -178,12 +183,7 @@ function ConfigurationSidebar({ isSidebarOpen, setIsSidebarOpen }) {
             {' '}
             {wrongPassword && (
               <Box mt={2} padding="10px" borderRadius="15px">
-                <Text
-                  color="white"
-                  fontWeight="bold"
-                  fontSize="14px"
-                  color="#cf3350"
-                >
+                <Text fontWeight="bold" fontSize="14px" color="#cf3350">
                   Incorrect password, please try again.
                 </Text>
               </Box>
@@ -282,7 +282,7 @@ function ConfigurationSidebar({ isSidebarOpen, setIsSidebarOpen }) {
             </Select>
             {selectedConfig === 'summary' && (
               <SummaryConfig setIsSidebarOpen={setIsSidebarOpen} />
-            )}{' '}
+            )}
             {selectedConfig === 'price_list' && (
               <PriceListConfig setIsSidebarOpen={setIsSidebarOpen} />
             )}

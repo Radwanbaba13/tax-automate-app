@@ -1,16 +1,55 @@
 import React from 'react';
 import {
   Box,
-  VStack,
-  HStack,
-  Select,
-  Input,
   FormControl,
+  HStack,
   IconButton,
+  Input,
+  Select,
+  VStack,
 } from '@chakra-ui/react';
-import { MdDragIndicator } from 'react-icons/md';
 import { AiOutlineClose, AiOutlinePlus, AiOutlineMail } from 'react-icons/ai';
+import { MdDragIndicator } from 'react-icons/md';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+
+interface ConfirmationNumbers {
+  federal: string;
+  quebec?: string;
+  t1135: string;
+}
+
+interface YearItem {
+  year: string;
+  confirmationNumbers: ConfirmationNumbers;
+}
+
+interface Client {
+  title: string;
+  name: string;
+  years: YearItem[];
+}
+
+interface ClientDetailsProps {
+  clients: Client[];
+  handleClientChange: (
+    clientIndex: number,
+    field: string,
+    yearIndex: number | null,
+    yearField: string | null,
+    value: string,
+  ) => void;
+  handleConfirmationNumberChange: (
+    clientIndex: number,
+    yearIndex: number,
+    type: string,
+    value: string,
+  ) => void;
+  selectedProvince: string;
+  removeClient: (index: number) => void;
+  addYear: (clientIndex: number) => void;
+  removeYear: (clientIndex: number, yearIndex: number) => void;
+  onDragEnd: (result: any, clientIndex: number) => void;
+}
 
 function ClientDetails({
   clients,
@@ -21,16 +60,17 @@ function ClientDetails({
   addYear,
   removeYear,
   onDragEnd,
-}) {
-  const handleMailQC = (clientIndex, yearIndex) => {
+}: ClientDetailsProps) {
+  const handleMailQC = (clientIndex: number, yearIndex: number) => {
     handleConfirmationNumberChange(clientIndex, yearIndex, 'quebec', 'Mail QC');
   };
 
   return (
     <>
-      {clients.map((client, index) => (
+      {/* eslint-disable react/no-array-index-key */}
+      {clients.map((client, clientIndex) => (
         <Box
-          key={index}
+          key={`client-${clientIndex}-${client.name}`}
           bg="rgb(47,45,45,0.05)"
           border="1px solid #cf3350"
           borderRadius="md"
@@ -43,7 +83,13 @@ function ClientDetails({
               <Select
                 placeholder="Select Title"
                 onChange={(e) =>
-                  handleClientChange(index, 'title', null, null, e.target.value)
+                  handleClientChange(
+                    clientIndex,
+                    'title',
+                    null,
+                    null,
+                    e.target.value,
+                  )
                 }
                 value={client.title}
                 border="none"
@@ -92,7 +138,13 @@ function ClientDetails({
                 placeholder="Name"
                 value={client.name}
                 onChange={(e) =>
-                  handleClientChange(index, 'name', null, null, e.target.value)
+                  handleClientChange(
+                    clientIndex,
+                    'name',
+                    null,
+                    null,
+                    e.target.value,
+                  )
                 }
                 width="75%"
               />
@@ -100,37 +152,48 @@ function ClientDetails({
                 aria-label="Remove Client"
                 borderRadius="50px"
                 icon={<AiOutlineClose size="20px" />}
-                onClick={() => removeClient(index)}
+                onClick={() => removeClient(clientIndex)}
                 colorScheme="red"
                 size="md"
                 variant="ghost"
-                mr={'5px'}
+                mr="5px"
               />
             </HStack>
           </FormControl>
 
           {/* Draggable and Sortable Years */}
-          <DragDropContext onDragEnd={(result) => onDragEnd(result, index)}>
-            <Droppable droppableId={`droppable-${index}`}>
-              {(provided) => (
+          <DragDropContext
+            onDragEnd={(result) => onDragEnd(result, clientIndex)}
+          >
+            <Droppable
+              droppableId={`droppable-${clientIndex}`}
+              isDropDisabled={false}
+              isCombineEnabled={false}
+              ignoreContainerClipping={false}
+            >
+              {(droppableProvided) => (
                 <VStack
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
+                  // eslint-disable-next-line react/jsx-props-no-spreading
+                  {...droppableProvided.droppableProps}
+                  ref={droppableProvided.innerRef}
                   spacing={4}
                   align="start"
                   mb={4}
                 >
+                  {/* eslint-disable react/no-array-index-key */}
                   {client.years.map((yearItem, yearIndex) => (
                     <Draggable
-                      key={yearIndex}
-                      draggableId={`draggable-${index}-${yearIndex}`}
+                      key={`year-${client.name}-${yearIndex}-${yearItem.year}`}
+                      draggableId={`draggable-${clientIndex}-${yearIndex}`}
                       index={yearIndex}
                     >
-                      {(provided) => (
+                      {(draggableProvided) => (
                         <HStack
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
+                          ref={draggableProvided.innerRef}
+                          // eslint-disable-next-line react/jsx-props-no-spreading
+                          {...draggableProvided.draggableProps}
+                          // eslint-disable-next-line react/jsx-props-no-spreading
+                          {...draggableProvided.dragHandleProps}
                           spacing={1}
                           align="start"
                         >
@@ -139,11 +202,11 @@ function ClientDetails({
                             <IconButton
                               aria-label="Remove Year"
                               icon={<AiOutlineClose />}
-                              onClick={() => removeYear(index, yearIndex)}
+                              onClick={() => removeYear(clientIndex, yearIndex)}
                               colorScheme="red"
                               size="md"
                               variant="ghost"
-                              borderRadius={'50px'}
+                              borderRadius="50px"
                             />
                           )}
                           {/* Drag Handle */}
@@ -154,7 +217,8 @@ function ClientDetails({
                             variant="ghost"
                             size="sm"
                             borderRadius="50px"
-                            {...provided.dragHandleProps}
+                            // eslint-disable-next-line react/jsx-props-no-spreading
+                            {...draggableProvided.dragHandleProps}
                           />
                           {/* Year and Confirmation Numbers */}
                           <Select
@@ -181,7 +245,7 @@ function ClientDetails({
                             value={yearItem.year}
                             onChange={(e) =>
                               handleClientChange(
-                                index,
+                                clientIndex,
                                 'years',
                                 yearIndex,
                                 'year',
@@ -205,7 +269,7 @@ function ClientDetails({
                               value={yearItem.confirmationNumbers.federal || ''}
                               onChange={(e) =>
                                 handleConfirmationNumberChange(
-                                  index,
+                                  clientIndex,
                                   yearIndex,
                                   'federal',
                                   e.target.value,
@@ -239,7 +303,7 @@ function ClientDetails({
                                   }
                                   onChange={(e) =>
                                     handleConfirmationNumberChange(
-                                      index,
+                                      clientIndex,
                                       yearIndex,
                                       'quebec',
                                       e.target.value,
@@ -267,7 +331,9 @@ function ClientDetails({
                                 <IconButton
                                   aria-label="Mail QC Confirmation"
                                   icon={<AiOutlineMail />}
-                                  onClick={() => handleMailQC(index, yearIndex)}
+                                  onClick={() =>
+                                    handleMailQC(clientIndex, yearIndex)
+                                  }
                                   colorScheme="blue"
                                   size="md"
                                   variant="ghost"
@@ -281,7 +347,7 @@ function ClientDetails({
                               value={yearItem.confirmationNumbers.t1135 || ''}
                               onChange={(e) =>
                                 handleConfirmationNumberChange(
-                                  index,
+                                  clientIndex,
                                   yearIndex,
                                   't1135',
                                   e.target.value,
@@ -308,25 +374,26 @@ function ClientDetails({
                             />
                           </HStack>
                           {/* Add Year (only for the last year) */}
-                          {client.years.length - 1 === yearIndex ? (
+                          {client.years.length - 1 === yearIndex && (
                             <IconButton
                               aria-label="Add Year"
                               icon={<AiOutlinePlus />}
-                              onClick={() => addYear(index)}
+                              onClick={() => addYear(clientIndex)}
                               colorScheme="red"
                               size="md"
                               variant="ghost"
                               borderRadius="50px"
                               width="40px"
                             />
-                          ) : (
+                          )}
+                          {client.years.length - 1 !== yearIndex && (
                             <Box width="40px" />
                           )}
                         </HStack>
                       )}
                     </Draggable>
                   ))}
-                  {provided.placeholder}
+                  {droppableProvided.placeholder}
                 </VStack>
               )}
             </Droppable>

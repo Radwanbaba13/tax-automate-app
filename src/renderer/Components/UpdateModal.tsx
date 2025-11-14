@@ -30,7 +30,7 @@ interface ProgressInfo {
   total: number;
 }
 
-const UpdateModal: React.FC = () => {
+function UpdateModal() {
   const [isOpen, setIsOpen] = useState(false);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [isDownloading, setIsDownloading] = useState(false);
@@ -60,10 +60,11 @@ const UpdateModal: React.FC = () => {
     });
 
     // Listen for update errors
-    window.electron.onUpdateError((error: Error) => {
+    window.electron.onUpdateError(() => {
       toast({
         title: 'Update Error',
-        description: 'There was an error checking for updates. Please try again later.',
+        description:
+          'There was an error checking for updates. Please try again later.',
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -83,7 +84,7 @@ const UpdateModal: React.FC = () => {
     setDownloadProgress(0);
     try {
       await window.electron.downloadUpdate();
-    } catch (error) {
+    } catch {
       toast({
         title: 'Download Failed',
         description: 'Failed to download the update. Please try again.',
@@ -105,14 +106,6 @@ const UpdateModal: React.FC = () => {
     }
   };
 
-  const formatBytes = (bytes: number): string => {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
-  };
-
   return (
     <Modal
       isOpen={isOpen}
@@ -132,7 +125,9 @@ const UpdateModal: React.FC = () => {
               color={updateDownloaded ? 'green.500' : 'blue.500'}
             />
             <Text>
-              {updateDownloaded ? 'Update Ready to Install' : 'Update Available'}
+              {updateDownloaded
+                ? 'Update Ready to Install'
+                : 'Update Available'}
             </Text>
           </HStack>
         </ModalHeader>
@@ -146,7 +141,8 @@ const UpdateModal: React.FC = () => {
                 </Text>
                 {updateInfo.releaseDate && (
                   <Text fontSize="sm" color="gray.600" mb={2}>
-                    Released: {new Date(updateInfo.releaseDate).toLocaleDateString()}
+                    Released:{' '}
+                    {new Date(updateInfo.releaseDate).toLocaleDateString()}
                   </Text>
                 )}
               </Box>
@@ -154,8 +150,9 @@ const UpdateModal: React.FC = () => {
 
             {!updateDownloaded && !isDownloading && (
               <Text fontSize="sm" color="gray.700">
-                A new version of the application is available. Would you like to download
-                and install it now? The application will restart after installation.
+                A new version of the application is available. Would you like to
+                download and install it now? The application will restart after
+                installation.
               </Text>
             )}
 
@@ -180,8 +177,9 @@ const UpdateModal: React.FC = () => {
                   ✓ Update downloaded successfully
                 </Text>
                 <Text fontSize="sm" color="gray.700">
-                  The update is ready to install. Click "Install & Restart" to complete
-                  the update. Your work will be saved automatically.
+                  The update is ready to install. Click &quot;Install &amp;
+                  Restart&quot; to complete the update. Your work will be saved
+                  automatically.
                 </Text>
               </VStack>
             )}
@@ -202,7 +200,12 @@ const UpdateModal: React.FC = () => {
             )}
 
             {isDownloading && (
-              <Button isDisabled colorScheme="blue" isLoading loadingText="Downloading">
+              <Button
+                isDisabled
+                colorScheme="blue"
+                isLoading
+                loadingText="Downloading"
+              >
                 Downloading
               </Button>
             )}
@@ -222,6 +225,6 @@ const UpdateModal: React.FC = () => {
       </ModalContent>
     </Modal>
   );
-};
+}
 
 export default UpdateModal;

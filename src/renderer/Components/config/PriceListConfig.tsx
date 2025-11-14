@@ -2,21 +2,21 @@ import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
-  Input,
-  VStack,
-  Tabs,
-  TabList,
-  TabPanels,
-  Tab,
-  Text,
-  TabPanel,
   IconButton,
+  Input,
   Select,
+  Tab,
+  TabList,
+  TabPanel,
+  TabPanels,
+  Tabs,
+  Text,
+  VStack,
   useToast,
 } from '@chakra-ui/react';
-import { supabase } from '../Utils/supabaseClient';
 import { FaPlus } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
+import { supabase } from '../../Utils/supabaseClient';
 
 interface PriceListItem {
   service: { en: string; fr: string };
@@ -24,15 +24,9 @@ interface PriceListItem {
   type: string;
 }
 
-interface TaxRateItem {
-  province: string;
-  fedRate: number;
-  provRate: number;
-}
-
 function PriceListConfig() {
   const [priceList, setPriceList] = useState<PriceListItem[]>([]);
-  const [taxRates, setTaxRates] = useState<TaxRateItem[]>([]);
+  const [taxRates, setTaxRates] = useState<any[]>([]);
   const [isModified, setIsModified] = useState(false);
   const toast = useToast();
 
@@ -45,13 +39,19 @@ function PriceListConfig() {
         const { data: taxData } = await supabase.from('tax_rates').select('*');
         setPriceList(priceData || []);
         setTaxRates(taxData || []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
+      } catch {
+        toast({
+          title: 'Error fetching data',
+          description: 'Could not fetch price list and tax rates.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
       }
     };
 
     fetchData();
-  }, []);
+  }, [toast]);
 
   const handleUpdatePriceList = (index: number, field: string, value: any) => {
     const updatedPriceList = [...priceList];
@@ -144,11 +144,10 @@ function PriceListConfig() {
         duration: 5000,
         isClosable: true,
       });
-    } catch (error) {
-      console.error('Error saving changes:', error);
+    } catch (error: any) {
       toast({
         title: 'Error!',
-        description: 'Failed to save changes: ' + error.message,
+        description: `Failed to save changes: ${error?.message || 'Unknown error'}`,
         status: 'error',
         duration: 5000,
         isClosable: true,

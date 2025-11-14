@@ -1,7 +1,24 @@
 import React from 'react';
-import { Box, HStack, Input, Text, Textarea } from '@chakra-ui/react';
+import { HStack, Input, Text, Textarea } from '@chakra-ui/react';
 
-function InvoiceDetails({ invoiceDetails, setInvoiceDetails }) {
+interface InvoiceDetailsData {
+  companyName: string;
+  fullName: string;
+  email: string;
+  address: string;
+  phoneNumber: string;
+  notes: string;
+}
+
+interface InvoiceDetailsProps {
+  invoiceDetails: InvoiceDetailsData;
+  setInvoiceDetails: (details: InvoiceDetailsData) => void;
+}
+
+function InvoiceDetails({
+  invoiceDetails,
+  setInvoiceDetails,
+}: InvoiceDetailsProps) {
   return (
     <>
       <HStack spacing={4} mt="15px" justifyContent="space-between" width="100%">
@@ -10,7 +27,7 @@ function InvoiceDetails({ invoiceDetails, setInvoiceDetails }) {
         </Text>
         <Text fontSize="14px" color="#cf3350" fontWeight="bold">
           Full Name*
-        </Text>{' '}
+        </Text>
         <Text fontSize="14px" color="#cf3350" fontWeight="bold">
           Email
         </Text>
@@ -74,7 +91,7 @@ function InvoiceDetails({ invoiceDetails, setInvoiceDetails }) {
           onChange={(e) =>
             setInvoiceDetails({ ...invoiceDetails, fullName: e.target.value })
           }
-        />{' '}
+        />
         <Input
           border="none"
           borderRadius="0px"
