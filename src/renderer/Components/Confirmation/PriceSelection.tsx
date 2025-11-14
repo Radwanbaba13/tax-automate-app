@@ -9,7 +9,7 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { MdClose, MdDragIndicator } from 'react-icons/md';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 interface PriceListItem {
   service: { en: string; fr: string };
@@ -347,6 +347,8 @@ function PriceSelection({
                         onClick={() => handlePriceRemove(price)}
                         aria-label="Remove Price"
                         borderRadius="25px"
+                        background="transparent"
+                        _hover={{ background: '#dfdfdfff' }}
                         icon={<MdClose color="#cf3350" size="20px" />}
                       />
                     </HStack>

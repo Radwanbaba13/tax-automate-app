@@ -9,13 +9,11 @@ import {
   Divider,
 } from '@chakra-ui/react';
 import { Link, useLocation } from 'react-router-dom';
-import {
-  MdSummarize,
-  MdDescription,
-  MdDataset,
-  MdEmail,
-  MdSettings,
-} from 'react-icons/md';
+import { MdEmail, MdSettings } from 'react-icons/md';
+import { IoDocuments } from 'react-icons/io5';
+import { FaFileInvoiceDollar } from 'react-icons/fa';
+import { VscOpenPreview } from 'react-icons/vsc';
+
 import { IconType } from 'react-icons';
 import LogoImage from '../../../../assets/Logo.png';
 
@@ -30,9 +28,8 @@ function NavItem({ icon, label, to, isActive }: NavItemProps) {
   return (
     <Link to={to} style={{ width: '100%', textDecoration: 'none' }}>
       <HStack
-        px={4}
-        py={3}
-        borderRadius="lg"
+        px={2}
+        py={2}
         cursor="pointer"
         bg={isActive ? '#cf335010' : 'transparent'}
         color={isActive ? '#cf3350' : 'gray.700'}
@@ -57,15 +54,15 @@ function Sidebar() {
   const location = useLocation();
 
   const mainNavItems = [
-    { icon: MdSummarize, label: 'Summary', to: '/summary' },
-    { icon: MdDescription, label: 'Confirmation', to: '/confirmation' },
-    { icon: MdDataset, label: 'Data Review', to: '/data-review' },
+    { icon: IoDocuments, label: 'Summary', to: '/summary' },
+    { icon: FaFileInvoiceDollar, label: 'Confirmation', to: '/confirmation' },
+    { icon: VscOpenPreview, label: 'Data Review', to: '/data-review' },
     { icon: MdEmail, label: 'Email Automation', to: '/email-automation' },
   ];
 
   return (
     <Box
-      w="260px"
+      w="220px"
       h="100vh"
       bg="white"
       borderRight="1px solid"
@@ -78,22 +75,38 @@ function Sidebar() {
       boxShadow="sm"
     >
       {/* Logo Section */}
-      <Box px={6} py={6} borderBottom="1px solid" borderColor="gray.200">
+      <Box
+        px={6}
+        py={2}
+        borderBottom="1px solid"
+        borderColor="gray.200"
+        height="100px"
+      >
         <Link to="/" style={{ textDecoration: 'none' }}>
           <Image
             src={LogoImage}
             alt="Tax Automation Logo"
-            h="50px"
+            h="75px"
             objectFit="contain"
             cursor="pointer"
             transition="all 0.2s"
+            justifySelf="center"
             _hover={{ opacity: 0.8 }}
           />
         </Link>
       </Box>
 
       {/* Main Navigation */}
-      <VStack flex={1} spacing={2} px={4} py={6} align="stretch">
+      <VStack flex={1} spacing={3} px={4} py={6} align="stretch">
+        <Text
+          fontSize="xs"
+          fontWeight="600"
+          color="gray.500"
+          textTransform="uppercase"
+          letterSpacing="wide"
+        >
+          Workspaces
+        </Text>
         {mainNavItems.map((item) => (
           <NavItem
             key={item.to}

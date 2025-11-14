@@ -299,54 +299,55 @@ function ConfirmationComponent() {
   };
 
   // Update handleClientChange function to accommodate years
-  const handleClientChange = React.useCallback((clientIndex, field, yearIndex, yearField, value) => {
-    setClients((prevClients) => {
-      const updatedClients = [...prevClients];
-      const client = { ...updatedClients[clientIndex] };
-
-      if (field === 'years' && yearIndex !== null && yearField !== null) {
-        const updatedYears = [...client.years];
-        updatedYears[yearIndex] = {
-          ...updatedYears[yearIndex],
-          [yearField]: value,
-        };
-        client.years = updatedYears;
-      } else {
-        client[field] = value;
-      }
-
-      updatedClients[clientIndex] = client;
-      return updatedClients;
-    });
-  }, []);
-
-  const handleConfirmationNumberChange = React.useCallback((
-    clientIndex,
-    yearIndex,
-    type,
-    value,
-  ) => {
-    setClients((prevClients) => {
-      const updatedClients = [...prevClients];
-
-      // Ensure the specific year exists and update the confirmation number
-      if (updatedClients[clientIndex]?.years[yearIndex]) {
+  const handleClientChange = React.useCallback(
+    (clientIndex, field, yearIndex, yearField, value) => {
+      setClients((prevClients) => {
+        const updatedClients = [...prevClients];
         const client = { ...updatedClients[clientIndex] };
-        const years = [...client.years];
-        years[yearIndex] = {
-          ...years[yearIndex],
-          confirmationNumbers: {
-            ...years[yearIndex].confirmationNumbers,
-            [type]: value,
-          },
-        };
-        client.years = years;
-        updatedClients[clientIndex] = client;
-      }
 
-      return updatedClients;
-    });
-  }, []);
+        if (field === 'years' && yearIndex !== null && yearField !== null) {
+          const updatedYears = [...client.years];
+          updatedYears[yearIndex] = {
+            ...updatedYears[yearIndex],
+            [yearField]: value,
+          };
+          client.years = updatedYears;
+        } else {
+          client[field] = value;
+        }
+
+        updatedClients[clientIndex] = client;
+        return updatedClients;
+      });
+    },
+    [],
+  );
+
+  const handleConfirmationNumberChange = React.useCallback(
+    (clientIndex, yearIndex, type, value) => {
+      setClients((prevClients) => {
+        const updatedClients = [...prevClients];
+
+        // Ensure the specific year exists and update the confirmation number
+        if (updatedClients[clientIndex]?.years[yearIndex]) {
+          const client = { ...updatedClients[clientIndex] };
+          const years = [...client.years];
+          years[yearIndex] = {
+            ...years[yearIndex],
+            confirmationNumbers: {
+              ...years[yearIndex].confirmationNumbers,
+              [type]: value,
+            },
+          };
+          client.years = years;
+          updatedClients[clientIndex] = client;
+        }
+
+        return updatedClients;
+      });
+    },
+    [],
+  );
   const removeClient = (index) => {
     setClients((prevClients) => prevClients.filter((_, i) => i !== index));
   };
@@ -480,7 +481,7 @@ function ConfirmationComponent() {
             <Box
               display="flex"
               alignItems="center"
-              border="3px solid #cf3350"
+              border="2px solid #cf3350"
               borderRadius="md"
               cursor="pointer"
               onClick={openDirectoryDialog}
@@ -570,10 +571,7 @@ function ConfirmationComponent() {
                   value={selectedProvince}
                 >
                   {provinces.map((prov: any) => (
-                    <option
-                      key={prov.province}
-                      value={prov.province}
-                    >
+                    <option key={prov.province} value={prov.province}>
                       {prov.province}
                     </option>
                   ))}
@@ -610,6 +608,8 @@ function ConfirmationComponent() {
                   onClick={addClient}
                   fontSize="18px"
                   borderRadius="25px"
+                  background="transparent"
+                  _hover={{ background: '#dfdfdfff' }}
                   icon={<MdAdd color="#cf3350" size="25px" />}
                 />
               </HStack>

@@ -10,7 +10,7 @@ import {
 } from '@chakra-ui/react';
 import { AiOutlineClose, AiOutlinePlus, AiOutlineMail } from 'react-icons/ai';
 import { MdDragIndicator } from 'react-icons/md';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
 interface ConfirmationNumbers {
   federal: string;
@@ -150,6 +150,7 @@ function ClientDetails({
               />
               <IconButton
                 aria-label="Remove Client"
+                color="#cf3350"
                 borderRadius="50px"
                 icon={<AiOutlineClose size="20px" />}
                 onClick={() => removeClient(clientIndex)}

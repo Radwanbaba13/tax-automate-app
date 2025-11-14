@@ -16,7 +16,7 @@ import {
 import { FaPlus } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import { MdDragHandle } from 'react-icons/md';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { supabase } from '../../Utils/supabaseClient';
 import { validateConfig } from '../../Utils/saveConfiguration';
 

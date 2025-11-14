@@ -201,7 +201,7 @@ function SummaryComponent() {
             p={6}
             width="100%"
           >
-            <VStack spacing={4} align="stretch">
+            <VStack spacing={2} align="stretch">
               <Text fontSize="md" fontWeight="600" color="gray.700">
                 Save Directory
               </Text>
@@ -211,10 +211,12 @@ function SummaryComponent() {
                 borderRadius="md"
                 cursor="pointer"
                 onClick={openDirectoryDialog}
-                p={3}
+                fontSize="14px"
+                padding={4}
+                height="45px"
                 _hover={{ bg: 'gray.50' }}
               >
-                <FaFolderOpen size={20} color="#cf3350" />
+                <FaFolderOpen size={18} color="#cf3350" />
                 <Input
                   placeholder="Select save directory"
                   value={directory || ''}

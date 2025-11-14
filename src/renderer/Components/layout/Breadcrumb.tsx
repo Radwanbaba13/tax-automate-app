@@ -9,7 +9,8 @@ import { Link, useLocation } from 'react-router-dom';
 import { MdChevronRight } from 'react-icons/md';
 
 const routeNames: Record<string, string> = {
-  '/': 'Summary',
+  '/': 'Home',
+  '/summary': 'Summary',
   '/confirmation': 'Confirmation',
   '/data-review': 'Data Review',
   '/email-automation': 'Email Automation',

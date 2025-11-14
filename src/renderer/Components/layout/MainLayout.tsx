@@ -9,14 +9,15 @@ interface MainLayoutProps {
 }
 
 const routeTitles: Record<string, string> = {
-  '/': 'Summary',
+  '/': 'Home',
+  '/summary': 'Summary Tool',
   '/confirmation': 'Confirmation & Invoice',
   '/data-review': 'Data Review',
   '/email-automation': 'Email Automation',
   '/admin-settings': 'Admin Settings',
 };
 
-const SIDEBAR_WIDTH = '260px';
+const SIDEBAR_WIDTH = '220px';
 
 function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation();
@@ -44,8 +45,9 @@ function MainLayout({ children }: MainLayoutProps) {
             bg="white"
             borderBottom="1px solid"
             borderColor="gray.200"
+            height="100px"
             px={8}
-            py={6}
+            py={5}
           >
             <VStack align="flex-start" spacing={2}>
               <Breadcrumb />

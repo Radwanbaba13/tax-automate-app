@@ -9,7 +9,10 @@ import {
   useColorModeValue,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
-import { MdDescription, MdDataset, MdEmail, MdSummarize } from 'react-icons/md';
+import { MdEmail } from 'react-icons/md';
+import { IoDocuments } from 'react-icons/io5';
+import { FaFileInvoiceDollar } from 'react-icons/fa';
+import { VscOpenPreview } from 'react-icons/vsc';
 import { IconType } from 'react-icons';
 
 interface NavigationCardProps {
@@ -33,6 +36,10 @@ function NavigationCard({
   return (
     <Box
       w="100%"
+      maxW="700px"
+      justifySelf={
+        title === 'Summary' || title === 'Data Review' ? 'right' : 'left'
+      }
       p={8}
       borderRadius="xl"
       border="2px solid"
@@ -73,7 +80,7 @@ function NavigationCard({
 function HomePage() {
   const navigationCards = [
     {
-      icon: MdSummarize,
+      icon: IoDocuments,
       title: 'Summary',
       description:
         'Generate summary documents from PDF files with customizable configurations',
@@ -81,7 +88,7 @@ function HomePage() {
       color: '#cf3350',
     },
     {
-      icon: MdDescription,
+      icon: FaFileInvoiceDollar,
       title: 'Confirmation',
       description:
         'Create confirmation documents and invoices with detailed client information',
@@ -89,7 +96,7 @@ function HomePage() {
       color: '#386498',
     },
     {
-      icon: MdDataset,
+      icon: VscOpenPreview,
       title: 'Data Review',
       description:
         'Review and validate processed data before generating documents',
@@ -107,11 +114,11 @@ function HomePage() {
   ];
 
   return (
-    <Box maxW="1400px" mx="auto">
+    <Box mx="auto">
       <VStack spacing={8} align="stretch">
         <Box textAlign="center" py={8}>
           <Heading size="2xl" color="gray.800" mb={4}>
-            Welcome to Tax Automation
+            Tax Automation Modules
           </Heading>
           <Text fontSize="lg" color="gray.600">
             Select a module below to get started
