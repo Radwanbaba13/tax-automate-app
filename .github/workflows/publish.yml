@@ -1,9 +1,12 @@
 name: Publish
 
+permissions:
+  contents: write
+
 on:
   push:
     tags:
-      - 'v*.*.*'  # Trigger on version tags (e.g., v1.0.0)
+      - 'v*.*.*' # Trigger on version tags (e.g., v1.0.0)
 
 jobs:
   build-windows:

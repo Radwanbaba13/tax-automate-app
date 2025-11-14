@@ -17,13 +17,16 @@ node_modules
 # OSX
 .DS_Store
 
-# IGNORE ONLY BUILD OUTPUTS
-release/build/
-release/app/dist/
+# Ignore ALL of release by default
+release/*
 
-# Allow release/app folder (needed for versioning)
+# BUT allow release/app folder (source files, versioned files)
 !release/app/
 !release/app/**
+
+# Ignore ONLY build output inside release/app
+release/app/dist/
+release/build/
 
 # Python build artifacts
 Python/dist/
