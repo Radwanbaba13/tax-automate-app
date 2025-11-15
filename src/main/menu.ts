@@ -34,6 +34,15 @@ async function checkForUpdates() {
 
   try {
     log.info('Manual update check triggered');
+
+    // Show a dialog that we're checking
+    dialog.showMessageBox({
+      type: 'info',
+      title: 'Checking for Updates',
+      message: 'Checking for updates...',
+      buttons: ['OK'],
+    });
+
     const result = await autoUpdater.checkForUpdates();
 
     if (!result || !result.updateInfo) {
@@ -43,6 +52,9 @@ async function checkForUpdates() {
         message: 'You are running the latest version.',
         buttons: ['OK'],
       });
+    } else {
+      // Update is available - the auto-updater events will handle showing the update modal
+      log.info('Update found:', result.updateInfo);
     }
   } catch (error) {
     log.error('Error checking for updates:', error);

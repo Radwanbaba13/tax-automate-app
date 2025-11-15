@@ -59,7 +59,7 @@ function MainLayout({ children }: MainLayoutProps) {
         )}
 
         {/* Page Content */}
-        <Box p={8} w="100%">
+        <Box p={!isHomePage ? 8 : 0} w="100%">
           {children}
         </Box>
       </Box>

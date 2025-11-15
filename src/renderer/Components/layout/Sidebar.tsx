@@ -7,15 +7,19 @@ import {
   Icon,
   Image,
   Divider,
+  Spinner,
+  Button,
 } from '@chakra-ui/react';
 import { Link, useLocation } from 'react-router-dom';
 import { MdEmail, MdSettings } from 'react-icons/md';
 import { IoDocuments } from 'react-icons/io5';
 import { FaFileInvoiceDollar } from 'react-icons/fa';
 import { VscOpenPreview } from 'react-icons/vsc';
+import { FiCheckCircle, FiAlertCircle } from 'react-icons/fi';
 
 import { IconType } from 'react-icons';
 import LogoImage from '../../../../assets/Logo.png';
+import UpdateModal from '../modals/UpdateModal';
 
 interface NavItemProps {
   icon: IconType;
@@ -52,6 +56,74 @@ function NavItem({ icon, label, to, isActive }: NavItemProps) {
 
 function Sidebar() {
   const location = useLocation();
+  const [version, setVersion] = React.useState('');
+  const [isCheckingUpdate, setIsCheckingUpdate] = React.useState(false);
+  const [updateStatus, setUpdateStatus] = React.useState<
+    'idle' | 'up-to-date' | 'update-available' | 'error'
+  >('idle');
+  const [isUpdateModalOpen, setIsUpdateModalOpen] = React.useState(false);
+
+  const handleCheckForUpdates = React.useCallback(async () => {
+    setIsCheckingUpdate(true);
+    setUpdateStatus('idle');
+    try {
+      const result = await window.electron.checkForUpdates();
+
+      // Handle development mode response
+      if (result && !result.available && result.message) {
+        setUpdateStatus('up-to-date');
+        setIsCheckingUpdate(false);
+        return;
+      }
+
+      // If there's an error in the result
+      if (result && result.error) {
+        setUpdateStatus('error');
+        setIsCheckingUpdate(false);
+        return;
+      }
+
+      // The update events will handle setting the status for production builds
+      // If no events fire within 10 seconds, assume up to date
+      setTimeout(() => {
+        setIsCheckingUpdate((checking) => {
+          if (checking) {
+            setUpdateStatus('up-to-date');
+            return false;
+          }
+          return checking;
+        });
+      }, 10000);
+    } catch (error) {
+      setUpdateStatus('error');
+      setIsCheckingUpdate(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    window.electron.getAppVersion().then((v: any) => {
+      setVersion(v);
+    });
+
+    // Listen for update events
+    window.electron.onUpdateAvailable(() => {
+      setUpdateStatus('update-available');
+      setIsCheckingUpdate(false);
+    });
+
+    window.electron.onUpdateNotAvailable(() => {
+      setUpdateStatus('up-to-date');
+      setIsCheckingUpdate(false);
+    });
+
+    window.electron.onUpdateError(() => {
+      setUpdateStatus('error');
+      setIsCheckingUpdate(false);
+    });
+
+    // Automatically check for updates on load
+    handleCheckForUpdates();
+  }, [handleCheckForUpdates]);
 
   const mainNavItems = [
     { icon: IoDocuments, label: 'Summary', to: '/summary' },
@@ -118,16 +190,85 @@ function Sidebar() {
         ))}
       </VStack>
 
-      {/* Bottom Section - Admin Settings */}
-      <Box px={4} pb={6}>
-        <Divider mb={4} />
+      {/* Bottom Section - Admin Settings & Version */}
+      <Box px={4} pb={4}>
+        <Divider mb={4} borderColor="gray.300" />
         <NavItem
           icon={MdSettings}
           label="Admin Settings"
           to="/admin-settings"
           isActive={location.pathname === '/admin-settings'}
         />
+
+        {/* Version and Update Status */}
+        <Box mt={4} px={2} py={3} borderTop="1px solid" borderColor="gray.200">
+          <VStack spacing={2} align="stretch">
+            <Text fontSize="xs" fontWeight="600" color="gray.500">
+              Version {version}
+            </Text>
+
+            {updateStatus === 'idle' && !isCheckingUpdate && (
+              <Text
+                fontSize="xs"
+                color="blue.600"
+                cursor="pointer"
+                fontWeight="500"
+                onClick={handleCheckForUpdates}
+                _hover={{ color: 'blue.700', textDecoration: 'underline' }}
+              >
+                Check for updates
+              </Text>
+            )}
+
+            {isCheckingUpdate && (
+              <HStack spacing={2}>
+                <Spinner size="xs" color="blue.500" />
+                <Text fontSize="xs" color="gray.600">
+                  Checking...
+                </Text>
+              </HStack>
+            )}
+
+            {updateStatus === 'up-to-date' && (
+              <HStack spacing={1}>
+                <Icon as={FiCheckCircle} boxSize={3} color="green.500" />
+                <Text fontSize="xs" color="green.600" fontWeight="500">
+                  Up to date
+                </Text>
+              </HStack>
+            )}
+
+            {updateStatus === 'update-available' && (
+              <Button
+                size="xs"
+                colorScheme="orange"
+                onClick={() => setIsUpdateModalOpen(true)}
+                leftIcon={<Icon as={FiAlertCircle} boxSize={3} />}
+              >
+                Update Now
+              </Button>
+            )}
+
+            {updateStatus === 'error' && (
+              <Text
+                fontSize="xs"
+                color="gray.500"
+                cursor="pointer"
+                onClick={handleCheckForUpdates}
+                _hover={{ textDecoration: 'underline' }}
+              >
+                Check again
+              </Text>
+            )}
+          </VStack>
+        </Box>
       </Box>
+
+      {/* Update Modal */}
+      <UpdateModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => setIsUpdateModalOpen(false)}
+      />
     </Box>
   );
 }
