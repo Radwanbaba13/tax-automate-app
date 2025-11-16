@@ -19,7 +19,12 @@ interface CheckUpdateModalProps {
   onClose: () => void;
 }
 
-type CheckStatus = 'checking' | 'up-to-date' | 'update-available' | 'error' | 'dev-mode';
+type CheckStatus =
+  | 'checking'
+  | 'up-to-date'
+  | 'update-available'
+  | 'error'
+  | 'dev-mode';
 
 function CheckUpdateModal({ isOpen, onClose }: CheckUpdateModalProps) {
   const [status, setStatus] = React.useState<CheckStatus>('checking');
@@ -198,7 +203,11 @@ function CheckUpdateModal({ isOpen, onClose }: CheckUpdateModalProps) {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={status === 'checking' ? () => {} : onClose} isCentered>
+    <Modal
+      isOpen={isOpen}
+      onClose={status === 'checking' ? () => {} : onClose}
+      isCentered
+    >
       <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />
       <ModalContent>{getModalContent()}</ModalContent>
     </Modal>

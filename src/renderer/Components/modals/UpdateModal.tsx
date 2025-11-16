@@ -28,6 +28,10 @@ function UpdateModal({ isOpen, onClose }: UpdateModalProps) {
   const [isDownloading, setIsDownloading] = React.useState(false);
 
   const handleDownloadUpdate = async () => {
+    if (!window.electron) {
+      console.error('Electron API not available');
+      return;
+    }
     setStage('downloading');
     setIsDownloading(true);
     try {
@@ -40,11 +44,21 @@ function UpdateModal({ isOpen, onClose }: UpdateModalProps) {
   };
 
   const handleInstallUpdate = () => {
+    if (!window.electron) {
+      console.error('Electron API not available');
+      return;
+    }
     setStage('installing');
     window.electron.installUpdate();
   };
 
   React.useEffect(() => {
+    // Safety check: ensure window.electron is available
+    if (!window.electron) {
+      console.error('Electron API not available');
+      return;
+    }
+
     // Listen for download progress
     window.electron.onUpdateDownloadProgress((progress: any) => {
       setDownloadProgress(progress.percent);
@@ -180,7 +194,9 @@ function UpdateModal({ isOpen, onClose }: UpdateModalProps) {
   return (
     <Modal
       isOpen={isOpen}
-      onClose={stage === 'downloading' || stage === 'installing' ? () => {} : onClose}
+      onClose={
+        stage === 'downloading' || stage === 'installing' ? () => {} : onClose
+      }
       closeOnOverlayClick={stage !== 'downloading' && stage !== 'installing'}
       closeOnEsc={stage !== 'downloading' && stage !== 'installing'}
       isCentered

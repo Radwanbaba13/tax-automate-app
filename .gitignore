@@ -58,3 +58,8 @@ npm-debug.log.*
 
 # Documentation
 docs/
+
+# Environment variables
+.env
+.env.local
+.env.*.local

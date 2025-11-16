@@ -31,4 +31,12 @@ contextBridge.exposeInMainWorld('electron', {
   onUpdateDownloaded: (callback) =>
     ipcRenderer.on('update-downloaded', (event, info) => callback(info)),
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
+
+  // OpenAI comparison API
+  compareWithOpenAI: (dtMaxFiles, clientSlipsFiles, prompt) =>
+    ipcRenderer.invoke('compare-with-openai', {
+      dtMaxFiles,
+      clientSlipsFiles,
+      prompt,
+    }),
 });
