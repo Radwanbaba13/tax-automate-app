@@ -70,7 +70,7 @@ function ClientDetails({
       {/* eslint-disable react/no-array-index-key */}
       {clients.map((client, clientIndex) => (
         <Box
-          key={`client-${clientIndex}-${client.name}`}
+          key={`client-${clientIndex}`}
           bg="rgb(47,45,45,0.05)"
           border="1px solid #cf3350"
           borderRadius="md"
@@ -184,7 +184,7 @@ function ClientDetails({
                   {/* eslint-disable react/no-array-index-key */}
                   {client.years.map((yearItem, yearIndex) => (
                     <Draggable
-                      key={`year-${client.name}-${yearIndex}-${yearItem.year}`}
+                      key={`year-${clientIndex}-${yearIndex}`}
                       draggableId={`draggable-${clientIndex}-${yearIndex}`}
                       index={yearIndex}
                     >
