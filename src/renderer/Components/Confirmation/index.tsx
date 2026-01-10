@@ -91,7 +91,7 @@ function ConfirmationComponent() {
       const name = clients[0].name || '';
       setInvoiceDetails((prev) => ({ ...prev, fullName, name }));
     }
-  }, [clients, language]);
+  }, [clients[0]?.title, clients[0]?.name, language]);
 
   useEffect(() => {
     if (language === 'fr') {
