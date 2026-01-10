@@ -6,6 +6,20 @@ from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 
+
+def _parse_rate(value):
+    """Parse a tax rate value into a float. Accepts numbers, numeric strings, or strings with a trailing '%'."""
+    try:
+        if value is None:
+            return 0.0
+        # Convert to string and strip whitespace
+        s = str(value).strip()
+        if s.endswith('%'):
+            s = s[:-1].strip()
+        return float(s)
+    except Exception:
+        return 0.0
+
 def create_confirmation_email(directory_path, clients, selected_prices, tax_rate, includeTaxes, language):
 
       if language == "fr":
@@ -16,9 +30,10 @@ def create_confirmation_email(directory_path, clients, selected_prices, tax_rate
           raise ValueError(f"Unsupported language: {language}")
 
 def create_confirmation_email_english(directory_path, clients, selected_prices, tax_rate, includeTaxes):
-    province = tax_rate["province"]
-    gst_rate = tax_rate["fedRate"]
-    qst_rate = tax_rate["provRate"] if province == "QC" else 0
+    province = tax_rate.get("province")
+    # Ensure rates are numeric (allow strings like "5" or "5%")
+    gst_rate = _parse_rate(tax_rate.get("fedRate", 0))
+    qst_rate = _parse_rate(tax_rate.get("provRate", 0)) if province == "QC" else 0
 
     doc = Document()
 
@@ -99,7 +114,7 @@ def add_confirmation_numbers_section(doc, clients, province):
             cra_confirmation = confirmation_numbers.get("federal", "Not provided")
             if province == "QC":
                 qc_confirmation = confirmation_numbers.get("quebec", "Not provided")
-            
+
             t1135_confirmation = confirmation_numbers.get("t1135", "Not provided")
 
             # Display confirmation numbers for the specific year
@@ -234,9 +249,10 @@ def add_footer_section(doc, province):
     footer_para.add_run("\nThank you for using our services & have a profitable year!")
 
 def create_confirmation_email_french(directory_path, clients, selected_prices, tax_rate, includeTaxes):
-    province = tax_rate["province"]
-    gst_rate = tax_rate["fedRate"]
-    qst_rate = tax_rate["provRate"] if province == "QC" else 0
+    province = tax_rate.get("province")
+    # Ensure rates are numeric (allow strings like "5" or "5%")
+    gst_rate = _parse_rate(tax_rate.get("fedRate", 0))
+    qst_rate = _parse_rate(tax_rate.get("provRate", 0)) if province == "QC" else 0
 
     doc = Document()
 
@@ -353,6 +369,7 @@ def add_tax_summary_fees_section_french(doc, selected_prices, gst_rate, qst_rate
     adjusted_subtotal = subtotal + adjustment_amount
 
     if includeTaxes:
+        raise ValueError (gst_rate)
         gst = adjusted_subtotal * (gst_rate / 100)
         qst = adjusted_subtotal * (qst_rate / 100) if province == "QC" else 0
     else:

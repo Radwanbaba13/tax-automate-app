@@ -17,7 +17,7 @@ import { MdAdd } from 'react-icons/md';
 import ClientDetails from './ClientDetails';
 import InvoiceDetails from './InvoiceDetails';
 import PriceSelection from './PriceSelection';
-import { supabase } from '../../Utils/supabaseClient';
+import { api } from '../../Utils/apiClient';
 
 interface PriceListItem {
   service: { en: string; fr: string };
@@ -110,9 +110,7 @@ function ConfirmationComponent() {
   useEffect(() => {
     const fetchProvinces = async () => {
       try {
-        const { data, error } = await supabase
-          .from('tax_rates')
-          .select('province');
+        const { data, error } = await api.taxRates.getAll();
 
         if (error) {
           console.error('Error fetching provinces:', error);
@@ -143,9 +141,35 @@ function ConfirmationComponent() {
 
     const fetchPrices = async () => {
       try {
-        const { data, error } = await supabase.from('price_list').select('*');
+        const { data, error } = await api.priceList.getAll();
         if (error) throw error;
-        setPrices(data);
+
+        // Parse service field from JSON strings if needed
+        const parsedPrices = (data || []).map((item: any) => {
+          let service = { en: '', fr: '' };
+
+          if (item.service) {
+            if (typeof item.service === 'string') {
+              try {
+                service = JSON.parse(item.service);
+              } catch {
+                service = { en: '', fr: '' };
+              }
+            } else if (typeof item.service === 'object') {
+              service = {
+                en: item.service.en || '',
+                fr: item.service.fr || '',
+              };
+            }
+          }
+
+          return {
+            ...item,
+            service,
+          };
+        });
+
+        setPrices(parsedPrices);
       } catch {
         toast({
           title: 'Error Fetching Prices',
@@ -159,10 +183,7 @@ function ConfirmationComponent() {
 
     const fetchInvoiceNumber = async () => {
       try {
-        const { data, error } = await supabase
-          .from('invoice_number')
-          .select('invoices')
-          .single();
+        const { data, error } = await api.invoiceNumber.get();
 
         if (error) throw error;
         setInvoiceDetails((prevDetails) => ({
@@ -194,13 +215,11 @@ function ConfirmationComponent() {
   useEffect(() => {
     const fetchTaxRates = async (province) => {
       try {
-        const { data, error } = await supabase
-          .from('tax_rates')
-          .select('*')
-          .eq('province', province);
+        const { data, error } = await api.taxRates.getByProvince(province);
 
         if (error) throw error;
-        setTaxRates(data);
+        // Ensure taxRates is always an array
+        setTaxRates(data ? [data] : []);
       } catch {
         toast({
           title: 'Error Fetching Tax Rates',
@@ -209,6 +228,7 @@ function ConfirmationComponent() {
           duration: 5000,
           isClosable: true,
         });
+        setTaxRates([]);
       }
     };
 
@@ -396,10 +416,7 @@ function ConfirmationComponent() {
       language,
     ]);
 
-    await supabase
-      .from('invoice_number')
-      .update({ invoices: invoiceDetails.invoiceNumber + 1 })
-      .eq('id', 1);
+    await api.invoiceNumber.update(invoiceDetails.invoiceNumber + 1);
 
     setInvoiceDetails((prevDetails) => ({
       ...prevDetails,

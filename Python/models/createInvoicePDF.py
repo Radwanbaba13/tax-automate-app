@@ -2,6 +2,17 @@ import fitz  # PyMuPDF
 import datetime
 import locale
 import os
+import sys
+
+def get_resource_path(relative_path):
+    """Get absolute path to resource, works for dev and PyInstaller."""
+    try:
+        # PyInstaller creates a temp folder and stores path in _MEIPASS
+        base_path = sys._MEIPASS
+    except AttributeError:
+        # Development: use script directory
+        base_path = os.path.dirname(os.path.abspath(__file__))
+    return os.path.join(base_path, relative_path)
 
 def create_confirmation_invoice(directory_path, selected_prices, invoice_details, tax_rate, includeTaxes, language):
     province = tax_rate["province"]
@@ -60,10 +71,9 @@ def create_confirmation_invoice_english(directory_path, selected_prices, invoice
     white = (1, 1, 1)
     red = (0.8, 0.2, 0.3)
 
-    # Get the directory of the current script
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    donate_path = os.path.join(script_dir, "donate.jpeg")
-    logo_path = os.path.join(script_dir, "logoEN.jpeg")
+    # Get resource paths (works for both dev and packaged app)
+    donate_path = get_resource_path(os.path.join("models", "donate.jpeg"))
+    logo_path = get_resource_path(os.path.join("models", "logoEN.jpeg"))
     page = doc.new_page()
     page.insert_image(fitz.Rect(30, 10, 250, 166), filename=logo_path)
 
@@ -262,10 +272,9 @@ def create_confirmation_invoice_french(directory_path, selected_prices, invoice_
     white = (1, 1, 1)
     red = (0.8, 0.2, 0.3)
 
-    # Get the directory of the current script
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    donate_path = os.path.join(script_dir, "donate.jpeg")
-    logo_path = os.path.join(script_dir, "logoFR.jpeg")
+    # Get resource paths (works for both dev and packaged app)
+    donate_path = get_resource_path(os.path.join("models", "donate.jpeg"))
+    logo_path = get_resource_path(os.path.join("models", "logoFR.jpeg"))
     page = doc.new_page()
     page.insert_image(fitz.Rect(30, 10, 250, 166), filename=logo_path)
 
@@ -477,10 +486,9 @@ def create_confirmation_invoice_bilingual(directory_path, selected_prices, invoi
     white = (1, 1, 1)
     red = (0.8, 0.2, 0.3)
 
-    # Get the directory of the current script
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    donate_path = os.path.join(script_dir, "donate.jpeg")
-    logo_path = os.path.join(script_dir, "logoEN.jpeg")
+    # Get resource paths (works for both dev and packaged app)
+    donate_path = get_resource_path(os.path.join("models", "donate.jpeg"))
+    logo_path = get_resource_path(os.path.join("models", "logoEN.jpeg"))
     page = doc.new_page()
     page.insert_image(fitz.Rect(30, 10, 250, 166), filename=logo_path)
 

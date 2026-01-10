@@ -20,7 +20,7 @@ import {
 } from '@chakra-ui/react';
 import { HiEye, HiEyeOff } from 'react-icons/hi';
 import { IoClose } from 'react-icons/io5';
-import { supabase } from '../../Utils/supabaseClient';
+import { api } from '../../Utils/apiClient';
 import SummaryConfig from './SummaryConfig';
 import PriceListConfig from './PriceListConfig';
 
@@ -60,26 +60,18 @@ function ConfigurationSidebar({
 
   // Function to handle password submission
   const handleAuth = async () => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('password')
-      .eq('username', 'admin')
-      .single();
+    const { data, error } = await api.users.verifyPassword(password);
 
-    if (error) {
+    if (error || !data.verified) {
       setWrongPassword(true);
       setIsAuthenticated(false);
       setIsSidebarOpen(false);
-    } else if (data && data.password === password) {
+    } else {
       setIsAuthenticated(true);
       setIsSidebarOpen(true);
       setPassword('');
       setWrongPassword(false);
       onClose();
-    } else {
-      setWrongPassword(true);
-      setIsAuthenticated(false);
-      setIsSidebarOpen(false);
     }
   };
 
@@ -102,30 +94,10 @@ function ConfigurationSidebar({
       return;
     }
 
-    const { data, error } = await supabase
-      .from('users')
-      .select('password')
-      .eq('username', 'admin')
-      .single();
+    const { error } = await api.users.updatePassword(oldPassword, newPassword);
 
-    if (error || !data) {
-      setPasswordChangeError('Error fetching user data.');
-      return;
-    }
-
-    if (data.password !== oldPassword) {
-      setPasswordChangeError('Old password is incorrect.');
-      return;
-    }
-
-    // Update the password in the database
-    const { updateError } = await supabase
-      .from('users')
-      .update({ password: newPassword })
-      .eq('username', 'admin');
-
-    if (updateError) {
-      setPasswordChangeError('Error updating password.');
+    if (error) {
+      setPasswordChangeError(error.message || 'Error updating password.');
     } else {
       setOldPassword('');
       setNewPassword('');

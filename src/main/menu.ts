@@ -125,7 +125,7 @@ const template = [
       },
       {
         label: 'Zoom Out',
-        accelerator: process.platform === 'darwin' ? 'Command+–' : 'Ctrl+–',
+        accelerator: process.platform === 'darwin' ? 'Command+-' : 'Ctrl+-',
         role: 'zoomOut',
       },
       {

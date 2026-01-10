@@ -36,6 +36,27 @@ jobs:
       - name: Build Python executables
         run: npm run build:python
 
+      - name: Validate required secrets
+        run: |
+          # Fail fast if required secrets are missing (DB_*)
+          if [ -z "${{ secrets.DB_HOST }}" ] || [ -z "${{ secrets.DB_USER }}" ] || [ -z "${{ secrets.DB_PASSWORD }}" ] || [ -z "${{ secrets.DB_NAME }}" ]; then
+            echo "Missing one or more required DB secrets (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME)."
+            exit 1
+          fi
+        shell: bash
+
+      - name: Create production .env file
+        run: |
+          # Write secrets to .env.production (secrets must be set in repo settings)
+          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env.production
+          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env.production
+          echo "DB_USER=${{ secrets.DB_USER }}" >> .env.production
+          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.production
+          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.production
+          # Optional DB_PORT and other settings (uncomment if you add them as secrets)
+          # echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env.production
+        shell: bash
+
       - name: Install and build Electron app
         run: |
           npm install

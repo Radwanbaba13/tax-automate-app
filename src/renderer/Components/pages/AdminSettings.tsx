@@ -25,7 +25,7 @@ import {
   TabPanel,
 } from '@chakra-ui/react';
 import { HiEye, HiEyeOff } from 'react-icons/hi';
-import { supabase } from '../../Utils/supabaseClient';
+import { api } from '../../Utils/apiClient';
 import SummaryConfig from '../config/SummaryConfig';
 import PriceListConfig from '../config/PriceListConfig';
 
@@ -56,23 +56,16 @@ function AdminSettingsComponent() {
 
   // Function to handle password submission for authentication
   const handleAuth = async () => {
-    const { data, error } = await supabase
-      .from('users')
-      .select('password')
-      .eq('username', 'admin')
-      .single();
+    const { data, error } = await api.users.verifyPassword(password);
 
-    if (error) {
+    if (error || !data.verified) {
       setWrongPassword(true);
       setIsAuthenticated(false);
-    } else if (data && data.password === password) {
+    } else {
       setIsAuthenticated(true);
       setPassword('');
       setWrongPassword(false);
       onClose();
-    } else {
-      setWrongPassword(true);
-      setIsAuthenticated(false);
     }
   };
 
@@ -95,30 +88,10 @@ function AdminSettingsComponent() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from('users')
-      .select('password')
-      .eq('username', 'admin')
-      .single();
+    const { error } = await api.users.updatePassword(oldPassword, newPassword);
 
-    if (error || !data) {
-      setPasswordChangeError('Error fetching user data.');
-      return;
-    }
-
-    if (data.password !== oldPassword) {
-      setPasswordChangeError('Old password is incorrect.');
-      return;
-    }
-
-    // Update the password in the database
-    const { error: updateError } = await supabase
-      .from('users')
-      .update({ password: newPassword })
-      .eq('username', 'admin');
-
-    if (updateError) {
-      setPasswordChangeError('Error updating password.');
+    if (error) {
+      setPasswordChangeError(error.message || 'Error updating password.');
     } else {
       setOldPassword('');
       setNewPassword('');

@@ -49,45 +49,53 @@ function PriceSelection({
 
   // Get tax rates for the selected province
   const getTaxRates = () => {
-    const taxRate = taxRates[0];
+    const taxRate = taxRates && taxRates.length > 0 ? taxRates[0] : null;
 
     return taxRate
-      ? { fedRate: taxRate.fedRate, provRate: taxRate.provRate }
+      ? { fedRate: taxRate.fedRate || 0, provRate: taxRate.provRate || 0 }
       : { fedRate: 0, provRate: 0 };
   };
 
   // Calculate subtotal, total, and tax amounts
   const calculateTotals = () => {
+    // First, calculate all fixed amounts (type === 'number')
     let subtotal = 0;
-    const rates = getTaxRates();
-    const { fedRate, provRate } = rates;
+    const percentageAdjustments: number[] = [];
 
     selectedPrices.forEach((price) => {
       if (price.type === 'number') {
         subtotal += price.amount * price.quantity;
       } else if (price.type === '%') {
-        subtotal += (price.amount / 100) * subtotal;
+        percentageAdjustments.push(price.amount);
       }
     });
 
-    if (!includeTaxes) {
-      const total = subtotal.toFixed(2);
+    // Apply percentage adjustments to the subtotal
+    percentageAdjustments.forEach((percentage) => {
+      subtotal += (subtotal * percentage) / 100;
+    });
+
+    const rates = getTaxRates();
+    const { fedRate, provRate } = rates;
+
+    // Calculate taxes only if includeTaxes is true
+    if (includeTaxes) {
+      const fedTax = (subtotal * fedRate) / 100;
+      const provTax = (subtotal * provRate) / 100;
+      const total = subtotal + fedTax + provTax;
+
       return {
-        subtotal: '0.00',
-        total,
+        subtotal: subtotal.toFixed(2),
+        total: total.toFixed(2),
         fedRate,
         provRate,
       };
     }
 
-    const total =
-      fedRate + provRate > 0
-        ? (subtotal * (1 + (fedRate + provRate) / 100)).toFixed(2)
-        : subtotal.toFixed(2);
-
+    // If taxes are not included, total equals subtotal
     return {
       subtotal: subtotal.toFixed(2),
-      total,
+      total: subtotal.toFixed(2),
       fedRate,
       provRate,
     };
@@ -121,6 +129,13 @@ function PriceSelection({
     setTotals({ subtotal, total, fedRate, provRate });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [includeTaxes, selectedPrices, taxRates]);
+
+  const selectedProvince =
+    taxRates && taxRates.length > 0 ? (taxRates[0] as any).province : undefined;
+  const provRateLabel =
+    selectedProvince === 'QC'
+      ? Number(totals.provRate).toFixed(3)
+      : Number(totals.provRate);
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
@@ -273,8 +288,8 @@ function PriceSelection({
                         }}
                         value={
                           language === 'en'
-                            ? price.service.en
-                            : price.service.fr
+                            ? price.service?.en || ''
+                            : price.service?.fr || ''
                         }
                         onChange={(e) =>
                           handleEditPrice(index, 'service', {
@@ -377,7 +392,7 @@ function PriceSelection({
               )}
               {totals.provRate > 0 && (
                 <Text fontSize="14px" textAlign="right" color="gray.600">
-                  Provincial Tax ({totals.provRate}%): $
+                  Provincial Tax ({provRateLabel}%): $
                   {(
                     (parseFloat(totals.subtotal) * totals.provRate) /
                     100

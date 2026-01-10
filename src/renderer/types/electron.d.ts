@@ -47,6 +47,95 @@ export interface ElectronAPI {
     callback: (progress: ProgressInfo) => void,
   ) => void;
   onUpdateDownloaded: (callback: (info: UpdateInfo) => void) => void;
+
+  // OpenAI comparison API
+  compareWithOpenAI: (
+    dtMaxFiles: any[],
+    clientSlipsFiles: any[],
+    prompt: string,
+  ) => Promise<{
+    success: boolean;
+    result?: string;
+    error?: string;
+    cost?: number;
+    timeSeconds?: number;
+    usage?: any;
+    debug?: any;
+  }>;
+
+  // Email automation API
+  generateEmailResponse: (options: {
+    customerInquiry: string;
+    replyMode: 'ai' | 'template' | 'template-ai';
+    templateContent?: string;
+  }) => Promise<{
+    success: boolean;
+    result?: string;
+    error?: string;
+  }>;
+  fixEmailTemplateWithAI: (
+    templateContent: string,
+  ) => Promise<{
+    success: boolean;
+    result?: string;
+    error?: string;
+  }>;
+
+  // Database API
+  database: {
+    // Configurations
+    getConfigurations: () => Promise<{ data: any; error: any }>;
+    updateConfigurations: (config: any) => Promise<{ data: any; error: any }>;
+
+    // Tax Rates
+    getAllTaxRates: () => Promise<{ data: any; error: any }>;
+    getTaxRateByProvince: (
+      province: string,
+    ) => Promise<{ data: any; error: any }>;
+    bulkReplaceTaxRates: (rates: any[]) => Promise<{ data: any; error: any }>;
+
+    // Price List
+    getAllPrices: () => Promise<{ data: any; error: any }>;
+    bulkReplacePrices: (prices: any[]) => Promise<{ data: any; error: any }>;
+
+    // Invoice Number
+    getInvoiceNumber: () => Promise<{ data: any; error: any }>;
+    updateInvoiceNumber: (
+      invoiceNum: number,
+    ) => Promise<{ data: any; error: any }>;
+
+    // Users
+    verifyPassword: (password: string) => Promise<{ data: any; error: any }>;
+    updatePassword: (
+      oldPassword: string,
+      newPassword: string,
+    ) => Promise<{ data: any; error: any }>;
+
+    // Email Templates
+    getAllEmailTemplates: () => Promise<{ data: any; error: any }>;
+    getEmailTemplateById: (id: number) => Promise<{ data: any; error: any }>;
+    getEmailTemplateByName: (
+      templateName: string,
+    ) => Promise<{ data: any; error: any }>;
+    createEmailTemplate: (template: {
+      template_name: string;
+      subject_en: string;
+      subject_fr: string;
+      content_en: string;
+      content_fr: string;
+    }) => Promise<{ data: any; error: any }>;
+    updateEmailTemplate: (
+      id: number,
+      template: {
+        template_name: string;
+        subject_en: string;
+        subject_fr: string;
+        content_en: string;
+        content_fr: string;
+      },
+    ) => Promise<{ data: any; error: any }>;
+    deleteEmailTemplate: (id: number) => Promise<{ data: any; error: any }>;
+  };
 }
 
 declare global {

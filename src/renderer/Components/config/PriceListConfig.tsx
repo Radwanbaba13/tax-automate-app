@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   Box,
   Button,
+  HStack,
   IconButton,
   Input,
   Select,
@@ -16,7 +17,9 @@ import {
 } from '@chakra-ui/react';
 import { FaPlus } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
-import { supabase } from '../../Utils/supabaseClient';
+import { MdDragHandle } from 'react-icons/md';
+import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { api } from '../../Utils/apiClient';
 
 interface PriceListItem {
   service: { en: string; fr: string };
@@ -33,11 +36,36 @@ function PriceListConfig() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const { data: priceData } = await supabase
-          .from('price_list')
-          .select('*');
-        const { data: taxData } = await supabase.from('tax_rates').select('*');
-        setPriceList(priceData || []);
+        const { data: priceData } = await api.priceList.getAll();
+        const { data: taxData } = await api.taxRates.getAll();
+
+        // Parse service field from JSON strings if needed
+        const parsedPriceData = (priceData || []).map((item: any) => {
+          let service = { en: '', fr: '' };
+
+          if (item.service) {
+            if (typeof item.service === 'string') {
+              try {
+                service = JSON.parse(item.service);
+              } catch {
+                // If parsing fails, try to use as-is or set defaults
+                service = { en: '', fr: '' };
+              }
+            } else if (typeof item.service === 'object') {
+              service = {
+                en: item.service.en || '',
+                fr: item.service.fr || '',
+              };
+            }
+          }
+
+          return {
+            ...item,
+            service,
+          };
+        });
+
+        setPriceList(parsedPriceData);
         setTaxRates(taxData || []);
       } catch {
         toast({
@@ -91,49 +119,118 @@ function PriceListConfig() {
     setIsModified(true);
   };
 
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const { source, destination } = result;
+    const updatedPriceList = [...priceList];
+    const [removed] = updatedPriceList.splice(source.index, 1);
+    updatedPriceList.splice(destination.index, 0, removed);
+
+    setPriceList(updatedPriceList);
+    setIsModified(true);
+  };
+
   const handleSave = async () => {
     try {
-      // Step 1: Delete all existing entries from price_list
-      const { error: deletePriceListError } = await supabase
-        .from('price_list')
-        .delete()
-        .neq('id', '00000000-0000-0000-0000-000000000000');
+      // Filter out empty/invalid prices before saving
+      const validPrices = priceList
+        .filter(
+          (item) =>
+            item.service &&
+            item.service.en?.trim() &&
+            item.service.fr?.trim() &&
+            !isNaN(item.amount) &&
+            item.type &&
+            (item.type === 'number' || item.type === '%'),
+        )
+        .map((item) => ({
+          service: {
+            en: item.service.en.trim(),
+            fr: item.service.fr.trim(),
+          },
+          amount: Number(item.amount),
+          type: item.type,
+        }));
 
-      if (deletePriceListError) throw deletePriceListError;
+      if (validPrices.length === 0 && priceList.length > 0) {
+        toast({
+          title: 'Validation Error!',
+          description:
+            'Please fill in all fields (English service, French service, amount, and type) for at least one item.',
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
 
-      // Step 2: Insert updated price list
-      const { error: insertPriceListError } = await supabase
-        .from('price_list')
-        .insert(
-          priceList.map((item) => ({
-            service: item.service,
-            amount: item.amount,
-            type: item.type,
-          })),
+      // Bulk replace price list (only valid ones)
+      const priceListResult = await api.priceList.bulkReplace(validPrices);
+
+      if (priceListResult.error) {
+        throw new Error(
+          priceListResult.error?.message || 'Failed to save price list',
         );
+      }
 
-      if (insertPriceListError) throw insertPriceListError;
+      // Filter out empty/invalid tax rates before saving and normalize provinces
+      const validTaxRates = taxRates
+        .filter(
+          (rate) =>
+            rate.province &&
+            rate.province.trim() !== '' &&
+            !isNaN(rate.fedRate) &&
+            !isNaN(rate.provRate),
+        )
+        .map((rate) => ({
+          province: rate.province.trim().toUpperCase(),
+          fedRate: Number(rate.fedRate),
+          provRate: Number(rate.provRate),
+        }));
 
-      // Step 3: Delete all existing entries from tax_rates
-      const { error: deleteTaxRatesError } = await supabase
-        .from('tax_rates')
-        .delete()
-        .neq('province', 0);
+      // Check for duplicate provinces in valid rates (case-insensitive)
+      const provinceCodes = validTaxRates.map((rate) => rate.province);
+      const seenProvinces = new Set<string>();
+      const duplicateProvinces: string[] = [];
 
-      if (deleteTaxRatesError) throw deleteTaxRatesError;
+      provinceCodes.forEach((code) => {
+        if (seenProvinces.has(code)) {
+          duplicateProvinces.push(code);
+        } else {
+          seenProvinces.add(code);
+        }
+      });
 
-      // Step 4: Insert updated tax rates
-      const { error: insertTaxRatesError } = await supabase
-        .from('tax_rates')
-        .insert(
-          taxRates.map((rate) => ({
-            province: rate.province, // Ensure this matches your schema
-            fedRate: rate.fedRate,
-            provRate: rate.provRate,
-          })),
+      if (duplicateProvinces.length > 0) {
+        toast({
+          title: 'Validation Error!',
+          description: `Duplicate province codes found: ${duplicateProvinces.join(', ')}. Each province must be unique.`,
+          status: 'error',
+          duration: 5000,
+          isClosable: true,
+        });
+        return;
+      }
+
+      // Remove duplicates (keep first occurrence)
+      const uniqueTaxRates = validTaxRates.filter((rate, index, self) => {
+        return (
+          index ===
+          self.findIndex(
+            (r) => r.province.toUpperCase() === rate.province.toUpperCase(),
+          )
         );
+      });
 
-      if (insertTaxRatesError) throw insertTaxRatesError;
+      // Bulk replace tax rates (only valid, unique ones)
+      const taxRatesResult = await api.taxRates.bulkReplace(uniqueTaxRates);
+
+      if (taxRatesResult.error) {
+        throw new Error(
+          taxRatesResult.error?.message || 'Failed to save tax rates',
+        );
+      }
 
       // If everything is successful
       setIsModified(false);
@@ -145,9 +242,12 @@ function PriceListConfig() {
         isClosable: true,
       });
     } catch (error: any) {
+      console.error('Save error:', error);
       toast({
         title: 'Error!',
-        description: `Failed to save changes: ${error?.message || 'Unknown error'}`,
+        description: `Failed to save changes: ${
+          error?.message || error?.toString() || 'Unknown error'
+        }`,
         status: 'error',
         duration: 5000,
         isClosable: true,
@@ -187,190 +287,226 @@ function PriceListConfig() {
 
         <TabPanels>
           <TabPanel>
-            <VStack spacing={4}>
-              <Box display="flex" width="80%" justifyContent="space-around">
-                <Text
-                  fontSize="14px"
-                  fontWeight="bold"
-                  color="#cf3350"
-                  decoration="underline"
-                >
-                  English
-                </Text>
-                <Text
-                  fontSize="14px"
-                  fontWeight="bold"
-                  color="#386498"
-                  decoration="underline"
-                  width="40%"
-                >
-                  French
-                </Text>
-                <Text
-                  fontSize="14px"
-                  fontWeight="bold"
-                  color="#cf3350"
-                  decoration="underline"
-                >
-                  Amount
-                </Text>
-                <Text
-                  fontSize="14px"
-                  fontWeight="bold"
-                  color="#cf3350"
-                  decoration="underline"
-                >
-                  Type
-                </Text>
-              </Box>
-              {priceList.map((item, index) => (
-                <Box
-                  key={index}
-                  display="flex"
-                  justifyContent="space-between"
-                  width="100%"
-                  gap="1px"
-                >
-                  <Input
-                    value={item.service.en}
-                    onChange={(e) =>
-                      handleUpdatePriceList(index, 'service', {
-                        ...item.service,
-                        en: e.target.value,
-                      })
-                    }
-                    placeholder="Service (EN)"
-                    border="none"
-                    borderRadius="0px"
-                    color="#cf3350"
-                    fontWeight="bold"
-                    fontSize="14px"
-                    borderBottom="2px solid #cf3350"
-                    _focus={{
-                      borderBottom: '3px solid #cf3350',
-                      boxShadow: 'none',
-                    }}
-                    _hover={{
-                      borderBottom: '3px solid #cf3350',
-                    }}
-                    _placeholder={{
-                      color: '#cf3350',
-                      opacity: '0.6',
-                      fontSize: '12px',
-                    }}
-                    width="33%"
-                  />
-                  <Input
-                    value={item.service.fr}
-                    onChange={(e) =>
-                      handleUpdatePriceList(index, 'service', {
-                        ...item.service,
-                        fr: e.target.value,
-                      })
-                    }
-                    placeholder="Service (FR)"
-                    border="none"
-                    borderRadius="0px"
-                    color="#386498"
-                    fontWeight="bold"
-                    fontSize="14px"
-                    borderBottom="2px solid #386498"
-                    _focus={{
-                      borderBottom: '3px solid #386498',
-                      boxShadow: 'none',
-                    }}
-                    _hover={{
-                      borderBottom: '3px solid #386498',
-                    }}
-                    _placeholder={{
-                      color: '#386498',
-                      opacity: '0.6',
-                      fontSize: '12px',
-                    }}
-                    width="33%"
-                  />
-                  <Input
-                    type="number"
-                    value={item.amount}
-                    onChange={(e) =>
-                      handleUpdatePriceList(
-                        index,
-                        'amount',
-                        parseFloat(e.target.value),
-                      )
-                    }
-                    placeholder="Amount"
-                    border="none"
-                    borderRadius="0px"
-                    color="#cf3350"
-                    fontWeight="bold"
-                    fontSize="14px"
-                    borderBottom="2px solid #cf3350"
-                    _focus={{
-                      borderBottom: '3px solid #cf3350',
-                      boxShadow: 'none',
-                    }}
-                    _hover={{
-                      borderBottom: '3px solid #cf3350',
-                    }}
-                    _placeholder={{
-                      color: '#cf3350',
-                      opacity: '0.6',
-                      fontSize: '12px',
-                    }}
-                    width="65px"
-                    minWidth="65px"
-                  />
-                  <Select
-                    value={item.type}
-                    onChange={(e) =>
-                      handleUpdatePriceList(index, 'type', e.target.value)
-                    }
-                    border="none"
-                    borderRadius="0px"
-                    color="#cf3350"
-                    fontWeight="bold"
-                    fontSize="14px"
-                    borderBottom="2px solid #cf3350"
-                    _focus={{
-                      borderBottom: '3px solid #cf3350',
-                      boxShadow: 'none',
-                    }}
-                    _hover={{
-                      borderBottom: '3px solid #cf3350',
-                    }}
-                    _placeholder={{
-                      color: '#cf3350',
-                      opacity: '0.6',
-                      fontSize: '12px',
-                    }}
-                    width="65px"
-                    minWidth="65px"
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="priceListSection">
+                {(provided) => (
+                  <VStack
+                    spacing={4}
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
                   >
-                    <option value="%">%</option>
-                    <option value="number">$</option>
-                  </Select>
-                  <IconButton
-                    aria-label="Delete"
-                    icon={<IoClose color="grey" size="25px" />}
-                    variant="ghost"
-                    borderRadius="25px"
-                    onClick={() => handleRemoveInput(index, 'priceList')}
-                  />
-                </Box>
-              ))}
-              <Button
-                aria-label="Add"
-                leftIcon={<FaPlus color="#cf3350" />}
-                variant="ghost"
-                borderRadius="25px"
-                onClick={() => handleAddInput('priceList')}
-                fontWeight="bold"
-                color="#cf3350"
-              >
-                Add New Row
-              </Button>
-            </VStack>
+                    <Box
+                      display="flex"
+                      width="80%"
+                      justifyContent="space-around"
+                    >
+                      <Text
+                        fontSize="14px"
+                        fontWeight="bold"
+                        color="#cf3350"
+                        decoration="underline"
+                      >
+                        English
+                      </Text>
+                      <Text
+                        fontSize="14px"
+                        fontWeight="bold"
+                        color="#386498"
+                        decoration="underline"
+                        width="40%"
+                      >
+                        French
+                      </Text>
+                      <Text
+                        fontSize="14px"
+                        fontWeight="bold"
+                        color="#cf3350"
+                        decoration="underline"
+                      >
+                        Amount
+                      </Text>
+                      <Text
+                        fontSize="14px"
+                        fontWeight="bold"
+                        color="#cf3350"
+                        decoration="underline"
+                      >
+                        Type
+                      </Text>
+                    </Box>
+                    {priceList.map((item, index) => (
+                      <Draggable
+                        key={`price-${index}`}
+                        draggableId={`price-${index}`}
+                        index={index}
+                      >
+                        {(provided, snapshot) => (
+                          <HStack
+                            spacing={2}
+                            width="100%"
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            bg={snapshot.isDragging ? '#f0f0f0' : 'transparent'}
+                          >
+                            <Box
+                              cursor="grab"
+                              _hover={{ color: '#cf3350' }}
+                              {...provided.dragHandleProps}
+                            >
+                              <MdDragHandle size="25px" />
+                            </Box>
+                            <Input
+                              value={item.service?.en || ''}
+                              onChange={(e) =>
+                                handleUpdatePriceList(index, 'service', {
+                                  ...item.service,
+                                  en: e.target.value,
+                                })
+                              }
+                              placeholder="Service (EN)"
+                              border="none"
+                              borderRadius="0px"
+                              color="#cf3350"
+                              fontWeight="bold"
+                              fontSize="14px"
+                              borderBottom="2px solid #cf3350"
+                              _focus={{
+                                borderBottom: '3px solid #cf3350',
+                                boxShadow: 'none',
+                              }}
+                              _hover={{
+                                borderBottom: '3px solid #cf3350',
+                              }}
+                              _placeholder={{
+                                color: '#cf3350',
+                                opacity: '0.6',
+                                fontSize: '12px',
+                              }}
+                              width="33%"
+                            />
+                            <Input
+                              value={item.service?.fr || ''}
+                              onChange={(e) =>
+                                handleUpdatePriceList(index, 'service', {
+                                  ...item.service,
+                                  fr: e.target.value,
+                                })
+                              }
+                              placeholder="Service (FR)"
+                              border="none"
+                              borderRadius="0px"
+                              color="#386498"
+                              fontWeight="bold"
+                              fontSize="14px"
+                              borderBottom="2px solid #386498"
+                              _focus={{
+                                borderBottom: '3px solid #386498',
+                                boxShadow: 'none',
+                              }}
+                              _hover={{
+                                borderBottom: '3px solid #386498',
+                              }}
+                              _placeholder={{
+                                color: '#386498',
+                                opacity: '0.6',
+                                fontSize: '12px',
+                              }}
+                              width="33%"
+                            />
+                            <Input
+                              type="number"
+                              value={item.amount}
+                              onChange={(e) =>
+                                handleUpdatePriceList(
+                                  index,
+                                  'amount',
+                                  parseFloat(e.target.value),
+                                )
+                              }
+                              placeholder="Amount"
+                              border="none"
+                              borderRadius="0px"
+                              color="#cf3350"
+                              fontWeight="bold"
+                              fontSize="14px"
+                              borderBottom="2px solid #cf3350"
+                              _focus={{
+                                borderBottom: '3px solid #cf3350',
+                                boxShadow: 'none',
+                              }}
+                              _hover={{
+                                borderBottom: '3px solid #cf3350',
+                              }}
+                              _placeholder={{
+                                color: '#cf3350',
+                                opacity: '0.6',
+                                fontSize: '12px',
+                              }}
+                              width="65px"
+                              minWidth="65px"
+                            />
+                            <Select
+                              value={item.type}
+                              onChange={(e) =>
+                                handleUpdatePriceList(
+                                  index,
+                                  'type',
+                                  e.target.value,
+                                )
+                              }
+                              border="none"
+                              borderRadius="0px"
+                              color="#cf3350"
+                              fontWeight="bold"
+                              fontSize="14px"
+                              borderBottom="2px solid #cf3350"
+                              _focus={{
+                                borderBottom: '3px solid #cf3350',
+                                boxShadow: 'none',
+                              }}
+                              _hover={{
+                                borderBottom: '3px solid #cf3350',
+                              }}
+                              _placeholder={{
+                                color: '#cf3350',
+                                opacity: '0.6',
+                                fontSize: '12px',
+                              }}
+                              width="65px"
+                              minWidth="65px"
+                            >
+                              <option value="%">%</option>
+                              <option value="number">$</option>
+                            </Select>
+                            <IconButton
+                              aria-label="Delete"
+                              icon={<IoClose color="grey" size="25px" />}
+                              variant="ghost"
+                              borderRadius="25px"
+                              onClick={() =>
+                                handleRemoveInput(index, 'priceList')
+                              }
+                            />
+                          </HStack>
+                        )}
+                      </Draggable>
+                    ))}
+                    <Button
+                      aria-label="Add"
+                      leftIcon={<FaPlus color="#cf3350" />}
+                      variant="ghost"
+                      borderRadius="25px"
+                      onClick={() => handleAddInput('priceList')}
+                      fontWeight="bold"
+                      color="#cf3350"
+                    >
+                      Add New Row
+                    </Button>
+                    {provided.placeholder}
+                  </VStack>
+                )}
+              </Droppable>
+            </DragDropContext>
           </TabPanel>
 
           <TabPanel>
