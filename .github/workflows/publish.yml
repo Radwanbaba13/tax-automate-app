@@ -63,14 +63,14 @@ jobs:
           npm run postinstall
           npm run build
 
-      - name: Publish Windows release
+      - name: Publish Windows release to GitHub
         env:
           # Add Windows code signing certificate if available
           # CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
           # CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npm exec electron-builder -- --publish always --win
+          npx electron-builder build --win --publish always
 
   # build-macos:
   #   runs-on: macos-latest
