@@ -42,6 +42,7 @@ try {
 const scripts = [
   'createSummaryDocuments.spec',
   'createConfirmationDocuments.spec',
+  'pdf_to_images.spec',
 ];
 
 scripts.forEach((specFile) => {
