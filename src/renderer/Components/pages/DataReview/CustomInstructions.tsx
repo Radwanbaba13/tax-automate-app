@@ -25,7 +25,7 @@ function CustomInstructions({
       <VStack spacing={3} align="stretch">
         <HStack justify="space-between" align="center">
           <Heading size="sm" color="gray.800">
-            Custom Instructions:
+            Custom Instructions
           </Heading>
           <Button
             size="xs"

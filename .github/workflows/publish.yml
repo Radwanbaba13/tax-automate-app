@@ -105,6 +105,13 @@ jobs:
           gh release upload "$TAG_NAME" "$EXE_FILE" "$YML_FILE" --clobber
         shell: bash
 
+      - name: Publish release and mark as latest
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "${GITHUB_REF_NAME}" --draft=false --latest
+        shell: bash
+
   # build-macos:
   #   runs-on: macos-latest
 
