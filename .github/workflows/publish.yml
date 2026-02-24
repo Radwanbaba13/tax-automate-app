@@ -62,7 +62,6 @@ jobs:
           npm install
           npm run postinstall
           npm run build
-
       - name: Publish Windows release to GitHub
         env:
           # Add Windows code signing certificate if available
@@ -71,6 +70,40 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npx electron-builder build --win --publish always
+
+      # Extra safety: explicitly upload built assets to the GitHub Release.
+      # This ensures the .exe and latest.yml actually appear under "Assets",
+      # even if electron-builder's built‑in publisher silently fails.
+      - name: List build output
+        run: |
+          echo "Contents of release/build:"
+          ls release/build
+        shell: bash
+
+      - name: Force upload installer and latest.yml to GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          TAG_NAME="${GITHUB_REF_NAME}"
+          echo "Tag name: $TAG_NAME"
+
+          # Find installer (.exe) and latest*.yml produced by electron-builder
+          EXE_FILE=$(ls release/build/*.exe | head -n 1 || true)
+          YML_FILE=$(ls release/build/latest*.yml | head -n 1 || true)
+
+          echo "EXE_FILE=$EXE_FILE"
+          echo "YML_FILE=$YML_FILE"
+
+          if [ -z "$EXE_FILE" ] || [ -z "$YML_FILE" ]; then
+            echo "ERROR: Could not find installer (.exe) or latest*.yml in release/build"
+            ls -R
+            exit 1
+          fi
+
+          # Ensure the release exists (it should for tag pushes) and upload assets
+          gh release upload "$TAG_NAME" "$EXE_FILE" "$YML_FILE" --clobber
+        shell: bash
 
   # build-macos:
   #   runs-on: macos-latest
