@@ -1,6 +1,6 @@
 {
   "name": "tax-automate-app",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Tax document automation and summary application",
   "keywords": [
     "electron",
@@ -260,7 +260,8 @@
     "publish": {
       "provider": "github",
       "owner": "radwanbaba13",
-      "repo": "tax-automate-app"
+      "repo": "tax-automate-app",
+      "releaseType": "release"
     }
   },
   "collective": {
