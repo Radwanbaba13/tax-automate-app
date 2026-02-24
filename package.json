@@ -1,6 +1,6 @@
 {
   "name": "tax-automate-app",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "Tax document automation and summary application",
   "keywords": [
     "electron",
@@ -48,7 +48,10 @@
     "start:main": "concurrently -k -P \"cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --watch --config ./.erb/configs/webpack.config.main.dev.ts\" \"electronmon . -- {@}\" --",
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true NODE_OPTIONS=\"-r ts-node/register --no-warnings\" webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
-    "test": "jest"
+    "test": "jest",
+    "release:patch": "node ./.erb/scripts/release-version.js patch",
+    "release:minor": "node ./.erb/scripts/release-version.js minor",
+    "release:major": "node ./.erb/scripts/release-version.js major"
   },
   "browserslist": [
     "extends browserslist-config-erb"
