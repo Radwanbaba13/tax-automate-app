@@ -10,7 +10,7 @@ block_cipher = None
 
 a = Analysis(
     ['createSummaryDocuments.py'],
-    pathex=[],
+    pathex=[os.path.abspath('.')],
     binaries=[
         # Explicitly include PyMuPDF DLLs
         *collect_dynamic_libs('fitz'),
