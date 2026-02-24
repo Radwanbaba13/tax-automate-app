@@ -603,7 +603,7 @@ ${hasInquiry
   : 'You will be given an email template. Improve the template by enhancing clarity, professionalism, and readability while maintaining the core message.'}
 Make the response personal, relevant, and professional.
 IMPORTANT: Do NOT use placeholder text like [Your Name], [Your Position], [Your Company], or [Contact Information].
-Use the actual signature information provided: Nawaf Sankari, Fiscal Specialist and Financial Security Advisor, Sankari Inc., Fiscal and Financial Services, www.sankari.ca, taxdeclaration@gmail.com, (514) 802-4776, (514) 839-4776.
+Use the actual signature information provided: Nawaf Sankari, Fiscal Specialist and Financial Security Advisor, Sankari Inc., Fiscal and Financial Services, www.sankari.ca, taxdeclaration@sankari.ca.
 Format your response in HTML for rich text display:
 - Use <p> tags for paragraphs
 - Use <strong> for emphasis

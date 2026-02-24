@@ -500,7 +500,7 @@ function EmailAutomationComponent() {
         }
 
         // Add professional signature block if not already present (HTML format)
-        const signature = `<p>Sincerely,</p><p><strong>Nawaf Sankari</strong><br><em>Fiscal Specialist and Financial Security Advisor</em><br><strong>Sankari Inc.</strong> — Fiscal and Financial Services<br><a href="http://www.sankari.ca">www.sankari.ca</a><br>taxdeclaration@gmail.com<br>(514) 802-4776 | (514) 839-4776</p>`;
+        const signature = `<p>Sincerely,</p><p><strong>Nawaf Sankari</strong><br><em>Fiscal Specialist and Financial Security Advisor</em><br><strong>Sankari Inc.</strong> — Fiscal and Financial Services<br><a href="http://www.sankari.ca">www.sankari.ca</a><br>taxdeclaration@sankari.ca</p>`;
 
         // Check if signature already exists
         if (!emailContent.includes('Nawaf Sankari')) {
@@ -542,20 +542,11 @@ function EmailAutomationComponent() {
   };
 
   const handleCopyEmail = async () => {
-    const currentSubject =
-      inquiryLanguage === 'EN' ? generatedSubjectEN : generatedSubjectFR;
-
-    // Wrap the HTML content for email clients
-    const fullHtml = wrapInEmailHtml(generatedEmail, currentSubject);
-
-    const success = await copyRichText(fullHtml);
-
+    await copyRichText(wrapInEmailHtml(generatedEmail));
     toast({
-      title: success ? 'Copied!' : 'Copy failed',
-      description: success
-        ? 'Email content copied to clipboard with formatting.'
-        : 'Failed to copy. Please try again.',
-      status: success ? 'success' : 'error',
+      title: 'Copied!',
+      description: 'Email content copied to clipboard.',
+      status: 'success',
       duration: 2000,
     });
   };
@@ -612,26 +603,11 @@ function EmailAutomationComponent() {
                 leftIcon={<MdContentCopy />}
                 size="sm"
                 onClick={async () => {
-                  const currentSubject =
-                    inquiryLanguage === 'EN'
-                      ? responseSubjectEN
-                      : responseSubjectFR;
-
-                  // If responseText contains HTML tags, copy as rich text
                   if (isHtmlContent(responseText)) {
-                    const fullHtml = wrapInEmailHtml(
-                      responseText,
-                      currentSubject,
-                    );
-                    await copyRichText(fullHtml);
+                    await copyRichText(wrapInEmailHtml(responseText));
                   } else {
-                    // Plain text - copy normally
-                    const fullResponse = currentSubject
-                      ? `Subject: ${currentSubject}\n\n${responseText}`
-                      : responseText;
-                    navigator.clipboard.writeText(fullResponse);
+                    await navigator.clipboard.writeText(responseText);
                   }
-
                   toast({
                     title: 'Copied!',
                     description: 'Response copied to clipboard.',

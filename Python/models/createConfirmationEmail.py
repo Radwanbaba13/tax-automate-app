@@ -208,7 +208,7 @@ def add_tax_summary_fees_section(doc, selected_prices, gst_rate, qst_rate, provi
     # Payment instructions in italic
     payment_para = doc.add_paragraph("")
     payment_run1 = payment_para.add_run("You can pay the fees by Interac e-transfer to ")
-    add_hyperlink(payment_para, "taxdeclaration@gmail.com", "mailto:taxdeclaration@gmail.com")
+    add_hyperlink(payment_para, "taxdeclaration@sankari.ca", "mailto:taxdeclaration@sankari.ca")
     payment_run2 = payment_para.add_run(". For the password, you can use the word ")
     password_run = payment_para.add_run("declaration")
     password_run.underline = True
@@ -437,7 +437,7 @@ def add_tax_summary_fees_section_french(doc, selected_prices, gst_rate, qst_rate
     # Payment instructions in italic
     payment_para = doc.add_paragraph("")
     payment_run1 = payment_para.add_run("Vous pouvez payer les frais par virement électronique Interac à ")
-    add_hyperlink(payment_para, "taxdeclaration@gmail.com", "mailto:taxdeclaration@gmail.com")
+    add_hyperlink(payment_para, "taxdeclaration@sankari.ca", "mailto:taxdeclaration@sankari.ca")
     payment_run2 = payment_para.add_run(". Pour le mot de passe, vous pouvez utiliser le mot ")
     password_run = payment_para.add_run("declaration")
     password_run.underline = True

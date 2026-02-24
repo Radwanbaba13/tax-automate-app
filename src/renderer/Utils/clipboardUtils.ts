@@ -29,17 +29,16 @@ export function htmlToPlainText(html: string): string {
 /**
  * Wraps content in basic HTML structure for email clients
  */
-export function wrapInEmailHtml(content: string, subject?: string): string {
-  return `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  ${subject ? `<title>${subject}</title>` : ''}
-</head>
-<body style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333;">
-  ${content}
-</body>
-</html>`.trim();
+export function wrapInEmailHtml(content: string, _subject?: string): string {
+  // To preserve formatting (bold, italic, links) AND keep Gmail Smart Compose
+  // working, the pasted HTML must look identical to what Gmail generates natively:
+  //   - <div> per line (not <p>)
+  //   - no style= or class= attributes (Gmail strips them anyway and flags foreign content)
+  //   - semantic tags only: <b>/<strong>, <em>/<i>, <a href>, <br>
+  const processed = content
+    .replace(/<p\b([^>]*)>/gi, '<div$1>')
+    .replace(/<\/p>/gi, '</div>');
+  return processed;
 }
 
 /**

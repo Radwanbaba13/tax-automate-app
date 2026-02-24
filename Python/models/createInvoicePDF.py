@@ -93,11 +93,9 @@ def create_confirmation_invoice_english(directory_path, selected_prices, invoice
     right_align_text("GST: 123456789RT0001", 95, description_style[0], 10)
     right_align_text("QST: 1234567890TQ0001", 110, description_style[0], 10)
 
-    page.insert_text((360, 150), "www.sankari.ca", fontname=text_style[0], fontsize=9)
-    page.insert_text((360, 160), "taxdeclaration@gmail.com", fontname=text_style[0], fontsize=9)
+    right_align_text("www.sankari.ca", 150, text_style[0], 9)
+    right_align_text("taxdeclaration@sankari.ca", 160, text_style[0], 9)
 
-    right_align_text("(514) 802-4776", 150, text_style[0], 9)
-    right_align_text("(514) 839-4776", 160, text_style[0], 9)
 
     # Page divider
     page.draw_line((0, 190), (600, 190), color=(0.7, 0.7, 0.7), width=1)
@@ -199,7 +197,7 @@ def create_confirmation_invoice_english(directory_path, selected_prices, invoice
     notes_start = current_y + 120
     page.insert_text((10, notes_start), "Notes / Terms:", fontname="Helvetica-Bold", fontsize=12, color=red)
     page.insert_text((10, notes_start + 20), f"{invoice_details.get('notes', 'N/A')}", fontname=text_style[0], fontsize=9)
-    page.insert_text((10, notes_start + 35), "You can pay the fees by Interac e-transfer to taxdeclaration@gmail.com. For the password, you can use the word \"declaration\".", fontname=text_style[0], fontsize=8)
+    page.insert_text((10, notes_start + 35), "You can pay the fees by Interac e-transfer to taxdeclaration@sankari.ca. For the password, you can use the word \"declaration\".", fontname=text_style[0], fontsize=8)
 
     page.insert_image(fitz.Rect(10, 750, 110, 820), filename=donate_path)
     # Insert the first line in red
@@ -208,11 +206,9 @@ def create_confirmation_invoice_english(directory_path, selected_prices, invoice
     page.insert_text((100, 800), "$1.00 will be donated to Humanitarian Coalition.", fontname=text_style[0], fontsize=9)
 
     page.insert_image(fitz.Rect(350, 660, 575, 770), filename=logo_path)
-    page.insert_text((360, 790), "www.sankari.ca", fontname=text_style[0], fontsize=9)
-    page.insert_text((360, 800), "taxdeclaration@gmail.com", fontname=text_style[0], fontsize=9)
+    right_align_text("www.sankari.ca", 790, text_style[0], 9)
+    right_align_text("taxdeclaration@sankari.ca", 800, text_style[0], 9)
 
-    right_align_text("(514) 802-4776", 790, text_style[0], 9)
-    right_align_text("(514) 839-4776", 800, text_style[0], 9)
 
     # Save the document
     os.makedirs(directory_path, exist_ok=True)
@@ -294,11 +290,9 @@ def create_confirmation_invoice_french(directory_path, selected_prices, invoice_
     right_align_text("TPS: 123456789RT0001", 95, description_style[0], 10)
     right_align_text("TVQ: 1234567890TQ0001", 110, description_style[0], 10)
 
-    page.insert_text((360, 150), "www.sankari.ca", fontname=text_style[0], fontsize=9)
-    page.insert_text((360, 160), "taxdeclaration@gmail.com", fontname=text_style[0], fontsize=9)
+    right_align_text("www.sankari.ca", 150, text_style[0], 9)
+    right_align_text("taxdeclaration@sankari.ca", 160, text_style[0], 9)
 
-    right_align_text("(514) 802-4776", 150, text_style[0], 9)
-    right_align_text("(514) 839-4776", 160, text_style[0], 9)
 
     # Page divider
     page.draw_line((0, 190), (600, 190), color=(0.7, 0.7, 0.7), width=1)
@@ -408,7 +402,7 @@ def create_confirmation_invoice_french(directory_path, selected_prices, invoice_
     notes_start = current_y + 120
     page.insert_text((10, notes_start), "Notes / Conditions:", fontname="Helvetica-Bold", fontsize=12, color=red)
     page.insert_text((10, notes_start + 20), f"{invoice_details.get('notes', 'N/A')}", fontname=text_style[0], fontsize=9)
-    page.insert_text((10, notes_start + 35), "Vous pouvez payer les frais par virement électronique Interac à taxdeclaration@gmail.com. Pour le mot de passe, vous pouvez utiliser le mot \"declaration\".", fontname=text_style[0], fontsize=8)
+    page.insert_text((10, notes_start + 35), "Vous pouvez payer les frais par virement électronique Interac à taxdeclaration@sankari.ca. Pour le mot de passe, vous pouvez utiliser le mot \"declaration\".", fontname=text_style[0], fontsize=8)
 
     page.insert_image(fitz.Rect(10, 750, 110, 820), filename=donate_path)
     # Insert the first line in red
@@ -417,11 +411,9 @@ def create_confirmation_invoice_french(directory_path, selected_prices, invoice_
     page.insert_text((100, 800), "un don de 1$ sera versé à Coalition Humanitaire.", fontname=text_style[0], fontsize=9)
 
     page.insert_image(fitz.Rect(350, 660, 575, 770), filename=logo_path)
-    page.insert_text((360, 790), "www.sankari.ca", fontname=text_style[0], fontsize=9)
-    page.insert_text((360, 800), "taxdeclaration@gmail.com", fontname=text_style[0], fontsize=9)
+    right_align_text("www.sankari.ca", 790, text_style[0], 9)
+    right_align_text("taxdeclaration@sankari.ca", 800, text_style[0], 9)
 
-    right_align_text("(514) 802-4776", 790, text_style[0], 9)
-    right_align_text("(514) 839-4776", 800, text_style[0], 9)
 
     # Save the PDF file
     name = invoice_details.get('name', 'Unknown').replace(' ', '')
@@ -508,11 +500,9 @@ def create_confirmation_invoice_bilingual(directory_path, selected_prices, invoi
     right_align_text("GST / TPS: 123456789RT0001", 95, description_style[0], 10)
     right_align_text("QST / TVQ: 1234567890TQ0001", 110, description_style[0], 10)
 
-    page.insert_text((360, 150), "www.sankari.ca", fontname=text_style[0], fontsize=9)
-    page.insert_text((360, 160), "taxdeclaration@gmail.com", fontname=text_style[0], fontsize=9)
+    right_align_text("www.sankari.ca", 150, text_style[0], 9)
+    right_align_text("taxdeclaration@sankari.ca", 160, text_style[0], 9)
 
-    right_align_text("(514) 802-4776", 150, text_style[0], 9)
-    right_align_text("(514) 839-4776", 160, text_style[0], 9)
 
     # Page divider
     page.draw_line((0, 190), (600, 190), color=(0.7, 0.7, 0.7), width=1)
@@ -615,7 +605,7 @@ def create_confirmation_invoice_bilingual(directory_path, selected_prices, invoi
     notes_start = current_y + 120
     page.insert_text((10, notes_start), "Notes / Conditions:", fontname="Helvetica-Bold", fontsize=12, color=red)
     page.insert_text((10, notes_start + 20), f"{invoice_details.get('notes', 'N/A')}", fontname=text_style[0], fontsize=9)
-    page.insert_text((10, notes_start + 35), "You can pay the fees by Interac e-transfer to taxdeclaration@gmail.com. For the password, you can use the word \"declaration\".", fontname=text_style[0], fontsize=8)
+    page.insert_text((10, notes_start + 35), "You can pay the fees by Interac e-transfer to taxdeclaration@sankari.ca. For the password, you can use the word \"declaration\".", fontname=text_style[0], fontsize=8)
 
     page.insert_image(fitz.Rect(10, 750, 110, 820), filename=donate_path)
     # Insert the first line in red
@@ -624,11 +614,9 @@ def create_confirmation_invoice_bilingual(directory_path, selected_prices, invoi
     page.insert_text((100, 800), "$1.00 will be donated to Humanitarian Coalition.", fontname=text_style[0], fontsize=9)
 
     page.insert_image(fitz.Rect(350, 660, 575, 770), filename=logo_path)
-    page.insert_text((360, 790), "www.sankari.ca", fontname=text_style[0], fontsize=9)
-    page.insert_text((360, 800), "taxdeclaration@gmail.com", fontname=text_style[0], fontsize=9)
+    right_align_text("www.sankari.ca", 790, text_style[0], 9)
+    right_align_text("taxdeclaration@sankari.ca", 800, text_style[0], 9)
 
-    right_align_text("(514) 802-4776", 790, text_style[0], 9)
-    right_align_text("(514) 839-4776", 800, text_style[0], 9)
 
     # Save the PDF document
     name = invoice_details.get('name', 'Unknown').replace(' ', '')
