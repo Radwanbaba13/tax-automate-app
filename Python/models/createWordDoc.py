@@ -22,7 +22,13 @@ def createCoupleWordDoc(couple_summaries, output_file_path):
         createCoupleWordDocFR(couple_summaries, output_file_path)
 
 
-locale.setlocale(locale.LC_ALL, 'fr_CA.UTF-8')
+try:
+    locale.setlocale(locale.LC_ALL, 'fr_CA.UTF-8')
+except locale.Error:
+    try:
+        locale.setlocale(locale.LC_ALL, 'French_Canada.1252')  # Windows
+    except locale.Error:
+        pass
 
 def format_currency(amount):
     # Convert the amount to a float and format it as a string
