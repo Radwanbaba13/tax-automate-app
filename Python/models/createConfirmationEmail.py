@@ -103,6 +103,7 @@ def add_confirmation_numbers_section(doc, clients, province):
 
     for client in clients:
         isMailQC = False
+        isSentMailQC = False
         # Add the client's title and name
         if len(clients) > 1:
             para.add_run(f"\n\n{client['title']}. {client['name']}:")
@@ -114,21 +115,29 @@ def add_confirmation_numbers_section(doc, clients, province):
             cra_confirmation = confirmation_numbers.get("federal", "Not provided")
             if province == "QC":
                 qc_confirmation = confirmation_numbers.get("quebec", "Not provided")
+                qc_confirmation_normalized = ' '.join(qc_confirmation.split()) if qc_confirmation else ""
 
             t1135_confirmation = confirmation_numbers.get("t1135", "Not provided")
 
             # Display confirmation numbers for the specific year
             para.add_run(f"\n{year}:\n").underline = True
             para.add_run(f"CRA: {cra_confirmation}")
-            if province == "QC" and qc_confirmation == "Mail QC":
-                isMailQC = True
-            if province == "QC" and qc_confirmation != "Mail QC":
-                para.add_run(f"\nQC: {qc_confirmation}")
+            if province == "QC":
+                if qc_confirmation_normalized == "Mail QC":
+                    isMailQC = True
+                elif qc_confirmation_normalized == "Sent Mail QC":
+                    isMailQC = True
+                    isSentMailQC = True
+                else:
+                    para.add_run(f"\nQC: {qc_confirmation}")
             if t1135_confirmation != "Not provided" and t1135_confirmation != "":
                 para.add_run(f"\nT1135: {t1135_confirmation}")
 
         if isMailQC:
-          para.add_run("\nPlease do not forget to mail the QC return as explained in the summary.").bold = True
+            if isSentMailQC:
+                para.add_run("\nPlease note that your Quebec tax declaration has been sent in a registered mail through Post Canada - please find attached the Post Canada receipt with the tracking number for your reference.").bold = True
+            else:
+                para.add_run("\nPlease do not forget to mail the QC return as explained in the summary.").bold = True
 
     para = doc.add_paragraph()
     para.add_run('You will receive a notice of assessment from the Canada Revenue ').bold = False
@@ -320,31 +329,40 @@ def add_confirmation_numbers_section_french(doc, clients, province):
     para.add_run("\nVeuillez conserver les numéros de confirmation pour vos dossiers :")
 
     for client in clients:
+        isMailQC = False
+        isSentMailQC = False
         # Add the client's title and name
         if len(clients) > 1:
             para.add_run(f"\n\n{client['title']} {client['name']}:")
 
         # Iterate over the years to get confirmation numbers
         for year_info in client['years']:
-            isMailQC = False
             year = year_info['year']
             confirmation_numbers = year_info['confirmationNumbers']
             cra_confirmation = confirmation_numbers.get("federal", "Non fourni")
             if province == "QC":
                 qc_confirmation = confirmation_numbers.get("quebec", "Non fourni")
+                qc_confirmation_normalized = ' '.join(qc_confirmation.split()) if qc_confirmation else ""
             t1135_confirmation = confirmation_numbers.get("t1135", "Non fourni")
             # Display confirmation numbers for the specific year
             para.add_run(f"\n{year} :\n").underline = True
             para.add_run(f"ARC: {cra_confirmation}")
-            if province == "QC" and qc_confirmation == "Mail QC":
-                isMailQC = True
-            if province == "QC" and qc_confirmation != "Mail QC":
-                para.add_run(f"\nQC: {qc_confirmation}")
+            if province == "QC":
+                if qc_confirmation_normalized == "Mail QC":
+                    isMailQC = True
+                elif qc_confirmation_normalized == "Sent Mail QC":
+                    isMailQC = True
+                    isSentMailQC = True
+                else:
+                    para.add_run(f"\nQC: {qc_confirmation}")
             if t1135_confirmation != "Non fourni" and t1135_confirmation != "":
                 para.add_run(f"\nT1135: {t1135_confirmation}")
 
         if isMailQC:
-          para.add_run("\nN'oubliez pas de poster la déclaration de QC comme expliqué dans le sommaire.").bold = True
+            if isSentMailQC:
+                para.add_run("\nVeuillez noter que votre déclaration de revenu du Québec a été envoyée par courrier recommandé par Postes Canada - veuillez trouver ci-joint le reçu de Postes Canada avec le numéro de suivi pour votre référence.").bold = True
+            else:
+                para.add_run("\nN'oubliez pas de poster la déclaration de QC comme expliqué dans le sommaire.").bold = True
 
     para = doc.add_paragraph()
     para.add_run("Vous recevrez un avis de cotisation de l'Agence du revenu du Canada ").bold = False

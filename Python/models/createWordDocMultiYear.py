@@ -82,11 +82,14 @@ def createIndividualWordDocEN(individual, output_file_path):
         if "gst_amounts" in return_summary and return_summary["gst_amounts"]:
             gst_credit(doc, return_summary, isNewcomer, year, years[-1], years[0])
 
+        if "ecgeb_amounts" in return_summary and return_summary["ecgeb_amounts"]:
+            ecgeb_credit(doc, return_summary, isNewcomer, year, years[-1], years[0])
+
         if "solidarity_amounts" in return_summary and return_summary["solidarity_amounts"]:
             solidarity_credit(doc, return_summary, year, years[-1])
 
         if "ccb_amounts" in return_summary and return_summary["ccb_amounts"]:
-            child_benefit(doc, return_summary, year, years[-1]) 
+            child_benefit(doc, return_summary, year, years[-1])
 
         if "family_allowance_amounts" in return_summary and return_summary["family_allowance_amounts"]:
             quebec_family_allowance(doc, return_summary, year, years[-1])
@@ -95,7 +98,7 @@ def createIndividualWordDocEN(individual, output_file_path):
         if year == years[-1] and "carryforward_amounts" in return_summary and return_summary["carryforward_amounts"]:
             carryforward_amounts(doc, return_summary)
 
-    conclusion(doc)
+    conclusion(doc, isMailQC)
     doc.save(output_file_path)
 
 
@@ -478,6 +481,55 @@ def gst_credit(doc, return_summary, isNewcomer, year, last_year, first_year):
         ).italic = True
 
     
+# Section: ECGEB Credit
+def ecgeb_credit(doc, return_summary, isNewcomer, year, last_year, first_year):
+    para = doc.add_paragraph()
+    title_run = para.add_run('ECGEB')
+    title_run.bold = True
+    title_run.underline = True
+
+    if isNewcomer and year == first_year:
+        title_run = para.add_run('* ')
+        title_run.bold = True
+        title_run.underline = True
+    title_run = para.add_run(' Credits:\n')
+    title_run.bold = True
+    title_run.underline = True
+
+    ecgeb_credit_amount = return_summary["ecgeb_amounts"]["ecgeb_credit_amount"]
+    july_amount = return_summary["ecgeb_amounts"].get("july_amount", 0)
+    october_amount = return_summary["ecgeb_amounts"].get("october_amount", 0)
+    january_amount = return_summary["ecgeb_amounts"].get("january_amount", 0)
+    april_amount = return_summary["ecgeb_amounts"].get("april_amount", 0)
+
+    para.add_run(f'You will receive a total of ').bold = False
+    total_run = para.add_run(f"${ecgeb_credit_amount:,.2f}")
+    total_run.bold = True
+    total_run.font.color.rgb = RGBColor(0, 128, 0)
+    para.add_run(f' for the ')
+    para.add_run(f'Canada Groceries and Essentials Benefit (ECGEB)').bold = True
+    if year == last_year:
+        para.add_run(f' as follows:\n')
+    else:
+        para.add_run(f'.\n')
+
+    if year == last_year:
+        if july_amount > 0:
+            para.add_run(f'July {year}: ${july_amount:,.2f}\n')
+        if october_amount > 0:
+            para.add_run(f'October {year}: ${october_amount:,.2f}\n')
+        if january_amount > 0:
+            para.add_run(f'January {year + 1}: ${january_amount:,.2f}\n')
+        if april_amount > 0:
+            para.add_run(f'April {year + 1}: ${april_amount:,.2f}\n')
+
+    if isNewcomer and year == first_year:
+        para.add_run(
+            '\n*Note that you will receive a letter from Canada Revenue Agency asking you to provide your income before arrival to Canada (so from January 1st until the date of arrival). '
+            'Even though it was mentioned on the declaration, you still need to respond to the letter and provide the amount. If you do not reply, they will not pay the ECGEB amount.\n'
+        ).italic = True
+
+
 # Section: Summary of Carryforward Amounts
 def carryforward_amounts(doc, return_summary):
     para = doc.add_paragraph()
@@ -630,11 +682,13 @@ def quebec_family_allowance(doc, return_summary, year, last_year):
             para.add_run(f'April {year_plus2}: ${april_amount:,.2f}\n')
 
 # Section: Conclusion
-def conclusion(doc):
+def conclusion(doc, isMailQC=False):
     para = doc.add_paragraph()
 
     # Add the red text above the conclusion
-    red_run = para.add_run('\nWe will be waiting for the signed authorization forms to proceed.\n')
+    # Use singular "form" for Efile fed mail QC (Individual), plural "forms" otherwise
+    form_text = "form" if isMailQC else "forms"
+    red_run = para.add_run(f'\nWe will be waiting for the signed authorization {form_text} to proceed.\n')
     red_run.font.color.rgb = RGBColor(205, 52, 78)
 
     # Add normal text for "Thank you."
@@ -683,6 +737,9 @@ def createIndividualWordDocFR(individual, output_file_path):
 
         if "gst_amounts" in return_summary and return_summary["gst_amounts"]:
             gst_creditFR(doc, return_summary, isNewcomer, year, years[-1], years[0])
+
+        if "ecgeb_amounts" in return_summary and return_summary["ecgeb_amounts"]:
+            ecgeb_creditFR(doc, return_summary, isNewcomer, year, years[-1], years[0])
 
         if "solidarity_amounts" in return_summary and return_summary["solidarity_amounts"]:
             solidarity_creditFR(doc, return_summary, year, years[-1])
@@ -1030,6 +1087,56 @@ def solidarity_creditFR(doc, return_summary, year, last_year):
 
                 for start, end, amount, end_year in amount_ranges:
                     para.add_run(f'{format_currency(amount)} /mois de {start} {year_plus1} à {end} {end_year}\n')
+
+
+# Section: Crédits ACEBE
+def ecgeb_creditFR(doc, return_summary, isNewcomer, year, last_year, first_year):
+    para = doc.add_paragraph()
+    title_run = para.add_run('Crédits ACEBE')
+    title_run.bold = True
+    title_run.underline = True
+
+    if isNewcomer and year == first_year:
+        title_run = para.add_run('* ')
+        title_run.bold = True
+        title_run.underline = True
+    title_run = para.add_run(' :\n')
+    title_run.bold = True
+    title_run.underline = True
+
+    ecgeb_credit_amount = return_summary["ecgeb_amounts"]["ecgeb_credit_amount"]
+    july_amount = return_summary["ecgeb_amounts"].get("july_amount", 0)
+    october_amount = return_summary["ecgeb_amounts"].get("october_amount", 0)
+    january_amount = return_summary["ecgeb_amounts"].get("january_amount", 0)
+    april_amount = return_summary["ecgeb_amounts"].get("april_amount", 0)
+
+    para.add_run(f'Vous allez recevoir un total de ')
+    total_run = para.add_run(format_currency(ecgeb_credit_amount))
+    total_run.bold = True
+    total_run.font.color.rgb = RGBColor(0, 128, 0)
+    para.add_run(f' pour la ')
+    para.add_run(f'Allocation canadienne pour l\'épicerie et les besoins essentiels (ACEBE)').bold = True
+
+    if year == last_year:
+        para.add_run(f' de la façon suivante :\n')
+    else:
+        para.add_run(f'.\n')
+
+    if year == last_year:
+        if july_amount > 0:
+            para.add_run(f'Juillet {year} : {format_currency(july_amount)}\n')
+        if october_amount > 0:
+            para.add_run(f'Octobre {year} : {format_currency(october_amount)}\n')
+        if january_amount > 0:
+            para.add_run(f'Janvier {year + 1} : {format_currency(january_amount)}\n')
+        if april_amount > 0:
+            para.add_run(f'Avril {year + 1} : {format_currency(april_amount)}\n')
+
+    if isNewcomer and year == first_year:
+        para.add_run(
+            '\n*Notez que vous allez recevoir une lettre de l\'Agence du Revenu du Canada vous demandant de fournir vos revenus avant votre arrivée au Canada (du 1er janvier jusqu\'à la date d\'arrivée). '
+            'Même si cela a été mentionné sur la déclaration, vous devez quand même répondre à la lettre. Si vous ne répondez pas, ils ne paieront pas le montant de la ACEBE.\n'
+        ).italic = True
 
 
 # Section: Crédit TPS

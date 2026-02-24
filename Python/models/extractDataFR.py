@@ -108,6 +108,33 @@ def extract_gst_creditFR(gst_credit_lines, year):
 
     return gst_credit_result
 
+def extract_ecgeb_creditFR(ecgeb_lines, year):
+    ecgeb_result = {
+        "ecgeb_credit_amount": 0.0,
+        "july_amount": 0.0,
+        "october_amount": 0.0,
+        "january_amount": 0.0,
+        "april_amount": 0.0
+    }
+
+    number_pattern = r'(\d{1,3}(?:\s\d{3})*\s\d{2}|\d{1,3}\s\d{2})'
+
+    for line in ecgeb_lines:
+        # if "Allocation canadienne pour l'épicerie et les besoins essentiels (0$ si la ligne 24 est moins de 1 $)." in line:
+        #    match = re.search(number_pattern, line)
+        #    if match:
+        #        ecgeb_result["ecgeb_credit_amount"] = convert_to_float(match.group(0).replace(' ', ''))
+        if f"juillet {year + 1}" in line:
+            ecgeb_result["july_amount"] = extract_value_between_labelsFR(f"juillet {year + 1}", f"janvier {year + 2}", line)
+        if f"octobre {year + 1}" in line:
+            ecgeb_result["october_amount"] = extract_value_between_labelsFR(f"octobre {year + 1}", f"avril {year + 2}", line)
+        if f"janvier {year + 2}" in line:
+            ecgeb_result["january_amount"] = extract_value_between_labelsFR(f"janvier {year + 2}", "", line)
+        if f"avril {year + 2}" in line:
+            ecgeb_result["april_amount"] = extract_value_between_labelsFR(f"avril {year + 2}", "", line)
+        ecgeb_result["ecgeb_credit_amount"] = ecgeb_result["july_amount"] + ecgeb_result["october_amount"] +ecgeb_result["january_amount"] +ecgeb_result["april_amount"]
+    return ecgeb_result
+
 def extract_carbon_rebateFR(carbon_rebate_lines, year):
     # Initialize the carbon rebate result dictionary
     carbon_rebate_result = {
@@ -163,49 +190,48 @@ def extract_ontario_trilliumFR(ontario_trillium_lines, year):
     year_plus_1 = year + 1
     year_plus_2 = year + 2
 
-    # Iterate over all the lines and extract the rebate amounts
+    # Iterate over all the lines and extract the rebate amounts (French month names)
     for line in ontario_trillium_lines:
-        # Extract values for each month
-        if f"July {year_plus_1}" in line and f"January {year_plus_2}" in line:
-            ontario_trillium_result["july_amount"] = extract_value_between_labels(f"July {year_plus_1}", f"January {year_plus_2}", line)
+        if f"Juillet {year_plus_1}" in line and f"Janvier {year_plus_2}" in line:
+            ontario_trillium_result["july_amount"] = extract_value_between_labelsFR(f"Juillet {year_plus_1}", f"Janvier {year_plus_2}", line)
 
-        if f"August {year_plus_1}" in line and f"February {year_plus_2}" in line:
-            ontario_trillium_result["august_amount"] = extract_value_between_labels(f"August {year_plus_1}", f"February {year_plus_2}", line)
+        if f"Août {year_plus_1}" in line and f"Février {year_plus_2}" in line:
+            ontario_trillium_result["august_amount"] = extract_value_between_labelsFR(f"Août {year_plus_1}", f"Février {year_plus_2}", line)
 
-        if f"September {year_plus_1}" in line and f"March {year_plus_2}" in line:
-            ontario_trillium_result["september_amount"] = extract_value_between_labels(f"September {year_plus_1}", f"March {year_plus_2}", line)
+        if f"Septembre {year_plus_1}" in line and f"Mars {year_plus_2}" in line:
+            ontario_trillium_result["september_amount"] = extract_value_between_labelsFR(f"Septembre {year_plus_1}", f"Mars {year_plus_2}", line)
 
-        if f"October {year_plus_1}" in line and f"April {year_plus_2}" in line:
-            ontario_trillium_result["october_amount"] = extract_value_between_labels(f"October {year_plus_1}", f"April {year_plus_2}", line)
+        if f"Octobre {year_plus_1}" in line and f"Avril {year_plus_2}" in line:
+            ontario_trillium_result["october_amount"] = extract_value_between_labelsFR(f"Octobre {year_plus_1}", f"Avril {year_plus_2}", line)
 
-        if f"November {year_plus_1}" in line and f"May {year_plus_2}" in line:
-            ontario_trillium_result["november_amount"] = extract_value_between_labels(f"November {year_plus_1}", f"May {year_plus_2}", line)
+        if f"Novembre {year_plus_1}" in line and f"Mai {year_plus_2}" in line:
+            ontario_trillium_result["november_amount"] = extract_value_between_labelsFR(f"Novembre {year_plus_1}", f"Mai {year_plus_2}", line)
 
-        if f"December {year_plus_1}" in line and f"June {year_plus_2}" in line:
-            ontario_trillium_result["december_amount"] = extract_value_between_labels(f"December {year_plus_1}", f"June {year_plus_2}", line)
+        if f"Décembre {year_plus_1}" in line and f"Juin {year_plus_2}" in line:
+            ontario_trillium_result["december_amount"] = extract_value_between_labelsFR(f"Décembre {year_plus_1}", f"Juin {year_plus_2}", line)
 
-        if f"January {year_plus_2}" in line:
-            ontario_trillium_result["january_amount"] = extract_value_between_labels(f"January {year_plus_2}", f"", line)
+        if f"Janvier {year_plus_2}" in line:
+            ontario_trillium_result["january_amount"] = extract_value_between_labelsFR(f"Janvier {year_plus_2}", "", line)
 
-        if f"February {year_plus_2}" in line:
-            ontario_trillium_result["february_amount"] = extract_value_between_labels(f"February {year_plus_2}", f"", line)
+        if f"Février {year_plus_2}" in line:
+            ontario_trillium_result["february_amount"] = extract_value_between_labelsFR(f"Février {year_plus_2}", "", line)
 
-        if f"March {year_plus_2}" in line:
-            ontario_trillium_result["march_amount"] = extract_value_between_labels(f"March {year_plus_2}", f"", line)
+        if f"Mars {year_plus_2}" in line:
+            ontario_trillium_result["march_amount"] = extract_value_between_labelsFR(f"Mars {year_plus_2}", "", line)
 
-        if f"April {year_plus_2}" in line:
-            ontario_trillium_result["april_amount"] = extract_value_between_labels(f"April {year_plus_2}", f"", line)
+        if f"Avril {year_plus_2}" in line:
+            ontario_trillium_result["april_amount"] = extract_value_between_labelsFR(f"Avril {year_plus_2}", "", line)
 
-        if f"May {year_plus_2}" in line:
-            ontario_trillium_result["may_amount"] = extract_value_between_labels(f"May {year_plus_2}", f"", line)
+        if f"Mai {year_plus_2}" in line:
+            ontario_trillium_result["may_amount"] = extract_value_between_labelsFR(f"Mai {year_plus_2}", "", line)
 
-        if f"June {year_plus_2}" in line:
-            ontario_trillium_result["june_amount"] = extract_value_between_labels(f"June {year_plus_2}", f"", line)
+        if f"Juin {year_plus_2}" in line:
+            ontario_trillium_result["june_amount"] = extract_value_between_labelsFR(f"Juin {year_plus_2}", "", line)
 
     # Now sum the amounts to get the total carbon rebate amount
     total_rebate = sum(ontario_trillium_result[month] for month in ontario_trillium_result if month != "carbon_rebate_amount")
     ontario_trillium_result["ontario_trillium_amount"] = total_rebate
-    
+
     return ontario_trillium_result
 
 

@@ -77,10 +77,8 @@ class AppUpdater {
       }
     });
 
-    // Check for updates on startup (only in production)
-    if (app.isPackaged) {
-      autoUpdater.checkForUpdates();
-    }
+    // Note: startup check is handled by the Sidebar component on mount,
+    // which fires after the renderer is ready and listeners are registered.
   }
 }
 
@@ -118,11 +116,11 @@ ipcMain.handle('check-for-updates', async () => {
     };
   }
   try {
-    const result = await autoUpdater.checkForUpdates();
-    return { available: true, info: result };
-  } catch (error) {
+    await autoUpdater.checkForUpdates();
+    return { available: true };
+  } catch (error: any) {
     log.error('Error checking for updates:', error);
-    return { available: false, error };
+    return { available: false, error: error?.message || String(error) };
   }
 });
 
@@ -130,9 +128,9 @@ ipcMain.handle('download-update', async () => {
   try {
     await autoUpdater.downloadUpdate();
     return { success: true };
-  } catch (error) {
+  } catch (error: any) {
     log.error('Error downloading update:', error);
-    return { success: false, error };
+    return { success: false, error: error?.message || String(error) };
   }
 });
 
@@ -582,8 +580,13 @@ ipcMain.handle(
         // AI-only mode: Generate a professional email response
         systemPrompt = `You are a professional email assistant for a tax preparation service.
 Generate clear, professional, and helpful email responses to customer inquiries.
-Be concise, friendly, and address all questions thoroughly.`;
-        userPrompt = `Customer inquiry/email:\n\n${customerInquiry}\n\nPlease generate a professional email response.`;
+Be concise, friendly, and address all questions thoroughly.
+Format your response in HTML for rich text display:
+- Use <p> tags for paragraphs
+- Use <strong> for emphasis
+- Use <br> for line breaks within paragraphs
+- Use <ul>/<li> for lists when appropriate`;
+        userPrompt = `Customer inquiry/email:\n\n${customerInquiry}\n\nPlease generate a professional email response in HTML format.`;
       } else if (replyMode === 'template') {
         // Template-only mode: Use the template as-is
         return {
@@ -592,14 +595,25 @@ Be concise, friendly, and address all questions thoroughly.`;
         };
       } else if (replyMode === 'template-ai') {
         // Template + AI mode: Enhance the template with AI based on the inquiry
+        const hasInquiry = customerInquiry && customerInquiry.trim();
+
         systemPrompt = `You are a professional email assistant for a tax preparation service.
-You will be given a customer inquiry and an email template.
-Your task is to customize the template to address the specific customer inquiry while maintaining the template's structure and key information.
+${hasInquiry
+  ? 'You will be given a customer inquiry and an email template. Customize the template to address the specific customer inquiry while maintaining the template\'s structure and key information.'
+  : 'You will be given an email template. Improve the template by enhancing clarity, professionalism, and readability while maintaining the core message.'}
 Make the response personal, relevant, and professional.
 IMPORTANT: Do NOT use placeholder text like [Your Name], [Your Position], [Your Company], or [Contact Information].
 Use the actual signature information provided: Nawaf Sankari, Fiscal Specialist and Financial Security Advisor, Sankari Inc., Fiscal and Financial Services, www.sankari.ca, taxdeclaration@gmail.com, (514) 802-4776, (514) 839-4776.
+Format your response in HTML for rich text display:
+- Use <p> tags for paragraphs
+- Use <strong> for emphasis
+- Use <br> for line breaks within paragraphs
+- Use <ul>/<li> for lists when appropriate
 Return your response in JSON format with "subject" and "body" fields.`;
-        userPrompt = `Customer inquiry/email:\n\n${customerInquiry}\n\nEmail template to customize:\n\n${templateContent}\n\nPlease customize this template to address the customer's inquiry. Keep the template structure but personalize it for this specific customer. Return your response as JSON with "subject" and "body" fields. Do NOT include placeholders - use actual information.`;
+
+        userPrompt = hasInquiry
+          ? `Customer inquiry/email:\n\n${customerInquiry}\n\nEmail template to customize:\n\n${templateContent}\n\nPlease customize this template to address the customer's inquiry. Keep the template structure but personalize it for this specific customer. Return your response as JSON with "subject" and "body" fields (body should be HTML formatted). Do NOT include placeholders - use actual information.`
+          : `Email template to improve:\n\n${templateContent}\n\nPlease improve this template by enhancing clarity, professionalism, and readability. Return your response as JSON with "subject" and "body" fields (body should be HTML formatted). Do NOT include placeholders - use actual information.`;
       }
 
       const response = await openai.chat.completions.create({
@@ -666,9 +680,16 @@ Your task is to improve email templates by:
 - Maintaining the original intent and key information
 - Making the language more concise and effective
 
-Return only the improved template content, without explanations or additional text.`;
+The input may be plain text or HTML. Return the improved content in HTML format:
+- Use <p> tags for paragraphs
+- Use <strong> for emphasis
+- Use <br> for line breaks within paragraphs
+- Use <ul>/<li> for lists when appropriate
+- Preserve any existing HTML formatting and styling
 
-    const userPrompt = `Please improve this email template:\n\n${templateContent}`;
+Return only the improved HTML content, without explanations or additional text.`;
+
+    const userPrompt = `Please improve this email template and return it as HTML:\n\n${templateContent}`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o',

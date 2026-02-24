@@ -9,6 +9,7 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { AiOutlineClose, AiOutlinePlus, AiOutlineMail } from 'react-icons/ai';
+import { PiMailboxBold } from 'react-icons/pi';
 import { MdDragIndicator } from 'react-icons/md';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -63,6 +64,15 @@ function ClientDetails({
 }: ClientDetailsProps) {
   const handleMailQC = (clientIndex: number, yearIndex: number) => {
     handleConfirmationNumberChange(clientIndex, yearIndex, 'quebec', 'Mail QC');
+  };
+
+  const handleSentMailQC = (clientIndex: number, yearIndex: number) => {
+    handleConfirmationNumberChange(
+      clientIndex,
+      yearIndex,
+      'quebec',
+      'Sent Mail QC',
+    );
   };
 
   return (
@@ -255,8 +265,8 @@ function ClientDetails({
                             }
                           >
                             {Array.from(
-                              { length: 2024 - 2010 },
-                              (_, i) => 2024 - i,
+                              { length: 2025 - 2010 },
+                              (_, i) => 2025 - i,
                             ).map((year) => (
                               <option key={year} value={year}>
                                 {year}
@@ -296,7 +306,7 @@ function ClientDetails({
                               }}
                             />
                             {selectedProvince === 'QC' && (
-                              <HStack spacing={2}>
+                              <HStack spacing={1}>
                                 <Input
                                   placeholder="Quebec Confirmation Number"
                                   value={
@@ -331,14 +341,37 @@ function ClientDetails({
                                 />
                                 <IconButton
                                   aria-label="Mail QC Confirmation"
-                                  icon={<AiOutlineMail />}
+                                  icon={<AiOutlineMail size="18px" />}
                                   onClick={() =>
                                     handleMailQC(clientIndex, yearIndex)
                                   }
                                   colorScheme="blue"
-                                  size="md"
-                                  variant="ghost"
-                                  borderRadius="50px"
+                                  size="sm"
+                                  variant={
+                                    yearItem.confirmationNumbers.quebec ===
+                                    'Mail QC'
+                                      ? 'solid'
+                                      : 'outline'
+                                  }
+                                  borderRadius="5px"
+                                  ml={1}
+                                />
+                                <IconButton
+                                  aria-label="Sent Mail QC Confirmation"
+                                  icon={<PiMailboxBold size="18px" />}
+                                  onClick={() =>
+                                    handleSentMailQC(clientIndex, yearIndex)
+                                  }
+                                  colorScheme="green"
+                                  size="sm"
+                                  variant={
+                                    yearItem.confirmationNumbers.quebec ===
+                                    'Sent Mail QC'
+                                      ? 'solid'
+                                      : 'outline'
+                                  }
+                                  borderRadius="5px"
+                                  title="Sent Mail QC (with Post Canada tracking)"
                                 />
                               </HStack>
                             )}
