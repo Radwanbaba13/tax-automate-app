@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs
+from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, collect_submodules
 
 block_cipher = None
 
@@ -25,11 +25,7 @@ a = Analysis(
         'fitz',           # Main module
         'fitz.fitz',      # C extension module
         'fitz.utils',     # Utility functions
-        'models.createSummary',
-        'models.createWordDoc',
-        'models.createWordDocMultiYear',
-        'models.extractData',
-        'models.extractDataFR',
+        *collect_submodules('models'),
     ],
     hookspath=[],
     hooksconfig={},
