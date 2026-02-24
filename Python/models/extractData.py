@@ -134,6 +134,42 @@ def extract_gst_credit(gst_credit_lines, year):
 
     return gst_credit_result
 
+def extract_ecgeb_credit(ecgeb_lines, year):
+    # Initialize the ECGEB credit result dictionary
+    ecgeb_result = {
+        "ecgeb_credit_amount": 0.0,
+        "july_amount": 0.0,
+        "october_amount": 0.0,
+        "january_amount": 0.0,
+        "april_amount": 0.0
+    }
+
+    number_pattern = r'(\d{1,3}(?:,\d{3})*\s\d{2}|\d{1,3}\s\d{2})'
+
+    year_plus_1 = year + 1
+    year_plus_2 = year + 2
+
+    for line in ecgeb_lines:
+        if "Canada Groceries and Essentials Benefit (if line 24 is less than $1, enter zero)." in line:
+            match = re.search(number_pattern, line)
+
+            if match:
+                ecgeb_result["ecgeb_credit_amount"] = convert_to_float(match.group(0).replace(',', '').replace(' ', ''))
+
+        if f"July {year_plus_1}" in line:
+            ecgeb_result["july_amount"] = extract_value_between_labels(f"July {year_plus_1}", f"January {year_plus_2}", line)
+
+        if f"October {year_plus_1}" in line:
+            ecgeb_result["october_amount"] = extract_value_between_labels(f"October {year_plus_1}", f"April {year_plus_2}", line)
+
+        if f"January {year_plus_2}" in line:
+            ecgeb_result["january_amount"] = extract_value_between_labels(f"January {year_plus_2}", "", line)
+
+        if f"April {year_plus_2}" in line:
+            ecgeb_result["april_amount"] = extract_value_between_labels(f"April {year_plus_2}", "", line)
+
+    return ecgeb_result
+
 def extract_carbon_rebate(carbon_rebate_lines, year):
     # Initialize the carbon rebate result dictionary
     carbon_rebate_result = {
@@ -184,7 +220,7 @@ def extract_climate_action_credit(climate_action_lines, year):
         "october_amount": 0.0,
         "april_amount": 0.0
     }
-    
+
     year_plus_1 = year + 1
     year_plus_2 = year + 2
 
@@ -196,13 +232,13 @@ def extract_climate_action_credit(climate_action_lines, year):
         if f"January {year_plus_2}" in line:
             # Extract the value for January; no end label specified
             climate_action_results["january_amount"] = extract_value_between_labels(f"January {year_plus_2}", "", line)
-        
+
         # Process the second pair: "October {year_plus_1}" and "April {year_plus_2}"
         if f"October {year_plus_1}" in line:
             climate_action_results["october_amount"] = extract_value_between_labels(f"October {year_plus_1}", f"April {year_plus_2}", line)
         if f"April {year_plus_2}" in line:
             climate_action_results["april_amount"] = extract_value_between_labels(f"April {year_plus_2}", "", line)
-    
+
     # Sum up all the monthly values to get the total Climate Action Credit
     total_credit = (climate_action_results["july_amount"] +
                     climate_action_results["january_amount"] +
@@ -277,7 +313,7 @@ def extract_ontario_trillium(ontario_trillium_lines, year):
     # Now sum the amounts to get the total carbon rebate amount
     total_rebate = sum(ontario_trillium_result[month] for month in ontario_trillium_result if month != "carbon_rebate_amount")
     ontario_trillium_result["ontario_trillium_amount"] = total_rebate
-    
+
     return ontario_trillium_result
 
 
@@ -362,7 +398,7 @@ def extract_child_benefit(child_benefit_lines, year):
         "may_amount": 0.0,
         "june_amount": 0.0
     }
-    
+
     # For overall CCB amount, keep your original extraction if it works well:
     number_pattern = r'(\d{1,3}(?:,\d{3})*\s\d{2})|(\d{2}\s\d{2})'
     for i, line in enumerate(child_benefit_lines):
@@ -373,7 +409,7 @@ def extract_child_benefit(child_benefit_lines, year):
                 child_benefit_result["ccb_amount"] = convert_to_float(
                     match.group(0).replace(',', '').replace(' ', '')
                 )
-    
+
         # Process monthly amounts by checking if the line contains a month indicator
         if i < len(child_benefit_lines) - 1:
             # Define the month mapping based on the given year
@@ -391,7 +427,7 @@ def extract_child_benefit(child_benefit_lines, year):
                 f"May {year + 2}": "may_amount",
                 f"June {year + 2}": "june_amount"
             }
-    
+
             for month, key in month_map.items():
                 if month in line:
                     # Extract all numeric tokens (digits with optional commas)
@@ -404,7 +440,7 @@ def extract_child_benefit(child_benefit_lines, year):
                         amount = float(dollars + '.' + cents)
                         child_benefit_result[key] = amount
                     break  # Exit loop once the month is processed
-    
+
     return child_benefit_result
 
 

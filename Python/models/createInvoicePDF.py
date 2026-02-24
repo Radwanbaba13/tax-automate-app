@@ -10,8 +10,8 @@ def get_resource_path(relative_path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except AttributeError:
-        # Development: use script directory
-        base_path = os.path.dirname(os.path.abspath(__file__))
+        # Development: go up from models/ to Python/ so "models/logo.jpeg" resolves correctly
+        base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     return os.path.join(base_path, relative_path)
 
 def create_confirmation_invoice(directory_path, selected_prices, invoice_details, tax_rate, includeTaxes, language):
@@ -183,10 +183,10 @@ def create_confirmation_invoice_english(directory_path, selected_prices, invoice
         # Subtotal
         page.insert_text((400, current_y + 15), "Subtotal:", fontname=text_style[0], fontsize=text_style[1])
         page.insert_text((500, current_y + 15), f"${total_amount:.2f}", fontname=text_style[0], fontsize=text_style[1])
-        page.insert_text((400, current_y + 30), f"GST ({gst_rate}%):", fontname=text_style[0], fontsize=text_style[1])
+        page.insert_text((400, current_y + 30), f"GST ({round(gst_rate, 3):g}%):", fontname=text_style[0], fontsize=text_style[1])
         page.insert_text((500, current_y + 30), f"${gst:.2f}", fontname=text_style[0], fontsize=text_style[1])
         if qst_rate > 0:
-            page.insert_text((400, current_y + 45), f"QST ({qst_rate}%):", fontname=text_style[0], fontsize=text_style[1])
+            page.insert_text((400, current_y + 45), f"QST ({round(qst_rate, 3):g}%):", fontname=text_style[0], fontsize=text_style[1])
             page.insert_text((500, current_y + 45), f"${qst:.2f}", fontname=text_style[0], fontsize=text_style[1])
         page.draw_line((375, current_y + 60), (550, current_y + 60), color=(0.7, 0.7, 0.7), width=1)
         page.insert_text((400, current_y + 75), "Total Due:", fontname=header_style[0], fontsize=header_style[1])
@@ -392,10 +392,10 @@ def create_confirmation_invoice_french(directory_path, selected_prices, invoice_
         # Subtotal
         page.insert_text((350, current_y + 15), "Sous-total:", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
         page.insert_text((500, current_y + 15), f"{adjusted_subtotal:.2f}".replace('.', ',') + " $", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
-        page.insert_text((350, current_y + 30), f"TPS ({gst_rate}%):", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
+        page.insert_text((350, current_y + 30), f"TPS ({round(gst_rate, 3):g}%):", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
         page.insert_text((500, current_y + 30), f"{gst:.2f}".replace('.', ',') + " $", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
         if qst_rate > 0:
-            page.insert_text((350, current_y + 45), f"TVQ ({qst_rate}%):", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
+            page.insert_text((350, current_y + 45), f"TVQ ({round(qst_rate, 3):g}%):", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
             page.insert_text((500, current_y + 45), f"{qst:.2f}".replace('.', ',') + " $", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
         page.draw_line((350, current_y + 60), (550, current_y + 60), color=(0.7, 0.7, 0.7), width=1)
         page.insert_text((400, current_y + 75), "Total:", fontname=header_style[0], fontsize=header_style[1], color=dark_grey)
@@ -599,10 +599,10 @@ def create_confirmation_invoice_bilingual(directory_path, selected_prices, invoi
         # Subtotal
         page.insert_text((350, current_y + 15), "Subtotal / Sous-total:", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
         page.insert_text((500, current_y + 15), f"${total_amount:.2f}", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
-        page.insert_text((350, current_y + 30), f"GST / TPS ({gst_rate}%):", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
+        page.insert_text((350, current_y + 30), f"GST / TPS ({round(gst_rate, 3):g}%):", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
         page.insert_text((500, current_y + 30), f"${gst:.2f}", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
         if qst_rate > 0:
-            page.insert_text((350, current_y + 45), f"QST / TVQ ({qst_rate}%):", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
+            page.insert_text((350, current_y + 45), f"QST / TVQ ({round(qst_rate, 3):g}%):", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
             page.insert_text((500, current_y + 45), f"${qst:.2f}", fontname=text_style[0], fontsize=text_style[1], color=dark_grey)
         page.draw_line((350, current_y + 60), (550, current_y + 60), color=(0.7, 0.7, 0.7), width=1)
         page.insert_text((400, current_y + 75), "Total Due:", fontname=header_style[0], fontsize=header_style[1], color=dark_grey)

@@ -24,6 +24,12 @@ import {
   TabPanels,
   Tab,
   TabPanel,
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogContent,
+  AlertDialogOverlay,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import {
@@ -35,6 +41,14 @@ import {
   MdAutoAwesome,
 } from 'react-icons/md';
 import Card from '../common/Card';
+import RichTextEditor from '../common/RichTextEditor';
+import HtmlContentViewer from '../common/HtmlContentViewer';
+import {
+  copyRichText,
+  wrapInEmailHtml,
+  htmlToPlainText,
+  isHtmlContent,
+} from '../../Utils/clipboardUtils';
 
 interface EmailTemplate {
   id: string;
@@ -80,6 +94,13 @@ function EmailAutomationComponent() {
     onOpen: onEditOpen,
     onClose: onEditClose,
   } = useDisclosure();
+  const {
+    isOpen: isDeleteOpen,
+    onOpen: onDeleteOpen,
+    onClose: onDeleteClose,
+  } = useDisclosure();
+  const deleteRef = React.useRef<HTMLButtonElement>(null);
+  const [templateToDelete, setTemplateToDelete] = useState<string | null>(null);
 
   const [newTemplateName, setNewTemplateName] = useState('');
   const [newTemplateSubjectEN, setNewTemplateSubjectEN] = useState('');
@@ -174,7 +195,8 @@ function EmailAutomationComponent() {
   const handleCreateTemplate = async () => {
     if (
       !newTemplateName.trim() ||
-      (!newTemplateContentEN.trim() && !newTemplateContentFR.trim())
+      (!htmlToPlainText(newTemplateContentEN).trim() &&
+        !htmlToPlainText(newTemplateContentFR).trim())
     ) {
       toast({
         title: 'Missing information',
@@ -237,7 +259,8 @@ function EmailAutomationComponent() {
     if (
       !editingTemplate ||
       !newTemplateName.trim() ||
-      (!newTemplateContentEN.trim() && !newTemplateContentFR.trim())
+      (!htmlToPlainText(newTemplateContentEN).trim() &&
+        !htmlToPlainText(newTemplateContentFR).trim())
     ) {
       return;
     }
@@ -411,17 +434,9 @@ function EmailAutomationComponent() {
   };
 
   const handleRefineWithAI = async () => {
-    if (!customerInquiry.trim()) {
-      toast({
-        title: 'Missing inquiry',
-        description: 'Please enter a customer inquiry or email.',
-        status: 'warning',
-        duration: 3000,
-      });
-      return;
-    }
+    // Customer inquiry is now optional - removed validation
 
-    if (!responseText.trim()) {
+    if (!htmlToPlainText(responseText).trim()) {
       toast({
         title: 'Missing response',
         description: 'Please enter a response to refine.',
@@ -484,8 +499,8 @@ function EmailAutomationComponent() {
           }
         }
 
-        // Add professional signature block if not already present
-        const signature = `\n\nSincerely,\n\nNawaf Sankari\n\nFiscal Specialist and Financial Security Advisor\n\nSankari Inc.\nFiscal and Financial Services\nwww.sankari.ca\ntaxdeclaration@gmail.com\n(514) 802-4776\n(514) 839-4776`;
+        // Add professional signature block if not already present (HTML format)
+        const signature = `<p>Sincerely,</p><p><strong>Nawaf Sankari</strong><br><em>Fiscal Specialist and Financial Security Advisor</em><br><strong>Sankari Inc.</strong> — Fiscal and Financial Services<br><a href="http://www.sankari.ca">www.sankari.ca</a><br>taxdeclaration@gmail.com<br>(514) 802-4776 | (514) 839-4776</p>`;
 
         // Check if signature already exists
         if (!emailContent.includes('Nawaf Sankari')) {
@@ -526,17 +541,21 @@ function EmailAutomationComponent() {
     }
   };
 
-  const handleCopyEmail = () => {
+  const handleCopyEmail = async () => {
     const currentSubject =
       inquiryLanguage === 'EN' ? generatedSubjectEN : generatedSubjectFR;
-    const fullEmail = currentSubject
-      ? `Subject: ${currentSubject}\n\n${generatedEmail}`
-      : generatedEmail;
-    navigator.clipboard.writeText(fullEmail);
+
+    // Wrap the HTML content for email clients
+    const fullHtml = wrapInEmailHtml(generatedEmail, currentSubject);
+
+    const success = await copyRichText(fullHtml);
+
     toast({
-      title: 'Copied!',
-      description: 'Email content copied to clipboard.',
-      status: 'success',
+      title: success ? 'Copied!' : 'Copy failed',
+      description: success
+        ? 'Email content copied to clipboard with formatting.'
+        : 'Failed to copy. Please try again.',
+      status: success ? 'success' : 'error',
       duration: 2000,
     });
   };
@@ -550,7 +569,10 @@ function EmailAutomationComponent() {
           <Card>
             <HStack justify="space-between" mb={4}>
               <Heading size="md" color="gray.700">
-                Customer Inquiry / Email
+                Customer Inquiry / Email{' '}
+                <Text as="span" fontSize="sm" color="gray.400" fontWeight="normal">
+                  (Optional)
+                </Text>
               </Heading>
               <HStack spacing={2}>
                 <Button
@@ -589,17 +611,35 @@ function EmailAutomationComponent() {
               <Button
                 leftIcon={<MdContentCopy />}
                 size="sm"
-                onClick={() => {
+                onClick={async () => {
                   const currentSubject =
                     inquiryLanguage === 'EN'
                       ? responseSubjectEN
                       : responseSubjectFR;
-                  const fullResponse = currentSubject
-                    ? `Subject: ${currentSubject}\n\n${responseText}`
-                    : responseText;
-                  navigator.clipboard.writeText(fullResponse);
+
+                  // If responseText contains HTML tags, copy as rich text
+                  if (isHtmlContent(responseText)) {
+                    const fullHtml = wrapInEmailHtml(
+                      responseText,
+                      currentSubject,
+                    );
+                    await copyRichText(fullHtml);
+                  } else {
+                    // Plain text - copy normally
+                    const fullResponse = currentSubject
+                      ? `Subject: ${currentSubject}\n\n${responseText}`
+                      : responseText;
+                    navigator.clipboard.writeText(fullResponse);
+                  }
+
+                  toast({
+                    title: 'Copied!',
+                    description: 'Response copied to clipboard.',
+                    status: 'success',
+                    duration: 2000,
+                  });
                 }}
-                isDisabled={!responseText.trim()}
+                isDisabled={!htmlToPlainText(responseText).trim()}
               >
                 Copy
               </Button>
@@ -629,12 +669,11 @@ function EmailAutomationComponent() {
                 <Text mb={2} fontSize="sm" fontWeight="medium" color="gray.600">
                   Content
                 </Text>
-                <Textarea
-                  placeholder="Type your response here, or click on a template to load it..."
+                <RichTextEditor
                   value={responseText}
-                  onChange={(e) => setResponseText(e.target.value)}
-                  minH="200px"
-                  resize="vertical"
+                  onChange={setResponseText}
+                  placeholder="Type your response here, or click on a template to load it..."
+                  minHeight="200px"
                 />
               </Box>
             </VStack>
@@ -723,60 +762,7 @@ function EmailAutomationComponent() {
                     fontSize="sm"
                     lineHeight="1.6"
                   >
-                    {generatedEmail.split('\n').map((line, index) => {
-                      const lineKey = `line-${index}-${line.substring(0, 10)}`;
-                      // Format signature section
-                      if (
-                        line.includes('Sincerely,') ||
-                        line.includes('Nawaf Sankari') ||
-                        line.includes('Fiscal Specialist') ||
-                        line.includes('Sankari Inc.') ||
-                        line.includes('Fiscal and Financial') ||
-                        line.includes('www.sankari.ca') ||
-                        line.includes('taxdeclaration@gmail.com') ||
-                        line.includes('(514)')
-                      ) {
-                        return (
-                          <Text
-                            key={lineKey}
-                            fontSize={
-                              line.includes('Nawaf Sankari') ? 'md' : 'sm'
-                            }
-                            fontWeight={
-                              line.includes('Nawaf Sankari') ||
-                              line.includes('Sankari Inc.')
-                                ? 'bold'
-                                : 'normal'
-                            }
-                            color={
-                              line.includes('www.sankari.ca') ||
-                              line.includes('taxdeclaration@gmail.com')
-                                ? 'blue.600'
-                                : 'gray.700'
-                            }
-                            mb={
-                              line.includes('Sincerely,') ||
-                              line.includes('Nawaf Sankari') ||
-                              line.includes('Fiscal Specialist')
-                                ? 2
-                                : 0.5
-                            }
-                            fontStyle={
-                              line.includes('Fiscal Specialist')
-                                ? 'italic'
-                                : 'normal'
-                            }
-                          >
-                            {line}
-                          </Text>
-                        );
-                      }
-                      return (
-                        <Text key={lineKey} mb={1} color="gray.700">
-                          {line || '\u00A0'}
-                        </Text>
-                      );
-                    })}
+                    <HtmlContentViewer html={generatedEmail} color="gray.700" />
                   </Box>
                 </Box>
               </VStack>
@@ -842,8 +828,8 @@ function EmailAutomationComponent() {
                   overflowY="auto"
                 >
                   {filteredTemplates.map((template) => {
-                    const hasEN = !!template.contentEN.trim();
-                    const hasFR = !!template.contentFR.trim();
+                    const hasEN = !!htmlToPlainText(template.contentEN).trim();
+                    const hasFR = !!htmlToPlainText(template.contentFR).trim();
                     return (
                       <Box
                         key={template.id}
@@ -903,18 +889,15 @@ function EmailAutomationComponent() {
                             })()}
                             <Text fontSize="sm" color="gray.600" noOfLines={2}>
                               {(() => {
-                                if (
-                                  inquiryLanguage === 'EN' &&
-                                  template.contentEN
-                                ) {
-                                  return template.contentEN.substring(0, 100);
-                                }
-                                if (template.contentFR) {
-                                  return template.contentFR.substring(0, 100);
-                                }
-                                return template.contentEN.substring(0, 100);
+                                const content =
+                                  inquiryLanguage === 'EN' && template.contentEN
+                                    ? template.contentEN
+                                    : template.contentFR || template.contentEN;
+
+                                // Strip HTML for preview
+                                const plainText = htmlToPlainText(content);
+                                return `${plainText.substring(0, 100)}...`;
                               })()}
-                              ...
                             </Text>
                           </VStack>
                           <HStack onClick={(e) => e.stopPropagation()}>
@@ -932,7 +915,10 @@ function EmailAutomationComponent() {
                               size="sm"
                               colorScheme="red"
                               variant="ghost"
-                              onClick={() => handleDeleteTemplate(template.id)}
+                              onClick={() => {
+                                setTemplateToDelete(template.id);
+                                onDeleteOpen();
+                              }}
                             />
                           </HStack>
                         </HStack>
@@ -993,14 +979,11 @@ function EmailAutomationComponent() {
                         <Text mb={2} fontWeight="medium">
                           Content (EN)
                         </Text>
-                        <Textarea
-                          placeholder="Enter your English email template content here..."
+                        <RichTextEditor
                           value={newTemplateContentEN}
-                          onChange={(e) =>
-                            setNewTemplateContentEN(e.target.value)
-                          }
-                          minH="200px"
-                          resize="vertical"
+                          onChange={setNewTemplateContentEN}
+                          placeholder="Enter your English email template content here..."
+                          minHeight="200px"
                         />
                       </Box>
                     </VStack>
@@ -1023,14 +1006,11 @@ function EmailAutomationComponent() {
                         <Text mb={2} fontWeight="medium">
                           Content (FR)
                         </Text>
-                        <Textarea
-                          placeholder="Entrez le contenu de votre modèle d'email en français ici..."
+                        <RichTextEditor
                           value={newTemplateContentFR}
-                          onChange={(e) =>
-                            setNewTemplateContentFR(e.target.value)
-                          }
-                          minH="200px"
-                          resize="vertical"
+                          onChange={setNewTemplateContentFR}
+                          placeholder="Entrez le contenu de votre modèle d'email en français ici..."
+                          minHeight="200px"
                         />
                       </Box>
                     </VStack>
@@ -1110,13 +1090,11 @@ function EmailAutomationComponent() {
                             Fix with AI
                           </Button>
                         </HStack>
-                        <Textarea
+                        <RichTextEditor
                           value={newTemplateContentEN}
-                          onChange={(e) =>
-                            setNewTemplateContentEN(e.target.value)
-                          }
-                          minH="200px"
-                          resize="vertical"
+                          onChange={setNewTemplateContentEN}
+                          placeholder="Enter your English email template content here..."
+                          minHeight="200px"
                         />
                       </Box>
                     </VStack>
@@ -1153,13 +1131,11 @@ function EmailAutomationComponent() {
                             Fix with AI
                           </Button>
                         </HStack>
-                        <Textarea
+                        <RichTextEditor
                           value={newTemplateContentFR}
-                          onChange={(e) =>
-                            setNewTemplateContentFR(e.target.value)
-                          }
-                          minH="200px"
-                          resize="vertical"
+                          onChange={setNewTemplateContentFR}
+                          placeholder="Entrez le contenu de votre modèle d'email en français ici..."
+                          minHeight="200px"
                         />
                       </Box>
                     </VStack>
@@ -1178,6 +1154,43 @@ function EmailAutomationComponent() {
           </ModalFooter>
         </ModalContent>
       </Modal>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        isOpen={isDeleteOpen}
+        leastDestructiveRef={deleteRef}
+        onClose={onDeleteClose}
+        isCentered
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Template
+            </AlertDialogHeader>
+            <AlertDialogBody>
+              Are you sure you want to delete this template? This action cannot
+              be undone.
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button ref={deleteRef} onClick={onDeleteClose}>
+                Cancel
+              </Button>
+              <Button
+                colorScheme="red"
+                ml={3}
+                onClick={() => {
+                  if (templateToDelete) {
+                    handleDeleteTemplate(templateToDelete);
+                  }
+                  onDeleteClose();
+                }}
+              >
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </VStack>
   );
 }

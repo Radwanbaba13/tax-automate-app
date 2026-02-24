@@ -12,6 +12,7 @@ interface ClientFile {
   isNewcomer: boolean;
   isPrimary: boolean;
   isMailQC: boolean;
+  isSentMailQC: boolean;
   directory: string;
 }
 
@@ -100,6 +101,7 @@ function SummaryComponent() {
               isNewcomer: false,
               isPrimary: false,
               isMailQC: false,
+              isSentMailQC: false,
               directory: filePath,
             };
           });
@@ -139,6 +141,11 @@ function SummaryComponent() {
           file.isPrimary = false;
         }
       });
+    }
+
+    // Handle Mail QC cascade - if Mail QC is disabled, also disable Sent Mail QC
+    if (updates.isMailQC === false) {
+      updatedFiles[index].isSentMailQC = false;
     }
 
     setClientFiles(updatedFiles);

@@ -38,14 +38,17 @@ function UpdateModal() {
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
   const toast = useToast();
 
+  const unsubAvailableRef = React.useRef<(() => void) | null>(null);
+
   useEffect(() => {
-    // Listen for update available
-    window.electron.onUpdateAvailable((info: UpdateInfo) => {
+    // Listen for update available — store unsub so we can stop auto-reopening after user dismisses
+    const unsub = window.electron.onUpdateAvailable((info: UpdateInfo) => {
       setUpdateInfo(info);
       setIsOpen(true);
       setIsDownloading(false);
       setUpdateDownloaded(false);
     });
+    unsubAvailableRef.current = unsub;
 
     // Listen for download progress
     window.electron.onUpdateDownloadProgress((progress: ProgressInfo) => {
@@ -103,6 +106,9 @@ function UpdateModal() {
   const handleClose = () => {
     if (!isDownloading) {
       setIsOpen(false);
+      // Stop auto-reopening on future update checks — Sidebar handles re-prompting via "Update Now"
+      unsubAvailableRef.current?.();
+      unsubAvailableRef.current = null;
     }
   };
 

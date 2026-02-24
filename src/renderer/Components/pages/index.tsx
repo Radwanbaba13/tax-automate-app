@@ -85,9 +85,9 @@ function HomePage() {
     });
   }, []);
 
-  const handleCheckForUpdates = async () => {
+  const handleCheckForUpdates = () => {
     setIsCheckModalOpen(true);
-    await window.electron.checkForUpdates();
+    // CheckUpdateModal calls checkForUpdates() itself on open
   };
 
   const navigationCards = [

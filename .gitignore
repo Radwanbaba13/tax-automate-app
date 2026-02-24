@@ -31,7 +31,7 @@ release/build/
 # Python build artifacts
 Python/dist/
 Python/build/
-Python/__pycache__/
+__pycache__/
 *.spec.backup
 *.pyc
 *.pyo
@@ -64,3 +64,4 @@ docs/
 .env.local
 .env.*.local
 .env.production
+*.pyc

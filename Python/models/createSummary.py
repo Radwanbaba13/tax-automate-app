@@ -1,10 +1,11 @@
-import fitz  
+import fitz
 import os
 from collections import defaultdict
 
 from models.extractData import (
     extract_tax_summary,
     extract_gst_credit,
+    extract_ecgeb_credit,
     extract_solidarity_credit,
     extract_child_benefit,
     extract_family_allowance,
@@ -16,6 +17,7 @@ from models.extractData import (
 from models.extractDataFR import (
     extract_tax_summaryFR,
     extract_gst_creditFR,
+    extract_ecgeb_creditFR,
     extract_solidarity_creditFR,
     extract_child_benefitFR,
     extract_family_allowanceFR,
@@ -30,6 +32,7 @@ from models.createWordDocMultiYear import createIndividualWordDocMultiYear
 # List of titles to search for in the document
 TITLES = [
     "Tax return summary",
+    "Estimated of the Canada Groceries",
     "GST/HST Tax Credit",
     "Solidarity Tax Credit",
     "calculation for the Canada Child Benefit (CCB)",
@@ -41,13 +44,14 @@ TITLES = [
 ]
 TITLES_FR = [
     "Sommaire de la déclaration",
+    "Estimation de l'allocation canadienne pour l'épicerie",
     "Estimation du crédit pour la TPS/TVH",
     "Estimation du calcul du crédit d'impôt pour solidarité",
     "l'allocation canadienne pour enfants",
     "Sommaire des montants reportés",
     "la mesure de l'Allocation famille",
     "remise canadienne sur le carbone",
-    
+    "prestation Trillium de l'Ontario",
 ]
 
 def extract_lines_from_page(page, vertical_tolerance=1.0):
@@ -105,7 +109,10 @@ def prepare_summary(summary_file_path, language):
                 next_line_text = lines[i + 1] if i + 1 < len(lines) else ""
                 combined_line = line_text + " " + next_line_text
 
-                found_title = is_title(line_text, titles_to_use) or is_title(combined_line, titles_to_use)
+                if line_text.startswith('('):
+                    found_title = None
+                else:
+                    found_title = is_title(line_text, titles_to_use) or is_title(combined_line, titles_to_use)
                 if found_title:
                     current_section = found_title
                     if current_section not in all_sections:
@@ -139,7 +146,8 @@ def process_summaries(client_files, directory_path):
         if language == 'EN':
             tax_summary = extract_tax_summary(result.get("sections", {}).get("Tax return summary", []), client_file['year'])
             province = tax_summary['province']
-            gst_amounts = extract_gst_credit(result.get("sections", {}).get("GST/HST Tax Credit", []), client_file['year']) 
+            gst_amounts = extract_gst_credit(result.get("sections", {}).get("GST/HST Tax Credit", []), client_file['year'])
+            ecgeb_amounts = extract_ecgeb_credit(result.get("sections", {}).get("Estimated of the Canada Groceries", []), client_file['year'])
             solidarity_amounts = extract_solidarity_credit(result.get("sections", {}).get("Solidarity Tax Credit", []), client_file['year'])
             ccb_amounts = extract_child_benefit(result.get("sections", {}).get("calculation for the Canada Child Benefit (CCB)", []), client_file['year'])
             family_allowance_amounts = extract_family_allowance(result.get("sections", {}).get("Family allowance measure", []), client_file['year'])
@@ -152,12 +160,13 @@ def process_summaries(client_files, directory_path):
             tax_summary = extract_tax_summaryFR(result.get("sections", {}).get("Sommaire de la déclaration", []), client_file['year'])
             province = tax_summary['province']
             gst_amounts = extract_gst_creditFR(result.get("sections", {}).get("Estimation du crédit pour la TPS/TVH", []), client_file['year'])
+            ecgeb_amounts = extract_ecgeb_creditFR(result.get("sections", {}).get("Estimation de l'allocation canadienne pour l'épicerie", []), client_file['year'])
             solidarity_amounts = extract_solidarity_creditFR(result.get("sections", {}).get("Estimation du calcul du crédit d'impôt pour solidarité", []), client_file['year'])
             ccb_amounts = extract_child_benefitFR(result.get("sections", {}).get("l'allocation canadienne pour enfants", []), client_file['year'])
             family_allowance_amounts = extract_family_allowanceFR(result.get("sections", {}).get("la mesure de l'Allocation famille", []), client_file['year'])
             carryforward_amounts = extract_carryforward_summaryFR(result.get("sections", {}).get("Sommaire des montants reportés", []), province)
             carbon_rebate_amounts = extract_carbon_rebateFR(result.get("sections", {}).get("remise canadienne sur le carbone", []), client_file['year'])
-            ontario_trillium_amounts = extract_ontario_trilliumFR(result.get("sections", {}).get("Ontario Trillium Benefit", []), client_file['year'])
+            ontario_trillium_amounts = extract_ontario_trilliumFR(result.get("sections", {}).get("prestation Trillium de l'Ontario", []), client_file['year'])
             climate_action_credit_amounts = extract_climate_action_credit(result.get("sections", {}).get("British Columbia Climate Action Tax Credit", []), client_file['year'])
 
         # Create a summary dictionary
@@ -166,6 +175,9 @@ def process_summaries(client_files, directory_path):
         }
         if gst_amounts and any(gst_amounts.values()):
             return_summary["gst_amounts"] = gst_amounts
+
+        if ecgeb_amounts and any(ecgeb_amounts.values()):
+            return_summary["ecgeb_amounts"] = ecgeb_amounts
 
         if carryforward_amounts and any(carryforward_amounts.values()):
             return_summary["carryforward_amounts"] = carryforward_amounts
@@ -181,7 +193,7 @@ def process_summaries(client_files, directory_path):
 
         if carbon_rebate_amounts and any(carbon_rebate_amounts.values()):
             return_summary["carbon_rebate_amounts"] = carbon_rebate_amounts
-        
+
         if ontario_trillium_amounts and any(ontario_trillium_amounts.values()):
             return_summary["ontario_trillium_amounts"] = ontario_trillium_amounts
 

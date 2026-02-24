@@ -66,18 +66,24 @@ function CheckUpdateModal({ isOpen, onClose }: CheckUpdateModalProps) {
 
       performCheck();
 
-      // Listen for update events
-      window.electron.onUpdateAvailable(() => {
+      // Listen for update events (unsubscribe on cleanup to prevent accumulation)
+      const unsubAvailable = window.electron.onUpdateAvailable(() => {
         setStatus('update-available');
       });
 
-      window.electron.onUpdateNotAvailable(() => {
+      const unsubNotAvailable = window.electron.onUpdateNotAvailable(() => {
         setStatus('up-to-date');
       });
 
-      window.electron.onUpdateError(() => {
+      const unsubError = window.electron.onUpdateError(() => {
         setStatus('error');
       });
+
+      return () => {
+        unsubAvailable?.();
+        unsubNotAvailable?.();
+        unsubError?.();
+      };
     }
   }, [isOpen]);
 

@@ -18,12 +18,21 @@ contextBridge.exposeInMainWorld('electron', {
   installUpdate: () => ipcRenderer.invoke('install-update'),
   onUpdateChecking: (callback) =>
     ipcRenderer.on('update-checking', () => callback()),
-  onUpdateAvailable: (callback) =>
-    ipcRenderer.on('update-available', (event, info) => callback(info)),
-  onUpdateNotAvailable: (callback) =>
-    ipcRenderer.on('update-not-available', (event, info) => callback(info)),
-  onUpdateError: (callback) =>
-    ipcRenderer.on('update-error', (event, error) => callback(error)),
+  onUpdateAvailable: (callback) => {
+    const listener = (_event, info) => callback(info);
+    ipcRenderer.on('update-available', listener);
+    return () => ipcRenderer.removeListener('update-available', listener);
+  },
+  onUpdateNotAvailable: (callback) => {
+    const listener = (_event, info) => callback(info);
+    ipcRenderer.on('update-not-available', listener);
+    return () => ipcRenderer.removeListener('update-not-available', listener);
+  },
+  onUpdateError: (callback) => {
+    const listener = (_event, error) => callback(error);
+    ipcRenderer.on('update-error', listener);
+    return () => ipcRenderer.removeListener('update-error', listener);
+  },
   onUpdateDownloadProgress: (callback) =>
     ipcRenderer.on('update-download-progress', (event, progress) =>
       callback(progress),
