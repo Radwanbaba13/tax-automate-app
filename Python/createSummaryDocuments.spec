@@ -16,10 +16,8 @@ a = Analysis(
         *collect_dynamic_libs('fitz'),
     ],
     datas=[
-        # Include image files from models directory (for consistency)
-        ('models/donate.jpeg', 'models'),
-        ('models/logoEN.jpeg', 'models'),
-        ('models/logoFR.jpeg', 'models'),
+        # Include entire models directory (source files + assets)
+        ('models', 'models'),
         # Include all PyMuPDF data files (fonts, CMaps, etc.)
         *collect_data_files('fitz'),
     ],
