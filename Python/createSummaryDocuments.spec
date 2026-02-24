@@ -25,6 +25,11 @@ a = Analysis(
         'fitz',           # Main module
         'fitz.fitz',      # C extension module
         'fitz.utils',     # Utility functions
+        'models.createSummary',
+        'models.createWordDoc',
+        'models.createWordDocMultiYear',
+        'models.extractData',
+        'models.extractDataFR',
     ],
     hookspath=[],
     hooksconfig={},
