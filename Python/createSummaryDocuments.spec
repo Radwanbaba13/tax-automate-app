@@ -4,7 +4,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath('.'))
 
-from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_dynamic_libs
 
 block_cipher = None
 
@@ -29,7 +29,15 @@ a = Analysis(
         'fitz',           # Main module
         'fitz.fitz',      # C extension module
         'fitz.utils',     # Utility functions
-        *collect_submodules('models'),
+        'models',
+        'models.createWordDoc',
+        'models.createWordDocMultiYear',
+        'models.createSummary',
+        'models.extractData',
+        'models.extractDataFR',
+        'models.createConfirmationEmail',
+        'models.createInvoicePDF',
+        'models.workspace',
     ],
     hookspath=[],
     hooksconfig={},
