@@ -13,6 +13,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 const { execSync } = require('child_process');
 
 const bumpType = process.argv[2] || 'patch'; // patch | minor | major
@@ -62,7 +63,20 @@ function bumpVersion(version, type) {
   return `${major}.${minor}.${patch}`;
 }
 
-try {
+function prompt(question) {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+async function main() {
   const rootPkg = readJson(rootPkgPath);
   const appPkg = readJson(appPkgPath);
 
@@ -90,7 +104,12 @@ try {
   const branch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
 
   const tagName = `v${newVersion}`;
-  const commitMsg = `Release ${tagName}`;
+  const defaultMsg = `Release ${tagName}`;
+
+  const userMsg = await prompt(
+    `Commit message (press Enter to use "${defaultMsg}"): `,
+  );
+  const commitMsg = userMsg || defaultMsg;
 
   console.log(`Committing changes: "${commitMsg}" on branch ${branch}`);
   execSync(`git commit -m "${commitMsg}"`, { stdio: 'inherit' });
@@ -108,7 +127,9 @@ try {
   console.log(
     '   GitHub Actions "Publish" workflow will now build and publish the release.',
   );
-} catch (err) {
+}
+
+main().catch((err) => {
   console.error('Failed to prepare release:', err.message || err);
   process.exit(1);
-}
+});
