@@ -9,27 +9,29 @@
 import mysql from 'mysql2/promise';
 import { randomUUID } from 'crypto';
 
-// Create connection pool
-const pool = mysql.createPool({
-  host: process.env.DB_HOST || 'srv557.hstgr.io',
-  user: process.env.DB_USER || 'u560342399_admin12345',
-  password: process.env.DB_PASSWORD || '12oo12RR$$',
-  database: process.env.DB_NAME || 'u560342399_SankariDB',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-});
+// Lazily created pool — initialized after dotenv has loaded env vars
+let pool: mysql.Pool | null = null;
 
-// Test database connection on startup
-pool
-  .getConnection()
-  .then((connection) => {
-    console.log('✅ Database connection established successfully');
-    connection.release();
-  })
-  .catch((err) => {
-    console.error('❌ Database connection failed:', err.message);
-  });
+function getPool(): mysql.Pool {
+  if (!pool) {
+    pool = mysql.createPool({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0,
+    });
+  }
+  return pool;
+}
+
+export async function initializePool(): Promise<void> {
+  const connection = await getPool().getConnection();
+  console.log('✅ Database connection established successfully');
+  connection.release();
+}
 
 /**
  * ===========================
@@ -41,7 +43,7 @@ pool
  * Get configuration
  */
 export async function getConfigurations() {
-  const [rows] = await pool.execute(
+  const [rows] = await getPool().execute(
     "SELECT fed_auth_section, qc_auth_section, summary_section FROM configurations WHERE id = '1' LIMIT 1",
   );
   return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
@@ -55,7 +57,7 @@ export async function updateConfigurations(config: {
   qc_auth_section: any;
   summary_section: any;
 }) {
-  await pool.execute(
+  await getPool().execute(
     `UPDATE configurations
      SET fed_auth_section = ?,
          qc_auth_section = ?,
@@ -80,7 +82,7 @@ export async function updateConfigurations(config: {
  * Get all tax rates
  */
 export async function getAllTaxRates() {
-  const [rows] = await pool.execute(
+  const [rows] = await getPool().execute(
     'SELECT province, fedRate, provRate FROM tax_rates ORDER BY province ASC',
   );
   return rows;
@@ -90,7 +92,7 @@ export async function getAllTaxRates() {
  * Get tax rate by province
  */
 export async function getTaxRateByProvince(province: string) {
-  const [rows] = await pool.execute(
+  const [rows] = await getPool().execute(
     'SELECT province, fedRate, provRate FROM tax_rates WHERE province = ? LIMIT 1',
     [province],
   );
@@ -103,7 +105,7 @@ export async function getTaxRateByProvince(province: string) {
 export async function bulkReplaceTaxRates(
   rates: Array<{ province: string; fedRate: number; provRate: number }>,
 ) {
-  const connection = await pool.getConnection();
+  const connection = await getPool().getConnection();
 
   try {
     await connection.beginTransaction();
@@ -193,14 +195,14 @@ export async function getAllPrices() {
   // Always try to order by sort_order first, then by id as fallback
   // This ensures consistent ordering
   try {
-    const [rows] = await pool.execute(
+    const [rows] = await getPool().execute(
       'SELECT id, service, amount, type, COALESCE(sort_order, 999999) as sort_order FROM price_list ORDER BY sort_order ASC, id ASC',
     );
     return rows;
   } catch (error: any) {
     // If sort_order column doesn't exist yet, order by id
     if (error.code === 'ER_BAD_FIELD_ERROR' || error.message?.includes('sort_order')) {
-      const [rows] = await pool.execute(
+      const [rows] = await getPool().execute(
         'SELECT id, service, amount, type FROM price_list ORDER BY id ASC',
       );
       return rows;
@@ -215,7 +217,7 @@ export async function getAllPrices() {
 export async function bulkReplacePrices(
   prices: Array<{ service: { en: string; fr: string }; amount: number; type: string }>,
 ) {
-  const connection = await pool.getConnection();
+  const connection = await getPool().getConnection();
 
   try {
     await connection.beginTransaction();
@@ -385,7 +387,7 @@ export async function bulkReplacePrices(
  * Get current invoice number
  */
 export async function getInvoiceNumber() {
-  const [rows] = await pool.execute(
+  const [rows] = await getPool().execute(
     'SELECT invoices FROM invoice_number LIMIT 1',
   );
   return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
@@ -395,7 +397,7 @@ export async function getInvoiceNumber() {
  * Update invoice number
  */
 export async function updateInvoiceNumber(invoiceNum: number) {
-  await pool.execute('UPDATE invoice_number SET invoices = ?', [invoiceNum]);
+  await getPool().execute('UPDATE invoice_number SET invoices = ?', [invoiceNum]);
   return { invoices: invoiceNum };
 }
 
@@ -409,7 +411,7 @@ export async function updateInvoiceNumber(invoiceNum: number) {
  * Verify admin password
  */
 export async function verifyPassword(password: string) {
-  const [rows] = await pool.execute(
+  const [rows] = await getPool().execute(
     "SELECT password FROM users WHERE username = 'admin' LIMIT 1",
   );
 
@@ -437,7 +439,7 @@ export async function updatePassword(
   newPassword: string,
 ) {
   // First verify old password
-  const [rows] = await pool.execute(
+  const [rows] = await getPool().execute(
     "SELECT password FROM users WHERE username = 'admin' LIMIT 1",
   );
 
@@ -453,7 +455,7 @@ export async function updatePassword(
   }
 
   // Update to new password
-  await pool.execute("UPDATE users SET password = ? WHERE username = 'admin'", [
+  await getPool().execute("UPDATE users SET password = ? WHERE username = 'admin'", [
     newPassword,
   ]);
 
@@ -470,7 +472,7 @@ export async function updatePassword(
  * Get all email templates
  */
 export async function getAllEmailTemplates() {
-  const [rows] = await pool.execute(
+  const [rows] = await getPool().execute(
     'SELECT id, template_name, subject_en, subject_fr, content_en, content_fr, created_at, updated_at FROM email_templates ORDER BY template_name ASC',
   );
   return rows;
@@ -480,7 +482,7 @@ export async function getAllEmailTemplates() {
  * Get email template by ID
  */
 export async function getEmailTemplateById(id: number) {
-  const [rows] = await pool.execute(
+  const [rows] = await getPool().execute(
     'SELECT id, template_name, subject_en, subject_fr, content_en, content_fr, created_at, updated_at FROM email_templates WHERE id = ? LIMIT 1',
     [id],
   );
@@ -491,7 +493,7 @@ export async function getEmailTemplateById(id: number) {
  * Get email template by name
  */
 export async function getEmailTemplateByName(templateName: string) {
-  const [rows] = await pool.execute(
+  const [rows] = await getPool().execute(
     'SELECT id, template_name, subject_en, subject_fr, content_en, content_fr, created_at, updated_at FROM email_templates WHERE template_name = ? LIMIT 1',
     [templateName],
   );
@@ -508,7 +510,7 @@ export async function createEmailTemplate(template: {
   content_en: string;
   content_fr: string;
 }) {
-  const [result] = await pool.execute(
+  const [result] = await getPool().execute(
     'INSERT INTO email_templates (template_name, subject_en, subject_fr, content_en, content_fr) VALUES (?, ?, ?, ?, ?)',
     [
       template.template_name,
@@ -536,7 +538,7 @@ export async function updateEmailTemplate(
     content_fr: string;
   },
 ) {
-  await pool.execute(
+  await getPool().execute(
     'UPDATE email_templates SET template_name = ?, subject_en = ?, subject_fr = ?, content_en = ?, content_fr = ? WHERE id = ?',
     [
       template.template_name,
@@ -554,7 +556,7 @@ export async function updateEmailTemplate(
  * Delete email template
  */
 export async function deleteEmailTemplate(id: number) {
-  await pool.execute('DELETE FROM email_templates WHERE id = ?', [id]);
+  await getPool().execute('DELETE FROM email_templates WHERE id = ?', [id]);
   return { deleted: true };
 }
 
@@ -563,6 +565,9 @@ export async function deleteEmailTemplate(id: number) {
  * Call this when app is shutting down
  */
 export async function closePool() {
-  await pool.end();
-  console.log('Database connection pool closed');
+  if (pool) {
+    await pool.end();
+    pool = null;
+    console.log('Database connection pool closed');
+  }
 }

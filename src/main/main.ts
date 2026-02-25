@@ -25,6 +25,11 @@ if (!process.env.OPENAI_API_KEY) {
   log.error('CRITICAL: OPENAI_API_KEY not found in environment');
 }
 
+// Initialize database pool now that env vars are loaded
+db.initializePool().catch((err: Error) => {
+  log.error('❌ Database connection failed:', err.message);
+});
+
 class AppUpdater {
   constructor() {
     log.transports.file.level = 'info';
