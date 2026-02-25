@@ -46,15 +46,19 @@ jobs:
         shell: bash
 
       - name: Create production .env file
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          DB_NAME: ${{ secrets.DB_NAME }}
         run: |
-          # Write secrets to .env.production (secrets must be set in repo settings)
-          echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" > .env.production
-          echo "DB_HOST=${{ secrets.DB_HOST }}" >> .env.production
-          echo "DB_USER=${{ secrets.DB_USER }}" >> .env.production
-          echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env.production
-          echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env.production
-          # Optional DB_PORT and other settings (uncomment if you add them as secrets)
-          # echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env.production
+          # Use printf with env vars (not inline secrets) to safely handle special chars like $ in passwords
+          printf 'OPENAI_API_KEY=%s\n' "$OPENAI_API_KEY" > .env.production
+          printf 'DB_HOST=%s\n' "$DB_HOST" >> .env.production
+          printf 'DB_USER=%s\n' "$DB_USER" >> .env.production
+          printf 'DB_PASSWORD=%s\n' "$DB_PASSWORD" >> .env.production
+          printf 'DB_NAME=%s\n' "$DB_NAME" >> .env.production
         shell: bash
 
       - name: Install and build Electron app
