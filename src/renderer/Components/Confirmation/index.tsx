@@ -517,7 +517,7 @@ function ConfirmationComponent() {
           height="52vh"
           title="Confirmation Details"
           subtitle={`${clients.length} client${clients.length !== 1 ? 's' : ''} added`}
-          icon={<FaUsers size={16} />}
+          icon={<FaUsers size={18} />}
           actions={
             <HStack spacing={1}>
               <FormSelect
@@ -591,7 +591,7 @@ function ConfirmationComponent() {
           flex={1}
           height="52vh"
           title="Price Details"
-          icon={<MdAttachMoney size={18} />}
+          icon={<MdAttachMoney size={20} />}
           actions={
             <FormLabel
               htmlFor="include-taxes"
@@ -632,7 +632,7 @@ function ConfirmationComponent() {
         w="100%"
         title="Invoice Details"
         subtitle="Client billing information"
-        icon={<MdReceipt size={18} />}
+        icon={<MdReceipt size={20} />}
         actions={
           <Button
             leftIcon={<MdCheckCircle />}

@@ -101,7 +101,7 @@ function ResultsPanel({
     <SectionCard
       flex="1"
       overflow="hidden"
-      icon={<MdAnalytics size={16} />}
+      icon={<MdAnalytics size={18} />}
       title="Comparison Results"
       actions={
         metrics && !isComparing ? (

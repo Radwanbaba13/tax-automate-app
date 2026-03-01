@@ -78,7 +78,7 @@ function ClientDetails({
           bg="white"
           border="1px solid #edf2f7"
           borderRadius="12px"
-          boxShadow="0 1px 3px rgba(0,0,0,0.1)"
+          boxShadow="0 1px 1px rgba(0,0,0,0.05)"
           p={4}
           mb={3}
         >
@@ -173,10 +173,11 @@ function ClientDetails({
                               aria-label="Remove Year"
                               icon={<AiOutlineClose />}
                               onClick={() => removeYear(clientIndex, yearIndex)}
-                              colorScheme="red"
                               size="md"
-                              variant="ghost"
+                              bg="red.100"
+                              color="red.600"
                               borderRadius="50px"
+                              _hover={{ bg: 'red.200' }}
                             />
                           )}
                           {/* Drag Handle */}
@@ -185,7 +186,7 @@ function ClientDetails({
                             icon={<MdDragIndicator size="20px" />}
                             colorScheme="grey"
                             variant="ghost"
-                            size="sm"
+                            size="md"
                             borderRadius="50px"
                             // eslint-disable-next-line react/jsx-props-no-spreading
                             {...draggableProvided.dragHandleProps}
@@ -229,10 +230,24 @@ function ClientDetails({
                               }
                             />
                             {selectedProvince === 'QC' && (
-                              <HStack spacing={1}>
+                              <HStack
+                                spacing={1}
+                                position="relative"
+                                alignItems="flex-end"
+                                pb={0}
+                                _after={{
+                                  content: '""',
+                                  position: 'absolute',
+                                  left: 0,
+                                  right: 0,
+                                  bottom: 0,
+                                  borderBottom: '2px solid #386498',
+                                  pointerEvents: 'none',
+                                }}
+                              >
                                 <FormInput
                                   variant="secondary"
-                                  placeholder="Quebec Confirmation Number"
+                                  placeholder="Quebec Num..."
                                   value={
                                     yearItem.confirmationNumbers.quebec || ''
                                   }
@@ -244,9 +259,16 @@ function ClientDetails({
                                       e.target.value,
                                     )
                                   }
+                                  borderBottom="0"
+                                  _focus={{
+                                    borderBottom: '0',
+                                    boxShadow: 'none',
+                                  }}
+                                  _hover={{ borderBottom: '0' }}
                                 />
                                 <IconButton
                                   aria-label="Mail QC Confirmation"
+                                  mb="5px"
                                   icon={<AiOutlineMail size="18px" />}
                                   onClick={() =>
                                     handleMailQC(clientIndex, yearIndex)
@@ -264,6 +286,7 @@ function ClientDetails({
                                 />
                                 <IconButton
                                   aria-label="Sent Mail QC Confirmation"
+                                  mb="5px"
                                   icon={<PiMailboxBold size="18px" />}
                                   onClick={() =>
                                     handleSentMailQC(clientIndex, yearIndex)
@@ -302,9 +325,10 @@ function ClientDetails({
                               aria-label="Add Year"
                               icon={<AiOutlinePlus />}
                               onClick={() => addYear(clientIndex)}
-                              colorScheme="red"
                               size="md"
                               variant="ghost"
+                              bg="blue.50"
+                              border="1px solid #386498"
                               borderRadius="50px"
                               width="40px"
                             />

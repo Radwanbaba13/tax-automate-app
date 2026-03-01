@@ -15,7 +15,7 @@ function DirectorySelector({
   return (
     <SectionCard
       width="100%"
-      icon={<FaFolderOpen size={16} />}
+      icon={<FaFolderOpen size={18} />}
       title="Save Directory"
       contentProps={{ p: 4 }}
     >

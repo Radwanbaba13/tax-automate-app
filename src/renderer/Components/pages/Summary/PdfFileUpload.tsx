@@ -18,7 +18,7 @@ function PdfFileUpload({
   return (
     <SectionCard
       width="100%"
-      icon={<FaRegFilePdf size={16} />}
+      icon={<FaRegFilePdf size={18} />}
       title="PDF Files"
       actions={
         <Button

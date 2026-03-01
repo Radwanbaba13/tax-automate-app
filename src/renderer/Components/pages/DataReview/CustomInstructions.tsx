@@ -16,7 +16,7 @@ function CustomInstructions({
 }: CustomInstructionsProps) {
   return (
     <SectionCard
-      icon={<MdTune size={16} />}
+      icon={<MdTune size={18} />}
       title="Custom Instructions"
       actions={
         <Button

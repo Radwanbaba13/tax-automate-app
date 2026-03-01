@@ -31,7 +31,7 @@ function ClientFilesList({
     <SectionCard
       flex={1}
       minH="500px"
-      icon={<MdPeopleAlt size={16} />}
+      icon={<MdPeopleAlt size={18} />}
       title="Client Files"
       subtitle={
         clientFiles.length > 0

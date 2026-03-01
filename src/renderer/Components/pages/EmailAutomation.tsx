@@ -114,7 +114,7 @@ function EmailAutomationComponent() {
   );
   const [isFixing, setIsFixing] = useState(false);
   const [fixingLanguage, setFixingLanguage] = useState<'EN' | 'FR'>('EN');
-  const [isTemplatesLoading, setIsTemplatesLoading] = useState(false);
+  const [, setIsTemplatesLoading] = useState(false);
 
   // Load templates from DB on mount (fallback to localStorage if DB fails)
   useEffect(() => {
@@ -539,7 +539,6 @@ function EmailAutomationComponent() {
       status: 'success',
       duration: 2000,
     });
-
   };
 
   return (
@@ -549,7 +548,7 @@ function EmailAutomationComponent() {
         <VStack spacing={4} flex={1} align="stretch">
           {/* Customer Inquiry Input */}
           <SectionCard
-            icon={<MdInbox size={16} />}
+            icon={<MdInbox size={18} />}
             title="Customer Inquiry / Email"
             subtitle="Optional"
             actions={
@@ -575,7 +574,7 @@ function EmailAutomationComponent() {
 
           {/* Response Input */}
           <SectionCard
-            icon={<MdReply size={16} />}
+            icon={<MdReply size={18} />}
             title="Your Response"
             actions={
               <Button
@@ -658,7 +657,7 @@ function EmailAutomationComponent() {
           {/* Generated Email Output */}
           {generatedEmail && (
             <SectionCard
-              icon={<MdAutoAwesome size={16} />}
+              icon={<MdAutoAwesome size={18} />}
               title="Generated Email"
               actions={
                 <Button
@@ -731,7 +730,7 @@ function EmailAutomationComponent() {
         {/* Right Column - Templates */}
         <VStack spacing={4} flex={1} align="stretch">
           <SectionCard
-            icon={<MdBookmarks size={16} />}
+            icon={<MdBookmarks size={18} />}
             title="Email Templates"
             subtitle={
               templates.length > 0

@@ -29,7 +29,7 @@ function FileUploadPanel({
 }: FileUploadPanelProps) {
   return (
     <SectionCard
-      icon={<MdCloudUpload size={16} />}
+      icon={<MdCloudUpload size={18} />}
       title="Upload Documents"
       contentProps={{ p: 4 }}
     >
