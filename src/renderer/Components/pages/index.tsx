@@ -6,6 +6,7 @@ import {
   Heading,
   Text,
   Icon,
+  HStack,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { MdEmail } from 'react-icons/md';
@@ -107,6 +108,14 @@ function NavigationCard({
 }
 
 function HomePage() {
+  const [version, setVersion] = React.useState('');
+
+  React.useEffect(() => {
+    window.electron.getAppVersion().then((v: string) => {
+      setVersion(v);
+    });
+  }, []);
+
   return (
     <Box w="100%" h="100vh" bg="gray.50" display="flex" flexDirection="column">
       {/* Header Bar */}
@@ -130,9 +139,16 @@ function HomePage() {
 
       {/* Subtitle Section */}
       <Box textAlign="center" py={4} bg="gray.50">
-        <Text fontSize="xl" color="gray.600">
+        <Text fontSize="xl" color="gray.600" mb={2}>
           Select a module below to get started
         </Text>
+        {version && (
+          <HStack spacing={2} justify="center">
+            <Text fontSize="md" color="gray.500">
+              Version {version}
+            </Text>
+          </HStack>
+        )}
       </Box>
 
       {/* Cards Grid */}
