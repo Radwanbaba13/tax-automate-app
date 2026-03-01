@@ -1,5 +1,6 @@
 import { MemoryRouter as Router, Routes, Route } from 'react-router-dom';
 import { ChakraProvider } from '@chakra-ui/react';
+import { ToastContainer } from './Utils/toast';
 
 import HomePage from './Components/pages';
 import SummaryComponent from './Components/pages/Summary';
@@ -35,6 +36,7 @@ export default function App() {
         </MainLayout>
       </Router>
       <UpdateModal />
+      <ToastContainer />
     </ChakraProvider>
   );
 }

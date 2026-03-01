@@ -16,10 +16,10 @@ import {
   InputGroup,
   InputRightElement,
   Heading,
-  useToast,
 } from '@chakra-ui/react';
 import { HiEye, HiEyeOff } from 'react-icons/hi';
 import { IoClose } from 'react-icons/io5';
+import { showToast } from '../../Utils/toast';
 import { api } from '../../Utils/apiClient';
 import SummaryConfig from './SummaryConfig';
 import PriceListConfig from './PriceListConfig';
@@ -50,7 +50,6 @@ function ConfigurationSidebar({
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  const toast = useToast();
 
   useEffect(() => {
     if (isSidebarOpen === false) {
@@ -103,12 +102,10 @@ function ConfigurationSidebar({
       setNewPassword('');
       setConfirmNewPassword('');
       setPasswordChangeError('');
-      toast({
+      showToast({
         title: 'Success.',
         description: 'Password changed successfully!',
         status: 'success',
-        duration: 3000,
-        isClosable: true,
       });
     }
   };

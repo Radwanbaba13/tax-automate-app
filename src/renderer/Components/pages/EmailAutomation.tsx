@@ -7,7 +7,6 @@ import {
   Text,
   Textarea,
   Button,
-  useToast,
   Input,
   IconButton,
   Modal,
@@ -40,6 +39,7 @@ import {
   MdAutoFixHigh,
   MdAutoAwesome,
 } from 'react-icons/md';
+import { showToast } from '../../Utils/toast';
 import Card from '../common/Card';
 import RichTextEditor from '../common/RichTextEditor';
 import HtmlContentViewer from '../common/HtmlContentViewer';
@@ -67,7 +67,6 @@ const sparkle = keyframes`
 `;
 
 function EmailAutomationComponent() {
-  const toast = useToast();
   const [customerInquiry, setCustomerInquiry] = useState('');
   const [inquiryLanguage, setInquiryLanguage] = useState<'EN' | 'FR'>('EN');
   const [responseSubjectEN, setResponseSubjectEN] = useState('');
@@ -153,11 +152,10 @@ function EmailAutomationComponent() {
           }
         }
       } catch (error: any) {
-        toast({
+        showToast({
           title: 'Error loading templates',
           description: error.message || 'Failed to load email templates',
           status: 'error',
-          duration: 4000,
         });
 
         // fallback to localStorage if available
@@ -198,11 +196,10 @@ function EmailAutomationComponent() {
       (!htmlToPlainText(newTemplateContentEN).trim() &&
         !htmlToPlainText(newTemplateContentFR).trim())
     ) {
-      toast({
+      showToast({
         title: 'Missing information',
         description: 'Please provide a name and at least one language content.',
         status: 'warning',
-        duration: 3000,
       });
       return;
     }
@@ -236,21 +233,19 @@ function EmailAutomationComponent() {
         setNewTemplateContentFR('');
         onCreateClose();
 
-        toast({
+        showToast({
           title: 'Template created',
           description: 'Your email template has been created successfully.',
           status: 'success',
-          duration: 3000,
         });
       } else {
         throw new Error(res?.error?.message || 'Failed to create template');
       }
     } catch (error: any) {
-      toast({
-        title: 'Error',
+      showToast({
+        title: 'Template not saved',
         description: error.message || 'Failed to create template',
         status: 'error',
-        duration: 4000,
       });
     }
   };
@@ -301,21 +296,19 @@ function EmailAutomationComponent() {
         setNewTemplateContentFR('');
         onEditClose();
 
-        toast({
+        showToast({
           title: 'Template updated',
           description: 'Your email template has been updated successfully.',
           status: 'success',
-          duration: 3000,
         });
       } else {
         throw new Error(res?.error?.message || 'Failed to update template');
       }
     } catch (error: any) {
-      toast({
-        title: 'Error',
+      showToast({
+        title: 'Update failed',
         description: error.message || 'Failed to update template',
         status: 'error',
-        duration: 4000,
       });
     }
   };
@@ -335,21 +328,19 @@ function EmailAutomationComponent() {
           setResponseText('');
         }
 
-        toast({
+        showToast({
           title: 'Template deleted',
-          description: 'The template has been deleted.',
-          status: 'info',
-          duration: 3000,
+          description: 'The template has been removed.',
+          status: 'success',
         });
       } else {
         throw new Error(res?.error?.message || 'Failed to delete template');
       }
     } catch (error: any) {
-      toast({
-        title: 'Error',
+      showToast({
+        title: 'Delete failed',
         description: error.message || 'Failed to delete template',
         status: 'error',
-        duration: 4000,
       });
     }
   };
@@ -382,11 +373,10 @@ function EmailAutomationComponent() {
         } else {
           setNewTemplateContentFR(response.result);
         }
-        toast({
+        showToast({
           title: 'Template fixed',
           description: `Your ${fixingLanguage} template has been improved with AI.`,
           status: 'success',
-          duration: 3000,
         });
       } else {
         throw new Error(response.error || 'Failed to fix template');
@@ -410,11 +400,10 @@ function EmailAutomationComponent() {
           'Rate limit exceeded. Please wait a moment and try again.';
       }
 
-      toast({
-        title: 'Error',
+      showToast({
+        title: 'AI request failed',
         description: userMessage,
         status: 'error',
-        duration: 5000,
       });
     } finally {
       setIsFixing(false);
@@ -437,11 +426,10 @@ function EmailAutomationComponent() {
     // Customer inquiry is now optional - removed validation
 
     if (!htmlToPlainText(responseText).trim()) {
-      toast({
+      showToast({
         title: 'Missing response',
         description: 'Please enter a response to refine.',
         status: 'warning',
-        duration: 3000,
       });
       return;
     }
@@ -530,11 +518,10 @@ function EmailAutomationComponent() {
           'Rate limit exceeded. Please wait a moment and try again.';
       }
 
-      toast({
-        title: 'Error',
+      showToast({
+        title: 'AI request failed',
         description: userMessage,
         status: 'error',
-        duration: 5000,
       });
     } finally {
       setIsGenerating(false);
@@ -543,12 +530,13 @@ function EmailAutomationComponent() {
 
   const handleCopyEmail = async () => {
     await copyRichText(wrapInEmailHtml(generatedEmail));
-    toast({
+    showToast({
       title: 'Copied!',
       description: 'Email content copied to clipboard.',
       status: 'success',
       duration: 2000,
     });
+
   };
 
   return (
@@ -608,12 +596,13 @@ function EmailAutomationComponent() {
                   } else {
                     await navigator.clipboard.writeText(responseText);
                   }
-                  toast({
+                  showToast({
                     title: 'Copied!',
                     description: 'Response copied to clipboard.',
                     status: 'success',
                     duration: 2000,
                   });
+
                 }}
                 isDisabled={!htmlToPlainText(responseText).trim()}
               >

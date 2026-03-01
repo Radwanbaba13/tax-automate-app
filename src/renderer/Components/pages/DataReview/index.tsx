@@ -1,5 +1,6 @@
 import React from 'react';
-import { VStack, HStack, useToast } from '@chakra-ui/react';
+import { VStack, HStack } from '@chakra-ui/react';
+import { showToast } from '../../../Utils/toast';
 import CustomInstructions from './CustomInstructions';
 import FileUploadPanel from './FileUploadPanel';
 import ResultsPanel from './ResultsPanel';
@@ -14,7 +15,6 @@ const DEFAULT_USER_PROMPT = `Compare all fields systematically:
 - Flag ANY discrepancies, no matter how small (including cents)`;
 
 function DataReviewComponent() {
-  const toast = useToast();
   const [aiPrompt, setAiPrompt] = React.useState(DEFAULT_USER_PROMPT);
   const [dtMaxFiles, setDtMaxFiles] = React.useState<File[]>([]);
   const [clientSlipsFiles, setClientSlipsFiles] = React.useState<File[]>([]);
@@ -49,11 +49,10 @@ function DataReviewComponent() {
     if (files && files.length > 0) {
       const fileArray = Array.from(files);
       setDtMaxFiles((prev) => [...prev, ...fileArray]);
-      toast({
+      showToast({
         title: 'Files uploaded',
         description: `${fileArray.length} DT Max file(s) added`,
         status: 'success',
-        duration: 3000,
       });
     }
   };
@@ -65,33 +64,30 @@ function DataReviewComponent() {
     if (files && files.length > 0) {
       const fileArray = Array.from(files);
       setClientSlipsFiles((prev) => [...prev, ...fileArray]);
-      toast({
+      showToast({
         title: 'Files uploaded',
         description: `${fileArray.length} Client Slip(s) added`,
         status: 'success',
-        duration: 3000,
       });
     }
   };
 
   const handleCompare = async () => {
     if (dtMaxFiles.length === 0 || clientSlipsFiles.length === 0) {
-      toast({
+      showToast({
         title: 'Missing files',
         description:
           'Please upload both DT Max Workspace and Client Slips files',
         status: 'warning',
-        duration: 3000,
       });
       return;
     }
 
     if (!aiPrompt.trim()) {
-      toast({
+      showToast({
         title: 'Missing prompt',
         description: 'Please enter an AI prompt for comparison',
         status: 'warning',
-        duration: 3000,
       });
       return;
     }
@@ -150,18 +146,16 @@ function DataReviewComponent() {
       });
       setDebugInfo(response.debug || null);
 
-      toast({
+      showToast({
         title: 'Comparison complete',
         description: `AI has analyzed ${dtMaxFiles.length + clientSlipsFiles.length} files`,
         status: 'success',
-        duration: 3000,
       });
     } catch (error: any) {
-      toast({
+      showToast({
         title: 'Comparison failed',
         description: error.message || 'Error comparing files',
         status: 'error',
-        duration: 5000,
       });
     } finally {
       setIsComparing(false);
@@ -177,7 +171,7 @@ function DataReviewComponent() {
     toast({
       title: 'New Review Started',
       description: 'All files and results have been cleared',
-      status: 'info',
+      status: 'success',
       duration: 2000,
     });
   };

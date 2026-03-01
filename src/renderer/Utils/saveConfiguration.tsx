@@ -1,3 +1,5 @@
+import { showToast } from './toast';
+
 export const isValidString = (item) =>
   typeof item === 'string' && item.trim() !== '';
 
@@ -38,7 +40,7 @@ export const findDuplicates = (section) => {
   return duplicates;
 };
 
-export const validateConfig = (config, toast) => {
+export const validateConfig = (config) => {
   const sections = {
     fedAuthSection: config.fedAuthSection.en,
     qcAuthSection: config.qcAuthSection.en,
@@ -46,12 +48,11 @@ export const validateConfig = (config, toast) => {
   };
 
   const reportErrorAndStop = (message) => {
-    toast({
-      title: 'Validation Error',
+    showToast({
+      title: 'Validation error',
       description: message,
       status: 'error',
       duration: 10000,
-      isClosable: true,
     });
     return false;
   };

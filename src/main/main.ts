@@ -739,6 +739,36 @@ Return only the improved HTML content, without explanations or additional text.`
   }
 });
 
+function parsePythonError(stderr: string): string {
+  if (
+    /PermissionError|WinError 32|Access is denied/i.test(stderr)
+  ) {
+    return 'A file is already open in another application. Please close it and try again.';
+  }
+  if (/FileNotFoundError/i.test(stderr)) {
+    return 'A required file could not be found. Please check your file paths.';
+  }
+  if (/JSONDecodeError|json\.decoder/i.test(stderr)) {
+    return 'There was a configuration error. Please verify your settings in Admin.';
+  }
+  if (/ModuleNotFoundError/i.test(stderr)) {
+    return 'A required component is missing. Please reinstall the application.';
+  }
+  if (/MemoryError/i.test(stderr)) {
+    return 'Not enough memory to complete the operation. Try with fewer files.';
+  }
+
+  // Extract the last meaningful error line (e.g. "ValueError: bad input")
+  const lines = stderr.trim().split('\n').filter((l) => l.trim());
+  const lastLine = lines[lines.length - 1] ?? '';
+  const match = lastLine.match(/\w+Error:\s*(.+)/);
+  if (match) {
+    return match[1].trim();
+  }
+
+  return 'An unexpected error occurred while running the script.';
+}
+
 ipcMain.on('run-python', (event, scriptName, args) => {
   // Determine Python executable path based on environment
   let pythonPath: string;
@@ -772,8 +802,13 @@ ipcMain.on('run-python', (event, scriptName, args) => {
 
   execFile(execCommand, execArgs, (error, stdout, stderr) => {
     if (error) {
-      log.error(`Error executing script: ${stderr}`);
-      event.reply('python-result', { success: false, error: stderr });
+      log.error(
+        `[Python Error] Script: ${scriptName} | ${new Date().toISOString()}\n${stderr}`,
+      );
+      event.reply('python-result', {
+        success: false,
+        error: parsePythonError(stderr),
+      });
       return;
     }
     log.info('Python script executed successfully');

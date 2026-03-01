@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { VStack, HStack, useToast } from '@chakra-ui/react';
+import { VStack, HStack } from '@chakra-ui/react';
+import { showToast } from '../../../Utils/toast';
 import { api } from '../../../Utils/apiClient';
 import DirectorySelector from './DirectorySelector';
 import PdfFileUpload from './PdfFileUpload';
@@ -27,8 +28,6 @@ function SummaryComponent() {
   const [directory, setDirectory] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [configuration, setConfiguration] = useState<SummaryConfiguration>();
-  const toast = useToast();
-
   useEffect(() => {
     const fetchConfigurations = async () => {
       try {
@@ -68,18 +67,16 @@ function SummaryComponent() {
           });
         }
       } catch {
-        toast({
+        showToast({
           title: 'Error fetching configurations',
           description: 'Could not fetch summary configurations.',
           status: 'error',
-          duration: 5000,
-          isClosable: true,
         });
       }
     };
 
     fetchConfigurations();
-  }, [toast]);
+  }, []);
 
   const openFileDialog = () => {
     window.electron
@@ -182,35 +179,29 @@ function SummaryComponent() {
 
   const runPythonScript = () => {
     if (!directory) {
-      toast({
+      showToast({
         title: 'No Directory Selected',
         description: 'Please select a directory for future saved files.',
         status: 'warning',
-        duration: 5000,
-        isClosable: true,
       });
       return;
     }
 
     if (!configuration) {
-      toast({
+      showToast({
         title: 'No Configuration Provided',
         description:
           'Please provide a valid configuration for processing the files.',
         status: 'warning',
-        duration: 5000,
-        isClosable: true,
       });
       return;
     }
 
     if (clientFiles.length === 0) {
-      toast({
+      showToast({
         title: 'No Files Selected',
         description: 'Please select at least one file to process.',
         status: 'warning',
-        duration: 5000,
-        isClosable: true,
       });
       return;
     }
@@ -229,19 +220,19 @@ function SummaryComponent() {
   };
 
   // Set up a listener to handle the result of the script
-  window.electron.onPythonResult((result) => {
-    setIsLoading(false);
+  useEffect(() => {
+    window.electron.onPythonResult((result) => {
+      setIsLoading(false);
 
-    if (!result.success) {
-      toast({
-        title: 'Error',
-        description: result.error || 'An unknown error occurred.',
-        status: 'error',
-        duration: 5000,
-        isClosable: true,
-      });
-    }
-  });
+      if (!result.success) {
+        showToast({
+          title: 'Generation failed',
+          description: result.error || 'An unknown error occurred.',
+          status: 'error',
+        });
+      }
+    });
+  }, []);
 
   return (
     <VStack spacing={6} align="stretch" w="100%">

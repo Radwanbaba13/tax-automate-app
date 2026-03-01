@@ -15,7 +15,6 @@ import {
   InputGroup,
   InputRightElement,
   Heading,
-  useToast,
   VStack,
   HStack,
   Tabs,
@@ -25,6 +24,7 @@ import {
   TabPanel,
 } from '@chakra-ui/react';
 import { HiEye, HiEyeOff } from 'react-icons/hi';
+import { showToast } from '../../Utils/toast';
 import { api } from '../../Utils/apiClient';
 import SummaryConfig from '../config/SummaryConfig';
 import PriceListConfig from '../config/PriceListConfig';
@@ -45,7 +45,6 @@ function AdminSettingsComponent() {
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
-  const toast = useToast();
 
   // Open authentication modal on mount
   useEffect(() => {
@@ -97,12 +96,10 @@ function AdminSettingsComponent() {
       setNewPassword('');
       setConfirmNewPassword('');
       setPasswordChangeError('');
-      toast({
-        title: 'Success.',
-        description: 'Password changed successfully!',
+      showToast({
+        title: 'Password changed',
+        description: 'Your password has been updated successfully.',
         status: 'success',
-        duration: 3000,
-        isClosable: true,
       });
     }
   };

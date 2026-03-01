@@ -11,8 +11,8 @@ import {
   TabPanels,
   Tabs,
   VStack,
-  useToast,
 } from '@chakra-ui/react';
+import { showToast } from '../../Utils/toast';
 import { FaPlus } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import { MdDragHandle } from 'react-icons/md';
@@ -33,7 +33,6 @@ function SummaryConfig() {
     summarySection: { en: [], fr: [] },
   });
   const [isModified, setIsModified] = useState(false);
-  const toast = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -71,18 +70,16 @@ function SummaryConfig() {
           });
         }
       } catch {
-        toast({
+        showToast({
           title: 'Error fetching data',
           description: 'Could not fetch summary configuration.',
           status: 'error',
-          duration: 5000,
-          isClosable: true,
         });
       }
     };
 
     fetchData();
-  }, [toast]);
+  }, []);
 
   const handleUpdateText = (
     lang: 'en' | 'fr',
@@ -185,7 +182,7 @@ function SummaryConfig() {
 
   const handleSave = async () => {
     // Validate the config before saving
-    const isValid = validateConfig(config, toast);
+    const isValid = validateConfig(config);
     if (!isValid) {
       return;
     }
@@ -200,20 +197,16 @@ function SummaryConfig() {
       if (error) throw error;
 
       setIsModified(false);
-      toast({
-        title: 'Success!',
-        description: 'Changes saved successfully.',
+      showToast({
+        title: 'Changes saved',
+        description: 'Configuration updated successfully.',
         status: 'success',
-        duration: 5000,
-        isClosable: true,
       });
     } catch {
-      toast({
-        title: 'Error!',
-        description: 'Failed to save changes',
+      showToast({
+        title: 'Error saving changes',
+        description: 'Failed to save configuration.',
         status: 'error',
-        duration: 5000,
-        isClosable: true,
       });
     }
   };

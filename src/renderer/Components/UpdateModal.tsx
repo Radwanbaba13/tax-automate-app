@@ -12,10 +12,10 @@ import {
   VStack,
   HStack,
   Icon,
-  useToast,
   Box,
 } from '@chakra-ui/react';
 import { FiDownload, FiAlertCircle } from 'react-icons/fi';
+import { showToast } from '../Utils/toast';
 
 interface UpdateInfo {
   version: string;
@@ -36,7 +36,6 @@ function UpdateModal() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
   const [updateDownloaded, setUpdateDownloaded] = useState(false);
-  const toast = useToast();
 
   const unsubAvailableRef = React.useRef<(() => void) | null>(null);
 
@@ -64,13 +63,12 @@ function UpdateModal() {
 
     // Listen for update errors
     window.electron.onUpdateError(() => {
-      toast({
+      showToast({
         title: 'Update Error',
         description:
           'There was an error checking for updates. Please try again later.',
         status: 'error',
         duration: 5000,
-        isClosable: true,
       });
       setIsOpen(false);
       setIsDownloading(false);
@@ -80,7 +78,7 @@ function UpdateModal() {
     window.electron.onUpdateNotAvailable(() => {
       // Silently handle - no update available
     });
-  }, [toast]);
+  }, []);
 
   const handleDownloadUpdate = async () => {
     setIsDownloading(true);
@@ -88,12 +86,11 @@ function UpdateModal() {
     try {
       await window.electron.downloadUpdate();
     } catch {
-      toast({
+      showToast({
         title: 'Download Failed',
         description: 'Failed to download the update. Please try again.',
         status: 'error',
         duration: 5000,
-        isClosable: true,
       });
       setIsDownloading(false);
     }

@@ -10,8 +10,8 @@ import {
   Select,
   Text,
   VStack,
-  useToast,
 } from '@chakra-ui/react';
+import { showToast } from '../../Utils/toast';
 import { FaFolderOpen } from 'react-icons/fa';
 import { MdAdd } from 'react-icons/md';
 import ClientDetails from './ClientDetails';
@@ -52,7 +52,6 @@ function ConfirmationComponent() {
   const [language, setLanguage] = useState('en');
   const [selectedPrices, setSelectedPrices] = useState<PriceListItem[]>([]);
   const [includeTaxes, setIncludeTaxes] = useState(true);
-  const toast = useToast();
 
   // State for invoice details
   const [invoiceDetails, setInvoiceDetails] = useState({
@@ -114,12 +113,10 @@ function ConfirmationComponent() {
 
         if (error) {
           console.error('Error fetching provinces:', error);
-          toast({
-            title: 'Error Fetching Provinces',
+          showToast({
+            title: 'Error fetching provinces',
             description: 'Could not fetch provinces. Please try again later.',
             status: 'error',
-            duration: 5000,
-            isClosable: true,
           });
           return;
         }
@@ -129,12 +126,10 @@ function ConfirmationComponent() {
         }
       } catch (err) {
         console.error('Unexpected error fetching provinces:', err);
-        toast({
-          title: 'Error Fetching Provinces',
+        showToast({
+          title: 'Error fetching provinces',
           description: 'Could not fetch provinces. Please try again later.',
           status: 'error',
-          duration: 5000,
-          isClosable: true,
         });
       }
     };
@@ -171,12 +166,10 @@ function ConfirmationComponent() {
 
         setPrices(parsedPrices);
       } catch {
-        toast({
-          title: 'Error Fetching Prices',
+        showToast({
+          title: 'Error fetching prices',
           description: 'Could not fetch prices. Please try again later.',
           status: 'error',
-          duration: 5000,
-          isClosable: true,
         });
       }
     };
@@ -191,13 +184,11 @@ function ConfirmationComponent() {
           invoiceNumber: data.invoices || 1111,
         }));
       } catch {
-        toast({
-          title: 'Error Fetching Invoice Number',
+        showToast({
+          title: 'Error fetching invoice number',
           description:
             'Could not fetch the invoice number. Please try again later.',
           status: 'error',
-          duration: 5000,
-          isClosable: true,
         });
       }
     };
@@ -210,7 +201,7 @@ function ConfirmationComponent() {
     fetchProvinces();
     fetchPrices();
     fetchInvoiceNumber();
-  }, [toast]);
+  }, []);
 
   useEffect(() => {
     const fetchTaxRates = async (province) => {
@@ -221,19 +212,17 @@ function ConfirmationComponent() {
         // Ensure taxRates is always an array
         setTaxRates(data ? [data] : []);
       } catch {
-        toast({
-          title: 'Error Fetching Tax Rates',
+        showToast({
+          title: 'Error fetching tax rates',
           description: 'Could not fetch tax rates. Please try again later.',
           status: 'error',
-          duration: 5000,
-          isClosable: true,
         });
         setTaxRates([]);
       }
     };
 
     fetchTaxRates(selectedProvince);
-  }, [selectedProvince, toast]);
+  }, [selectedProvince]);
 
   const addYear = (clientIndex) => {
     setClients((prevClients) => {
@@ -390,12 +379,10 @@ function ConfirmationComponent() {
 
   const runPythonScript = async () => {
     if (!directory) {
-      toast({
-        title: 'No Directory Selected',
+      showToast({
+        title: 'No directory selected',
         description: 'Please select a directory for future saved files.',
         status: 'warning',
-        duration: 5000,
-        isClosable: true,
       });
       return;
     }
@@ -423,12 +410,10 @@ function ConfirmationComponent() {
       invoiceNumber: prevDetails.invoiceNumber + 1,
     }));
 
-    toast({
-      title: 'Success',
-      description: 'Invoice and email created successfully!',
+    showToast({
+      title: 'Documents generated',
+      description: 'Invoice and email created successfully.',
       status: 'success',
-      duration: 5000,
-      isClosable: true,
     });
   };
 
@@ -436,19 +421,14 @@ function ConfirmationComponent() {
   React.useEffect(() => {
     window.electron.onPythonResult((result) => {
       if (!result.success) {
-        const errorMessage = result.error || 'An Error has Occurred.';
-        const formattedError = `Internal Python Error: ${errorMessage}`;
-
-        toast({
-          title: 'Error',
-          description: formattedError,
+        showToast({
+          title: 'Generation failed',
+          description: result.error || 'An error has occurred.',
           status: 'error',
-          duration: 5000,
-          isClosable: true,
         });
       }
     });
-  }, [toast]);
+  }, []);
 
   const resetAll = () => {
     const currentInvoiceNumber = invoiceDetails.invoiceNumber;

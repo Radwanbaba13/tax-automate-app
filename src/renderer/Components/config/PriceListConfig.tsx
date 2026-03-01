@@ -13,8 +13,8 @@ import {
   Tabs,
   Text,
   VStack,
-  useToast,
 } from '@chakra-ui/react';
+import { showToast } from '../../Utils/toast';
 import { FaPlus } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
 import { MdDragHandle } from 'react-icons/md';
@@ -31,7 +31,6 @@ function PriceListConfig() {
   const [priceList, setPriceList] = useState<PriceListItem[]>([]);
   const [taxRates, setTaxRates] = useState<any[]>([]);
   const [isModified, setIsModified] = useState(false);
-  const toast = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -68,18 +67,16 @@ function PriceListConfig() {
         setPriceList(parsedPriceData);
         setTaxRates(taxData || []);
       } catch {
-        toast({
+        showToast({
           title: 'Error fetching data',
           description: 'Could not fetch price list and tax rates.',
           status: 'error',
-          duration: 5000,
-          isClosable: true,
         });
       }
     };
 
     fetchData();
-  }, [toast]);
+  }, []);
 
   const handleUpdatePriceList = (index: number, field: string, value: any) => {
     const updatedPriceList = [...priceList];
@@ -154,13 +151,11 @@ function PriceListConfig() {
         }));
 
       if (validPrices.length === 0 && priceList.length > 0) {
-        toast({
-          title: 'Validation Error!',
+        showToast({
+          title: 'Validation error',
           description:
             'Please fill in all fields (English service, French service, amount, and type) for at least one item.',
           status: 'error',
-          duration: 5000,
-          isClosable: true,
         });
         return;
       }
@@ -203,12 +198,10 @@ function PriceListConfig() {
       });
 
       if (duplicateProvinces.length > 0) {
-        toast({
-          title: 'Validation Error!',
+        showToast({
+          title: 'Duplicate province codes',
           description: `Duplicate province codes found: ${duplicateProvinces.join(', ')}. Each province must be unique.`,
           status: 'error',
-          duration: 5000,
-          isClosable: true,
         });
         return;
       }
@@ -234,23 +227,19 @@ function PriceListConfig() {
 
       // If everything is successful
       setIsModified(false);
-      toast({
-        title: 'Success!',
-        description: 'Changes saved successfully.',
+      showToast({
+        title: 'Changes saved',
+        description: 'Price list and tax rates updated successfully.',
         status: 'success',
-        duration: 5000,
-        isClosable: true,
       });
     } catch (error: any) {
       console.error('Save error:', error);
-      toast({
-        title: 'Error!',
+      showToast({
+        title: 'Error saving changes',
         description: `Failed to save changes: ${
           error?.message || error?.toString() || 'Unknown error'
         }`,
         status: 'error',
-        duration: 5000,
-        isClosable: true,
       });
     }
   };
