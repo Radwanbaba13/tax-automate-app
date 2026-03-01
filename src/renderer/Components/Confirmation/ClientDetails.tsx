@@ -1,13 +1,7 @@
 import React from 'react';
-import {
-  Box,
-  FormControl,
-  HStack,
-  IconButton,
-  Input,
-  Select,
-  VStack,
-} from '@chakra-ui/react';
+import { Box, FormControl, HStack, IconButton, VStack } from '@chakra-ui/react';
+import FormInput from '../common/FormInput';
+import FormSelect from '../common/FormSelect';
 import { AiOutlineClose, AiOutlinePlus, AiOutlineMail } from 'react-icons/ai';
 import { PiMailboxBold } from 'react-icons/pi';
 import { MdDragIndicator } from 'react-icons/md';
@@ -81,16 +75,17 @@ function ClientDetails({
       {clients.map((client, clientIndex) => (
         <Box
           key={`client-${clientIndex}`}
-          bg="rgb(47,45,45,0.05)"
-          border="1px solid #cf3350"
-          borderRadius="md"
+          bg="white"
+          border="1px solid #edf2f7"
+          borderRadius="12px"
+          boxShadow="0 1px 3px rgba(0,0,0,0.1)"
           p={4}
-          mb={4}
+          mb={3}
         >
           {/* Client Title and Name */}
           <FormControl mb={4}>
             <HStack spacing={4}>
-              <Select
+              <FormSelect
                 placeholder="Select Title"
                 onChange={(e) =>
                   handleClientChange(
@@ -102,49 +97,13 @@ function ClientDetails({
                   )
                 }
                 value={client.title}
-                border="none"
-                borderRadius="0px"
-                color="#cf3350"
-                fontWeight="bold"
-                fontSize="14px"
-                borderBottom="2px solid #cf3350"
-                _focus={{
-                  borderBottom: '3px solid #cf3350',
-                  boxShadow: 'none',
-                }}
-                _hover={{
-                  borderBottom: '3px solid #cf3350',
-                }}
-                _placeholder={{
-                  color: '#cf3350',
-                  opacity: '0.6',
-                  fontSize: '12px',
-                }}
                 width="25%"
               >
                 <option value="Mr">Mr./M.</option>
                 <option value="Mrs">Mrs./Mme</option>
                 <option value="Ms">Ms./Mme</option>
-              </Select>
-              <Input
-                border="none"
-                borderRadius="0px"
-                color="#cf3350"
-                fontWeight="bold"
-                fontSize="14px"
-                borderBottom="2px solid #cf3350"
-                _focus={{
-                  borderBottom: '3px solid #cf3350',
-                  boxShadow: 'none',
-                }}
-                _hover={{
-                  borderBottom: '3px solid #cf3350',
-                }}
-                _placeholder={{
-                  color: '#cf3350',
-                  opacity: '0.6',
-                  fontSize: '12px',
-                }}
+              </FormSelect>
+              <FormInput
                 placeholder="Name"
                 value={client.name}
                 onChange={(e) =>
@@ -232,26 +191,8 @@ function ClientDetails({
                             {...draggableProvided.dragHandleProps}
                           />
                           {/* Year and Confirmation Numbers */}
-                          <Select
+                          <FormSelect
                             width="150px"
-                            border="none"
-                            borderRadius="0px"
-                            color="#cf3350"
-                            fontWeight="bold"
-                            fontSize="14px"
-                            borderBottom="2px solid #cf3350"
-                            _focus={{
-                              borderBottom: '3px solid #cf3350',
-                              boxShadow: 'none',
-                            }}
-                            _hover={{
-                              borderBottom: '3px solid #cf3350',
-                            }}
-                            _placeholder={{
-                              color: '#cf3350',
-                              opacity: '0.6',
-                              fontSize: '12px',
-                            }}
                             placeholder="Year"
                             value={yearItem.year}
                             onChange={(e) =>
@@ -272,9 +213,9 @@ function ClientDetails({
                                 {year}
                               </option>
                             ))}
-                          </Select>
+                          </FormSelect>
                           <HStack spacing={2} width="100%">
-                            <Input
+                            <FormInput
                               width="50%"
                               placeholder="Federal Confirmation Number"
                               value={yearItem.confirmationNumbers.federal || ''}
@@ -286,28 +227,11 @@ function ClientDetails({
                                   e.target.value,
                                 )
                               }
-                              border="none"
-                              borderRadius="0px"
-                              color="#cf3350"
-                              fontWeight="bold"
-                              fontSize="14px"
-                              borderBottom="2px solid #cf3350"
-                              _focus={{
-                                borderBottom: '3px solid #cf3350',
-                                boxShadow: 'none',
-                              }}
-                              _hover={{
-                                borderBottom: '3px solid #cf3350',
-                              }}
-                              _placeholder={{
-                                color: '#cf3350',
-                                opacity: '0.6',
-                                fontSize: '12px',
-                              }}
                             />
                             {selectedProvince === 'QC' && (
                               <HStack spacing={1}>
-                                <Input
+                                <FormInput
+                                  variant="secondary"
                                   placeholder="Quebec Confirmation Number"
                                   value={
                                     yearItem.confirmationNumbers.quebec || ''
@@ -320,24 +244,6 @@ function ClientDetails({
                                       e.target.value,
                                     )
                                   }
-                                  border="none"
-                                  borderRadius="0px"
-                                  color="#386498"
-                                  fontWeight="bold"
-                                  fontSize="14px"
-                                  borderBottom="2px solid #386498"
-                                  _focus={{
-                                    borderBottom: '3px solid #386498',
-                                    boxShadow: 'none',
-                                  }}
-                                  _hover={{
-                                    borderBottom: '3px solid #386498',
-                                  }}
-                                  _placeholder={{
-                                    color: '#386498',
-                                    opacity: '0.6',
-                                    fontSize: '12px',
-                                  }}
                                 />
                                 <IconButton
                                   aria-label="Mail QC Confirmation"
@@ -375,7 +281,8 @@ function ClientDetails({
                                 />
                               </HStack>
                             )}
-                            <Input
+                            <FormInput
+                              variant="neutral"
                               width="50%"
                               placeholder="T1135 Confirmation Number"
                               value={yearItem.confirmationNumbers.t1135 || ''}
@@ -387,24 +294,6 @@ function ClientDetails({
                                   e.target.value,
                                 )
                               }
-                              border="none"
-                              borderRadius="0px"
-                              color="#757575"
-                              fontWeight="bold"
-                              fontSize="14px"
-                              borderBottom="2px solid#757575"
-                              _focus={{
-                                borderBottom: '3px solid #757575',
-                                boxShadow: 'none',
-                              }}
-                              _hover={{
-                                borderBottom: '3px solid #757575',
-                              }}
-                              _placeholder={{
-                                color: '#757575',
-                                opacity: '0.6',
-                                fontSize: '12px',
-                              }}
                             />
                           </HStack>
                           {/* Add Year (only for the last year) */}

@@ -4,8 +4,6 @@ import {
   Button,
   HStack,
   IconButton,
-  Input,
-  Select,
   Tab,
   TabList,
   TabPanel,
@@ -14,6 +12,8 @@ import {
   Text,
   VStack,
 } from '@chakra-ui/react';
+import FormInput from '../common/FormInput';
+import FormSelect from '../common/FormSelect';
 import { showToast } from '../../Utils/toast';
 import { FaPlus } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
@@ -344,7 +344,7 @@ function PriceListConfig() {
                             >
                               <MdDragHandle size="25px" />
                             </Box>
-                            <Input
+                            <FormInput
                               value={item.service?.en || ''}
                               onChange={(e) =>
                                 handleUpdatePriceList(index, 'service', {
@@ -353,27 +353,10 @@ function PriceListConfig() {
                                 })
                               }
                               placeholder="Service (EN)"
-                              border="none"
-                              borderRadius="0px"
-                              color="#cf3350"
-                              fontWeight="bold"
-                              fontSize="14px"
-                              borderBottom="2px solid #cf3350"
-                              _focus={{
-                                borderBottom: '3px solid #cf3350',
-                                boxShadow: 'none',
-                              }}
-                              _hover={{
-                                borderBottom: '3px solid #cf3350',
-                              }}
-                              _placeholder={{
-                                color: '#cf3350',
-                                opacity: '0.6',
-                                fontSize: '12px',
-                              }}
                               width="33%"
                             />
-                            <Input
+                            <FormInput
+                              variant="secondary"
                               value={item.service?.fr || ''}
                               onChange={(e) =>
                                 handleUpdatePriceList(index, 'service', {
@@ -382,27 +365,9 @@ function PriceListConfig() {
                                 })
                               }
                               placeholder="Service (FR)"
-                              border="none"
-                              borderRadius="0px"
-                              color="#386498"
-                              fontWeight="bold"
-                              fontSize="14px"
-                              borderBottom="2px solid #386498"
-                              _focus={{
-                                borderBottom: '3px solid #386498',
-                                boxShadow: 'none',
-                              }}
-                              _hover={{
-                                borderBottom: '3px solid #386498',
-                              }}
-                              _placeholder={{
-                                color: '#386498',
-                                opacity: '0.6',
-                                fontSize: '12px',
-                              }}
                               width="33%"
                             />
-                            <Input
+                            <FormInput
                               type="number"
                               value={item.amount}
                               onChange={(e) =>
@@ -413,28 +378,10 @@ function PriceListConfig() {
                                 )
                               }
                               placeholder="Amount"
-                              border="none"
-                              borderRadius="0px"
-                              color="#cf3350"
-                              fontWeight="bold"
-                              fontSize="14px"
-                              borderBottom="2px solid #cf3350"
-                              _focus={{
-                                borderBottom: '3px solid #cf3350',
-                                boxShadow: 'none',
-                              }}
-                              _hover={{
-                                borderBottom: '3px solid #cf3350',
-                              }}
-                              _placeholder={{
-                                color: '#cf3350',
-                                opacity: '0.6',
-                                fontSize: '12px',
-                              }}
                               width="65px"
                               minWidth="65px"
                             />
-                            <Select
+                            <FormSelect
                               value={item.type}
                               onChange={(e) =>
                                 handleUpdatePriceList(
@@ -443,30 +390,12 @@ function PriceListConfig() {
                                   e.target.value,
                                 )
                               }
-                              border="none"
-                              borderRadius="0px"
-                              color="#cf3350"
-                              fontWeight="bold"
-                              fontSize="14px"
-                              borderBottom="2px solid #cf3350"
-                              _focus={{
-                                borderBottom: '3px solid #cf3350',
-                                boxShadow: 'none',
-                              }}
-                              _hover={{
-                                borderBottom: '3px solid #cf3350',
-                              }}
-                              _placeholder={{
-                                color: '#cf3350',
-                                opacity: '0.6',
-                                fontSize: '12px',
-                              }}
                               width="65px"
                               minWidth="65px"
                             >
                               <option value="%">%</option>
                               <option value="number">$</option>
-                            </Select>
+                            </FormSelect>
                             <IconButton
                               aria-label="Delete"
                               icon={<IoClose color="grey" size="25px" />}
@@ -539,33 +468,15 @@ function PriceListConfig() {
                   width="100%"
                   gap="1px"
                 >
-                  <Input
+                  <FormInput
                     value={rate.province}
                     onChange={(e) =>
                       handleUpdateTaxRate(index, 'province', e.target.value)
                     }
-                    placeholder="Province "
-                    border="none"
-                    borderRadius="0px"
-                    color="#cf3350"
-                    fontWeight="bold"
-                    fontSize="14px"
-                    borderBottom="2px solid #cf3350"
-                    _focus={{
-                      borderBottom: '3px solid #cf3350',
-                      boxShadow: 'none',
-                    }}
-                    _hover={{
-                      borderBottom: '3px solid #cf3350',
-                    }}
-                    _placeholder={{
-                      color: '#cf3350',
-                      opacity: '0.6',
-                      fontSize: '12px',
-                    }}
+                    placeholder="Province"
                     width="30%"
                   />
-                  <Input
+                  <FormInput
                     type="number"
                     value={rate.fedRate}
                     onChange={(e) =>
@@ -576,27 +487,10 @@ function PriceListConfig() {
                       )
                     }
                     placeholder="Federal Rate"
-                    border="none"
-                    borderRadius="0px"
-                    color="#cf3350"
-                    fontWeight="bold"
-                    fontSize="14px"
-                    borderBottom="2px solid #cf3350"
-                    _focus={{
-                      borderBottom: '3px solid #cf3350',
-                      boxShadow: 'none',
-                    }}
-                    _hover={{
-                      borderBottom: '3px solid #cf3350',
-                    }}
-                    _placeholder={{
-                      color: '#cf3350',
-                      opacity: '0.6',
-                      fontSize: '12px',
-                    }}
                     width="30%"
                   />
-                  <Input
+                  <FormInput
+                    variant="secondary"
                     type="number"
                     value={rate.provRate}
                     onChange={(e) =>
@@ -607,24 +501,6 @@ function PriceListConfig() {
                       )
                     }
                     placeholder="Provincial Rate"
-                    border="none"
-                    borderRadius="0px"
-                    color="#386498"
-                    fontWeight="bold"
-                    fontSize="14px"
-                    borderBottom="2px solid #386498"
-                    _focus={{
-                      borderBottom: '3px solid #386498',
-                      boxShadow: 'none',
-                    }}
-                    _hover={{
-                      borderBottom: '3px solid #386498',
-                    }}
-                    _placeholder={{
-                      color: '#386498',
-                      opacity: '0.6',
-                      fontSize: '12px',
-                    }}
                     width="30%"
                   />
                   <IconButton

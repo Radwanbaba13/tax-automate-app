@@ -3,13 +3,13 @@ import {
   VStack,
   HStack,
   Box,
-  Heading,
   Text,
   Spinner,
   Icon,
 } from '@chakra-ui/react';
 import { FiFileText } from 'react-icons/fi';
-import { Card } from '../../common';
+import { MdAnalytics } from 'react-icons/md';
+import SectionCard from '../../common/SectionCard';
 
 interface Metrics {
   cost: number;
@@ -98,31 +98,33 @@ function ResultsPanel({
   debugInfo,
 }: ResultsPanelProps) {
   return (
-    <Card flex="1" p={6} overflow="hidden">
-      <VStack spacing={4} align="stretch" h="100%">
-        <HStack justify="space-between" align="center">
-          <Heading size="md" color="gray.800">
-            Comparison Results
-          </Heading>
-          {metrics && !isComparing && (
-            <HStack spacing={4} fontSize="sm" color="gray.600">
-              <HStack spacing={1}>
-                <Text fontWeight="600">Cost of Comparison:</Text>
-                <Text color="green.600" fontWeight="700">
-                  ${metrics.cost.toFixed(4)}
-                </Text>
-              </HStack>
-              <HStack spacing={1}>
-                <Text fontWeight="600">Time:</Text>
-                <Text color="blue.600" fontWeight="700">
-                  {metrics.timeMinutes > 0 && `${metrics.timeMinutes}m `}
-                  {metrics.timeSeconds}s
-                </Text>
-              </HStack>
+    <SectionCard
+      flex="1"
+      overflow="hidden"
+      icon={<MdAnalytics size={16} />}
+      title="Comparison Results"
+      actions={
+        metrics && !isComparing ? (
+          <HStack spacing={4} fontSize="sm" color="gray.600">
+            <HStack spacing={1}>
+              <Text fontWeight="600">Cost:</Text>
+              <Text color="green.600" fontWeight="700">
+                ${metrics.cost.toFixed(4)}
+              </Text>
             </HStack>
-          )}
-        </HStack>
-
+            <HStack spacing={1}>
+              <Text fontWeight="600">Time:</Text>
+              <Text color="blue.600" fontWeight="700">
+                {metrics.timeMinutes > 0 && `${metrics.timeMinutes}m `}
+                {metrics.timeSeconds}s
+              </Text>
+            </HStack>
+          </HStack>
+        ) : undefined
+      }
+      contentProps={{ p: 4, display: 'flex', flexDirection: 'column' }}
+    >
+      <VStack spacing={4} align="stretch" flex="1" h="100%">
         {isComparing && (
           <VStack spacing={4} flex="1" justify="center">
             <Spinner size="xl" color="purple.500" thickness="4px" />
@@ -164,7 +166,7 @@ function ResultsPanel({
           </VStack>
         )}
       </VStack>
-    </Card>
+    </SectionCard>
   );
 }
 

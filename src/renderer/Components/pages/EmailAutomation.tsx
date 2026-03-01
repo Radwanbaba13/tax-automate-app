@@ -3,7 +3,6 @@ import {
   VStack,
   HStack,
   Box,
-  Heading,
   Text,
   Textarea,
   Button,
@@ -38,9 +37,13 @@ import {
   MdEdit,
   MdAutoFixHigh,
   MdAutoAwesome,
+  MdInbox,
+  MdReply,
+  MdBookmarks,
 } from 'react-icons/md';
 import { showToast } from '../../Utils/toast';
-import Card from '../common/Card';
+import SectionCard from '../common/SectionCard';
+import SegmentedControl from '../common/SegmentedControl';
 import RichTextEditor from '../common/RichTextEditor';
 import HtmlContentViewer from '../common/HtmlContentViewer';
 import {
@@ -545,33 +548,22 @@ function EmailAutomationComponent() {
         {/* Left Column - Email Generation */}
         <VStack spacing={4} flex={1} align="stretch">
           {/* Customer Inquiry Input */}
-          <Card>
-            <HStack justify="space-between" mb={4}>
-              <Heading size="md" color="gray.700">
-                Customer Inquiry / Email{' '}
-                <Text as="span" fontSize="sm" color="gray.400" fontWeight="normal">
-                  (Optional)
-                </Text>
-              </Heading>
-              <HStack spacing={2}>
-                <Button
-                  size="sm"
-                  colorScheme={inquiryLanguage === 'EN' ? 'red' : 'gray'}
-                  variant={inquiryLanguage === 'EN' ? 'solid' : 'outline'}
-                  onClick={() => setInquiryLanguage('EN')}
-                >
-                  EN
-                </Button>
-                <Button
-                  size="sm"
-                  colorScheme={inquiryLanguage === 'FR' ? 'blue' : 'gray'}
-                  variant={inquiryLanguage === 'FR' ? 'solid' : 'outline'}
-                  onClick={() => setInquiryLanguage('FR')}
-                >
-                  FR
-                </Button>
-              </HStack>
-            </HStack>
+          <SectionCard
+            icon={<MdInbox size={16} />}
+            title="Customer Inquiry / Email"
+            subtitle="Optional"
+            actions={
+              <SegmentedControl
+                options={[
+                  { label: 'EN', value: 'EN', colorScheme: 'red' },
+                  { label: 'FR', value: 'FR', colorScheme: 'blue' },
+                ]}
+                value={inquiryLanguage}
+                onChange={(v) => setInquiryLanguage(v as 'EN' | 'FR')}
+              />
+            }
+            contentProps={{ p: 4 }}
+          >
             <Textarea
               placeholder="Paste customer email or inquiry here..."
               value={customerInquiry}
@@ -579,14 +571,13 @@ function EmailAutomationComponent() {
               minH="150px"
               resize="vertical"
             />
-          </Card>
+          </SectionCard>
 
           {/* Response Input */}
-          <Card>
-            <HStack justify="space-between" mb={4}>
-              <Heading size="md" color="gray.700">
-                Your Response
-              </Heading>
+          <SectionCard
+            icon={<MdReply size={16} />}
+            title="Your Response"
+            actions={
               <Button
                 leftIcon={<MdContentCopy />}
                 size="sm"
@@ -602,13 +593,14 @@ function EmailAutomationComponent() {
                     status: 'success',
                     duration: 2000,
                   });
-
                 }}
                 isDisabled={!htmlToPlainText(responseText).trim()}
               >
                 Copy
               </Button>
-            </HStack>
+            }
+            contentProps={{ p: 4 }}
+          >
             <VStack spacing={3} align="stretch">
               <Box>
                 <Text mb={2} fontSize="sm" fontWeight="medium" color="gray.600">
@@ -642,7 +634,7 @@ function EmailAutomationComponent() {
                 />
               </Box>
             </VStack>
-          </Card>
+          </SectionCard>
 
           {/* Refine with AI Button */}
           <Button
@@ -665,11 +657,10 @@ function EmailAutomationComponent() {
 
           {/* Generated Email Output */}
           {generatedEmail && (
-            <Card>
-              <HStack justify="space-between" mb={4}>
-                <Heading size="md" color="gray.700">
-                  Generated Email
-                </Heading>
+            <SectionCard
+              icon={<MdAutoAwesome size={16} />}
+              title="Generated Email"
+              actions={
                 <Button
                   leftIcon={<MdContentCopy />}
                   size="sm"
@@ -677,7 +668,9 @@ function EmailAutomationComponent() {
                 >
                   Copy to Clipboard
                 </Button>
-              </HStack>
+              }
+              contentProps={{ p: 4 }}
+            >
               <VStack spacing={3} align="stretch">
                 {(() => {
                   const currentSubject =
@@ -731,17 +724,21 @@ function EmailAutomationComponent() {
                   </Box>
                 </Box>
               </VStack>
-            </Card>
+            </SectionCard>
           )}
         </VStack>
 
         {/* Right Column - Templates */}
         <VStack spacing={4} flex={1} align="stretch">
-          <Card>
-            <HStack justify="space-between" mb={4}>
-              <Heading size="md" color="gray.700">
-                Email Templates
-              </Heading>
+          <SectionCard
+            icon={<MdBookmarks size={16} />}
+            title="Email Templates"
+            subtitle={
+              templates.length > 0
+                ? `${templates.length} template${templates.length !== 1 ? 's' : ''}`
+                : undefined
+            }
+            actions={
               <Button
                 leftIcon={<MdAdd />}
                 size="sm"
@@ -750,8 +747,9 @@ function EmailAutomationComponent() {
               >
                 Create
               </Button>
-            </HStack>
-
+            }
+            contentProps={{ p: 4 }}
+          >
             <Box mb={4}>
               <Input
                 placeholder="Search templates by name or subject..."
@@ -893,7 +891,7 @@ function EmailAutomationComponent() {
                 </VStack>
               );
             })()}
-          </Card>
+          </SectionCard>
         </VStack>
       </HStack>
 

@@ -1,6 +1,8 @@
 import React from 'react';
 import { VStack, Button } from '@chakra-ui/react';
-import { Card, FileUploadDropZone } from '../../common';
+import { MdCloudUpload } from 'react-icons/md';
+import { FileUploadDropZone } from '../../common';
+import SectionCard from '../../common/SectionCard';
 
 interface FileUploadPanelProps {
   dtMaxFiles: File[];
@@ -26,7 +28,11 @@ function FileUploadPanel({
   isDisabled,
 }: FileUploadPanelProps) {
   return (
-    <Card p={4}>
+    <SectionCard
+      icon={<MdCloudUpload size={16} />}
+      title="Upload Documents"
+      contentProps={{ p: 4 }}
+    >
       <VStack spacing={4} align="stretch">
         <FileUploadDropZone
           title="DT Max Workspace"
@@ -60,7 +66,7 @@ function FileUploadPanel({
           Compare with AI
         </Button>
       </VStack>
-    </Card>
+    </SectionCard>
   );
 }
 

@@ -4,7 +4,6 @@ import {
   Button,
   HStack,
   IconButton,
-  Input,
   Tab,
   TabList,
   TabPanel,
@@ -12,6 +11,7 @@ import {
   Tabs,
   VStack,
 } from '@chakra-ui/react';
+import FormInput from '../common/FormInput';
 import { showToast } from '../../Utils/toast';
 import { FaPlus } from 'react-icons/fa';
 import { IoClose } from 'react-icons/io5';
@@ -338,7 +338,7 @@ function SummaryConfig() {
                             <Box cursor="grab" _hover={{ color: '#cf3350' }}>
                               <MdDragHandle size="25px" />
                             </Box>
-                            <Input
+                            <FormInput
                               value={config.fedAuthSection?.en?.[index] || ''}
                               onChange={(e) =>
                                 handleUpdateText(
@@ -349,27 +349,10 @@ function SummaryConfig() {
                                 )
                               }
                               placeholder={`EN FedAuth ${index + 1}`}
-                              border="none"
-                              borderRadius="0px"
-                              color="#cf3350"
-                              fontWeight="bold"
-                              fontSize="14px"
-                              borderBottom="2px solid #cf3350"
-                              _focus={{
-                                borderBottom: '3px solid #cf3350',
-                                boxShadow: 'none',
-                              }}
-                              _hover={{
-                                borderBottom: '3px solid #cf3350',
-                              }}
-                              _placeholder={{
-                                color: '#cf3350',
-                                opacity: '0.6',
-                                fontSize: '12px',
-                              }}
                               width="40%"
                             />
-                            <Input
+                            <FormInput
+                              variant="secondary"
                               value={config.fedAuthSection?.fr?.[index] || ''}
                               onChange={(e) =>
                                 handleUpdateText(
@@ -380,24 +363,6 @@ function SummaryConfig() {
                                 )
                               }
                               placeholder={`FR FedAuth ${index + 1}`}
-                              border="none"
-                              borderRadius="0px"
-                              color="#386498"
-                              fontWeight="bold"
-                              fontSize="14px"
-                              borderBottom="2px solid #386498"
-                              _focus={{
-                                borderBottom: '3px solid #386498',
-                                boxShadow: 'none',
-                              }}
-                              _hover={{
-                                borderBottom: '3px solid #386498',
-                              }}
-                              _placeholder={{
-                                color: '#386498',
-                                opacity: '0.6',
-                                fontSize: '12px',
-                              }}
                               width="40%"
                             />
                             <IconButton
@@ -456,7 +421,7 @@ function SummaryConfig() {
                             <Box cursor="grab" _hover={{ color: '#cf3350' }}>
                               <MdDragHandle size="25px" />
                             </Box>
-                            <Input
+                            <FormInput
                               value={config.qcAuthSection?.en?.[index] || ''}
                               onChange={(e) =>
                                 handleUpdateText(
@@ -467,27 +432,10 @@ function SummaryConfig() {
                                 )
                               }
                               placeholder={`EN QCAuth ${index + 1}`}
-                              border="none"
-                              borderRadius="0px"
-                              color="#cf3350"
-                              fontWeight="bold"
-                              fontSize="14px"
-                              borderBottom="2px solid #cf3350"
-                              _focus={{
-                                borderBottom: '3px solid #cf3350',
-                                boxShadow: 'none',
-                              }}
-                              _hover={{
-                                borderBottom: '3px solid #cf3350',
-                              }}
-                              _placeholder={{
-                                color: '#cf3350',
-                                opacity: '0.6',
-                                fontSize: '12px',
-                              }}
                               width="40%"
                             />
-                            <Input
+                            <FormInput
+                              variant="secondary"
                               value={config.qcAuthSection?.fr?.[index] || ''}
                               onChange={(e) =>
                                 handleUpdateText(
@@ -498,24 +446,6 @@ function SummaryConfig() {
                                 )
                               }
                               placeholder={`FR QCAuth ${index + 1}`}
-                              border="none"
-                              borderRadius="0px"
-                              color="#386498"
-                              fontWeight="bold"
-                              fontSize="14px"
-                              borderBottom="2px solid #386498"
-                              _focus={{
-                                borderBottom: '3px solid #386498',
-                                boxShadow: 'none',
-                              }}
-                              _hover={{
-                                borderBottom: '3px solid #386498',
-                              }}
-                              _placeholder={{
-                                color: '#386498',
-                                opacity: '0.6',
-                                fontSize: '12px',
-                              }}
                               width="40%"
                             />
                             <IconButton
@@ -581,7 +511,7 @@ function SummaryConfig() {
                                 >
                                   <MdDragHandle size="25px" />
                                 </Box>
-                                <Input
+                                <FormInput
                                   value={
                                     config.summarySection?.en?.[summaryIndex] ||
                                     ''
@@ -595,27 +525,10 @@ function SummaryConfig() {
                                     )
                                   }
                                   placeholder={`EN Summary ${summaryIndex + 1}`}
-                                  border="none"
-                                  borderRadius="0px"
-                                  color="#cf3350"
-                                  fontWeight="bold"
-                                  fontSize="14px"
-                                  borderBottom="2px solid #cf3350"
-                                  _focus={{
-                                    borderBottom: '3px solid #cf3350',
-                                    boxShadow: 'none',
-                                  }}
-                                  _hover={{
-                                    borderBottom: '3px solid #cf3350',
-                                  }}
-                                  _placeholder={{
-                                    color: '#cf3350',
-                                    opacity: '0.6',
-                                    fontSize: '12px',
-                                  }}
                                   width="40%"
                                 />
-                                <Input
+                                <FormInput
+                                  variant="secondary"
                                   value={
                                     config.summarySection?.fr?.[summaryIndex] ||
                                     ''
@@ -629,24 +542,6 @@ function SummaryConfig() {
                                     )
                                   }
                                   placeholder={`FR Summary ${summaryIndex + 1}`}
-                                  border="none"
-                                  borderRadius="0px"
-                                  color="#386498"
-                                  fontWeight="bold"
-                                  fontSize="14px"
-                                  borderBottom="2px solid #386498"
-                                  _focus={{
-                                    borderBottom: '3px solid #386498',
-                                    boxShadow: 'none',
-                                  }}
-                                  _hover={{
-                                    borderBottom: '3px solid #386498',
-                                  }}
-                                  _placeholder={{
-                                    color: '#386498',
-                                    opacity: '0.6',
-                                    fontSize: '12px',
-                                  }}
                                   width="40%"
                                 />
                                 <IconButton

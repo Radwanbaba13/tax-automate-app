@@ -5,11 +5,12 @@ import {
   IconButton,
   Divider,
   Text,
-  Select,
   Switch,
   FormLabel,
 } from '@chakra-ui/react';
 import { AiOutlineClose } from 'react-icons/ai';
+import OptionChips from '../../common/OptionChips';
+import FormSelect from '../../common/FormSelect';
 
 interface ClientFile {
   label: string;
@@ -55,34 +56,14 @@ function ClientFileCard({
     >
       {/* Row 1: Title selector + close button */}
       <HStack justify="space-between" align="center">
-        <HStack spacing={1}>
-          {TITLE_OPTIONS.map((title) => (
-            <Box
-              key={title.value}
-              as="button"
-              onClick={() => onUpdateFile(index, { title: title.value })}
-              px={3}
-              py={1}
-              borderRadius="full"
-              fontSize="xs"
-              fontWeight="600"
-              border="1.5px solid"
-              cursor="pointer"
-              transition="all 0.15s"
-              bg={fileItem.title === title.value ? '#cf3350' : 'transparent'}
-              color={fileItem.title === title.value ? 'white' : 'gray.500'}
-              borderColor={
-                fileItem.title === title.value ? '#cf3350' : 'gray.300'
-              }
-              _hover={{
-                borderColor: '#cf3350',
-                color: fileItem.title === title.value ? 'white' : '#cf3350',
-              }}
-            >
-              {title.display}
-            </Box>
-          ))}
-        </HStack>
+        <OptionChips
+          options={TITLE_OPTIONS.map((t) => ({
+            label: t.display,
+            value: t.value,
+          }))}
+          value={fileItem.title}
+          onChange={(v) => onUpdateFile(index, { title: v })}
+        />
 
         <IconButton
           aria-label="Remove Client"
@@ -154,27 +135,9 @@ function ClientFileCard({
       {/* Row 3: Couple-with selector (only when multiple files) */}
       {allFiles.length >= 2 && (
         <HStack spacing={4} mt={4} justify="space-between" align="center">
-          <Select
+          <FormSelect
             placeholder="Individual Summary"
             value={fileItem.coupleWith}
-            border="none"
-            borderRadius="0px"
-            color="#cf3350"
-            fontWeight="bold"
-            fontSize="14px"
-            borderBottom="2px solid #cf3350"
-            _focus={{
-              borderBottom: '3px solid #cf3350',
-              boxShadow: 'none',
-            }}
-            _hover={{
-              borderBottom: '3px solid #cf3350',
-            }}
-            _placeholder={{
-              color: '#cf3350',
-              opacity: '0.6',
-              fontSize: '12px',
-            }}
             onChange={(e) => onCoupleWithChange(index, e.target.value)}
             width="60%"
           >
@@ -185,7 +148,7 @@ function ClientFileCard({
                   {mappedFile.label}
                 </option>
               ))}
-          </Select>
+          </FormSelect>
 
           {fileItem.coupleWith !== 'Individual Summary' && (
             <FormLabel

@@ -9,10 +9,9 @@ function Card({ children, ...props }: CardProps) {
   return (
     <Box
       bg="white"
-      borderRadius="lg"
-      boxShadow="sm"
-      border="1px solid"
-      borderColor="gray.200"
+      borderRadius="12px"
+      boxShadow="0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)"
+      border="1px solid #edf2f7"
       p={6}
       {...props}
     >

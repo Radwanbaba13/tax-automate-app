@@ -1,7 +1,8 @@
 import React from 'react';
 import { VStack, Text, Button, Spinner } from '@chakra-ui/react';
 import { FaRegFilePdf } from 'react-icons/fa';
-import { Card } from '../../common';
+import { MdCheckCircle } from 'react-icons/md';
+import SectionCard from '../../common/SectionCard';
 
 interface PdfFileUploadProps {
   onFileSelect: () => void;
@@ -15,11 +16,26 @@ function PdfFileUpload({
   isLoading,
 }: PdfFileUploadProps) {
   return (
-    <Card width="100%">
+    <SectionCard
+      width="100%"
+      icon={<FaRegFilePdf size={16} />}
+      title="PDF Files"
+      actions={
+        <Button
+          leftIcon={<MdCheckCircle />}
+          colorScheme="red"
+          size="sm"
+          onClick={onGenerate}
+          isLoading={isLoading}
+          loadingText="Generating..."
+          borderRadius="8px"
+        >
+          Generate
+        </Button>
+      }
+      contentProps={{ p: 4 }}
+    >
       <VStack spacing={4}>
-        <Text fontSize="md" fontWeight="600" color="gray.700">
-          PDF File Input
-        </Text>
         <Button
           border="2px dashed"
           borderColor="brand.500"
@@ -46,15 +62,6 @@ function PdfFileUpload({
           </Text>
         </Button>
 
-        <Button
-          colorScheme="brand"
-          onClick={onGenerate}
-          width="100%"
-          size="lg"
-        >
-          Generate Documents
-        </Button>
-
         {isLoading && (
           <Spinner
             thickness="4px"
@@ -65,7 +72,7 @@ function PdfFileUpload({
           />
         )}
       </VStack>
-    </Card>
+    </SectionCard>
   );
 }
 

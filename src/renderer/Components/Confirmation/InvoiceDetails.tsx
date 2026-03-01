@@ -1,5 +1,6 @@
 import React from 'react';
-import { HStack, Input, Text, Textarea } from '@chakra-ui/react';
+import { HStack, Text, Textarea } from '@chakra-ui/react';
+import FormInput from '../common/FormInput';
 
 interface InvoiceDetailsData {
   companyName: string;
@@ -39,25 +40,7 @@ function InvoiceDetails({
         </Text>
       </HStack>
       <HStack spacing={4} mb={4}>
-        <Input
-          border="none"
-          borderRadius="0px"
-          color="#cf3350"
-          fontWeight="bold"
-          fontSize="14px"
-          borderBottom="2px solid #cf3350"
-          _focus={{
-            borderBottom: '3px solid #cf3350',
-            boxShadow: 'none',
-          }}
-          _hover={{
-            borderBottom: '3px solid #cf3350',
-          }}
-          _placeholder={{
-            color: '#cf3350',
-            opacity: '0.6',
-            fontSize: '12px',
-          }}
+        <FormInput
           placeholder="Company Name"
           value={invoiceDetails.companyName}
           onChange={(e) =>
@@ -67,50 +50,14 @@ function InvoiceDetails({
             })
           }
         />
-        <Input
-          border="none"
-          borderRadius="0px"
-          color="#cf3350"
-          fontWeight="bold"
-          fontSize="14px"
-          borderBottom="2px solid #cf3350"
-          _focus={{
-            borderBottom: '3px solid #cf3350',
-            boxShadow: 'none',
-          }}
-          _hover={{
-            borderBottom: '3px solid #cf3350',
-          }}
-          _placeholder={{
-            color: '#cf3350',
-            opacity: '0.6',
-            fontSize: '12px',
-          }}
+        <FormInput
           placeholder="Full Name"
           value={invoiceDetails.fullName}
           onChange={(e) =>
             setInvoiceDetails({ ...invoiceDetails, fullName: e.target.value })
           }
         />
-        <Input
-          border="none"
-          borderRadius="0px"
-          color="#cf3350"
-          fontWeight="bold"
-          fontSize="14px"
-          borderBottom="2px solid #cf3350"
-          _focus={{
-            borderBottom: '3px solid #cf3350',
-            boxShadow: 'none',
-          }}
-          _hover={{
-            borderBottom: '3px solid #cf3350',
-          }}
-          _placeholder={{
-            color: '#cf3350',
-            opacity: '0.6',
-            fontSize: '12px',
-          }}
+        <FormInput
           placeholder="Email"
           value={invoiceDetails.email}
           onChange={(e) =>
@@ -120,50 +67,14 @@ function InvoiceDetails({
             })
           }
         />
-        <Input
-          border="none"
-          borderRadius="0px"
-          color="#cf3350"
-          fontWeight="bold"
-          fontSize="14px"
-          borderBottom="2px solid #cf3350"
-          _focus={{
-            borderBottom: '3px solid #cf3350',
-            boxShadow: 'none',
-          }}
-          _hover={{
-            borderBottom: '3px solid #cf3350',
-          }}
-          _placeholder={{
-            color: '#cf3350',
-            opacity: '0.6',
-            fontSize: '12px',
-          }}
+        <FormInput
           placeholder="Address"
           value={invoiceDetails.address}
           onChange={(e) =>
             setInvoiceDetails({ ...invoiceDetails, address: e.target.value })
           }
         />
-        <Input
-          border="none"
-          borderRadius="0px"
-          color="#cf3350"
-          fontWeight="bold"
-          fontSize="14px"
-          borderBottom="2px solid #cf3350"
-          _focus={{
-            borderBottom: '3px solid #cf3350',
-            boxShadow: 'none',
-          }}
-          _hover={{
-            borderBottom: '3px solid #cf3350',
-          }}
-          _placeholder={{
-            color: '#cf3350',
-            opacity: '0.6',
-            fontSize: '12px',
-          }}
+        <FormInput
           placeholder="Phone Number"
           value={invoiceDetails.phoneNumber}
           onChange={(e) =>

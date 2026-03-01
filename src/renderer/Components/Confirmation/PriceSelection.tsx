@@ -3,11 +3,11 @@ import {
   Box,
   HStack,
   IconButton,
-  Input,
-  Select,
   Text,
   VStack,
 } from '@chakra-ui/react';
+import FormInput from '../common/FormInput';
+import FormSelect from '../common/FormSelect';
 import { MdClose, MdDragIndicator } from 'react-icons/md';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 
@@ -141,7 +141,8 @@ function PriceSelection({
     <DragDropContext onDragEnd={onDragEnd}>
       <Box>
         <HStack spacing={2} mb="20px">
-          <Select
+          <FormSelect
+            variant="secondary"
             placeholder="Select Service to Add"
             onChange={(e) => {
               const { value } = e.target;
@@ -157,24 +158,6 @@ function PriceSelection({
               }
             }}
             value=""
-            border="none"
-            borderRadius="0px"
-            color="#386498"
-            fontWeight="bold"
-            fontSize="14px"
-            borderBottom="2px solid #386498"
-            _focus={{
-              borderBottom: '3px solid #386498',
-              boxShadow: 'none',
-            }}
-            _hover={{
-              borderBottom: '3px solid #386498',
-            }}
-            _placeholder={{
-              color: '#386498',
-              opacity: '0.6',
-              fontSize: '12px',
-            }}
           >
             {/* eslint-disable react/no-array-index-key */}
             {prices.map((price, index) => (
@@ -196,7 +179,7 @@ function PriceSelection({
             >
               Custom Service
             </option>
-          </Select>
+          </FormSelect>
         </HStack>
 
         <Droppable
@@ -234,26 +217,8 @@ function PriceSelection({
                         icon={<MdDragIndicator color="#cf3350" size="20px" />}
                         variant="ghost"
                       />
-                      <Input
+                      <FormInput
                         placeholder="QTY"
-                        border="none"
-                        borderRadius="0px"
-                        color="#cf3350"
-                        fontWeight="bold"
-                        fontSize="14px"
-                        borderBottom="2px solid #cf3350"
-                        _focus={{
-                          borderBottom: '3px solid #cf3350',
-                          boxShadow: 'none',
-                        }}
-                        _hover={{
-                          borderBottom: '3px solid #cf3350',
-                        }}
-                        _placeholder={{
-                          color: '#cf3350',
-                          opacity: '0.6',
-                          fontSize: '12px',
-                        }}
                         type="number"
                         min="1"
                         value={price.quantity}
@@ -266,26 +231,8 @@ function PriceSelection({
                         }
                         width="65px"
                       />
-                      <Input
+                      <FormInput
                         width="60%"
-                        border="none"
-                        borderRadius="0px"
-                        color="#cf3350"
-                        fontWeight="bold"
-                        fontSize="14px"
-                        borderBottom="2px solid #cf3350"
-                        _focus={{
-                          borderBottom: '3px solid #cf3350',
-                          boxShadow: 'none',
-                        }}
-                        _hover={{
-                          borderBottom: '3px solid #cf3350',
-                        }}
-                        _placeholder={{
-                          color: '#cf3350',
-                          opacity: '0.6',
-                          fontSize: '12px',
-                        }}
                         value={
                           language === 'en'
                             ? price.service?.en || ''
@@ -298,25 +245,7 @@ function PriceSelection({
                           })
                         }
                       />
-                      <Input
-                        border="none"
-                        borderRadius="0px"
-                        color="#cf3350"
-                        fontWeight="bold"
-                        fontSize="14px"
-                        borderBottom="2px solid #cf3350"
-                        _focus={{
-                          borderBottom: '3px solid #cf3350',
-                          boxShadow: 'none',
-                        }}
-                        _hover={{
-                          borderBottom: '3px solid #cf3350',
-                        }}
-                        _placeholder={{
-                          color: '#cf3350',
-                          opacity: '0.6',
-                          fontSize: '12px',
-                        }}
+                      <FormInput
                         type="number"
                         value={price.amount}
                         onChange={(e) =>
@@ -329,25 +258,7 @@ function PriceSelection({
                         width="100px"
                       />
 
-                      <Select
-                        border="none"
-                        borderRadius="0px"
-                        color="#cf3350"
-                        fontWeight="bold"
-                        fontSize="14px"
-                        borderBottom="2px solid #cf3350"
-                        _focus={{
-                          borderBottom: '3px solid #cf3350',
-                          boxShadow: 'none',
-                        }}
-                        _hover={{
-                          borderBottom: '3px solid #cf3350',
-                        }}
-                        _placeholder={{
-                          color: '#cf3350',
-                          opacity: '0.6',
-                          fontSize: '12px',
-                        }}
+                      <FormSelect
                         value={price.type}
                         onChange={(e) =>
                           handleEditPrice(index, 'type', e.target.value)
@@ -356,7 +267,7 @@ function PriceSelection({
                       >
                         <option value="number">$</option>
                         <option value="%">%</option>
-                      </Select>
+                      </FormSelect>
 
                       <IconButton
                         onClick={() => handlePriceRemove(price)}

@@ -182,7 +182,6 @@ function DataReviewComponent() {
       align="stretch"
       w="100%"
       h="calc(100vh - 170px)"
-      bg="gray.50"
     >
       {/* Left Panel - Inputs */}
       <VStack

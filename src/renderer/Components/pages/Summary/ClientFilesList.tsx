@@ -1,6 +1,7 @@
 import React from 'react';
-import { Box, VStack, Text, Divider } from '@chakra-ui/react';
-import { Card } from '../../common';
+import { Box, VStack, Text } from '@chakra-ui/react';
+import { MdPeopleAlt } from 'react-icons/md';
+import SectionCard from '../../common/SectionCard';
 import ClientFileCard from './ClientFileCard';
 
 interface ClientFile {
@@ -27,12 +28,19 @@ function ClientFilesList({
   onCoupleWithChange,
 }: ClientFilesListProps) {
   return (
-    <Card flex={1} minH="500px">
+    <SectionCard
+      flex={1}
+      minH="500px"
+      icon={<MdPeopleAlt size={16} />}
+      title="Client Files"
+      subtitle={
+        clientFiles.length > 0
+          ? `${clientFiles.length} file${clientFiles.length !== 1 ? 's' : ''}`
+          : undefined
+      }
+      contentProps={{ p: 4 }}
+    >
       <VStack spacing={4} align="stretch">
-        <Text fontSize="md" fontWeight="600" color="gray.700">
-          Client Files
-        </Text>
-        <Divider borderColor="gray.300" />
         {clientFiles && clientFiles.length > 0 ? (
           clientFiles.map((fileItem, index) => (
             <ClientFileCard
@@ -63,7 +71,7 @@ function ClientFilesList({
           </Box>
         )}
       </VStack>
-    </Card>
+    </SectionCard>
   );
 }
 

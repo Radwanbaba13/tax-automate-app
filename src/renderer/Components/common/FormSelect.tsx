@@ -1,10 +1,10 @@
 import React from 'react';
-import { Input, InputProps } from '@chakra-ui/react';
+import { Select, SelectProps } from '@chakra-ui/react';
 
-type FormInputVariant = 'primary' | 'secondary' | 'neutral';
+type FormSelectVariant = 'primary' | 'secondary' | 'neutral';
 
-interface FormInputProps extends Omit<InputProps, 'variant'> {
-  variant?: FormInputVariant;
+interface FormSelectProps extends Omit<SelectProps, 'variant'> {
+  variant?: FormSelectVariant;
 }
 
 const variantStyles = {
@@ -58,19 +58,25 @@ const variantStyles = {
   },
 };
 
-function FormInput({ variant = 'primary', ...props }: FormInputProps) {
+function FormSelect({
+  variant = 'primary',
+  children,
+  ...props
+}: FormSelectProps) {
   const styles = variantStyles[variant];
 
   return (
-    <Input
+    <Select
       border="none"
       borderRadius="0px"
       fontWeight="bold"
       fontSize="14px"
       {...styles}
       {...props}
-    />
+    >
+      {children}
+    </Select>
   );
 }
 
-export default FormInput;
+export default FormSelect;

@@ -2,21 +2,20 @@ import React, { useState, useEffect } from 'react';
 import {
   Box,
   Button,
-  Checkbox,
-  Heading,
+  FormLabel,
   HStack,
-  IconButton,
-  Input,
-  Select,
+  Switch,
   Text,
   VStack,
 } from '@chakra-ui/react';
 import { showToast } from '../../Utils/toast';
-import { FaFolderOpen } from 'react-icons/fa';
-import { MdAdd } from 'react-icons/md';
+import { FaFolderOpen, FaUsers } from 'react-icons/fa';
+import { MdAttachMoney, MdReceipt, MdCheckCircle } from 'react-icons/md';
 import ClientDetails from './ClientDetails';
 import InvoiceDetails from './InvoiceDetails';
 import PriceSelection from './PriceSelection';
+import SectionCard from '../common/SectionCard';
+import FormSelect from '../common/FormSelect';
 import { api } from '../../Utils/apiClient';
 
 interface PriceListItem {
@@ -462,243 +461,200 @@ function ConfirmationComponent() {
   };
 
   return (
-    <VStack spacing={6} align="stretch" w="100%">
-      <HStack gap="15px" align="flex-start" w="100%">
-        <VStack flex={1} spacing={4} align="stretch" w="100%">
-          <Box
-            display="flex"
-            width="100%"
-            alignItems="center"
-            p="20px"
-            height="50px"
-          >
-            <Text fontSize="18px" fontWeight="bold" mr="10px">
-              Save Directory:
-            </Text>
-            <Box
-              display="flex"
-              alignItems="center"
-              border="2px solid #cf3350"
-              borderRadius="md"
-              cursor="pointer"
-              onClick={openDirectoryDialog}
-              flex="1"
-              _hover={{ background: '#f1f1f1' }}
-            >
-              <FaFolderOpen
-                size={24}
-                color="#cf3350"
-                style={{ marginRight: '10px', marginLeft: '10px' }}
-              />
-              <Input
-                placeholder="Select the directory you would like to save the files in"
-                value={directory?.path || ''}
-                isReadOnly
-                flex="1"
-                border="none"
-                cursor="pointer"
-              />
-            </Box>
-            <Button
-              ml="10px"
-              bg="#909090"
-              color="white"
-              _hover={{ opacity: '0.6' }}
-              onClick={resetAll}
-            >
-              Reset All
-            </Button>
-          </Box>
-          <Box
-            bg="#f1f1f1"
-            padding="20px"
-            borderRadius="10px"
-            width="100%"
-            height="50vh"
-            boxShadow="4px 8px 16px rgba(0, 0, 0, 0.1), 2px 4px 6px rgba(0, 0, 0, 0.05)"
-            border="1px solid #e0e0e0"
-          >
-            <Box
-              justifyContent="space-between"
-              display="flex"
-              alignItems="center"
-              mb={4}
-            >
-              {' '}
-              <Heading size="sm">Confirmation Details</Heading>
-              <HStack>
-                <Select
-                  width="100px"
-                  border="none"
-                  borderRadius="0px"
-                  color="#cf3350"
-                  fontWeight="bold"
-                  fontSize="14px"
-                  borderBottom="2px solid #cf3350"
-                  _focus={{
-                    borderBottom: '3px solid #cf3350',
-                    boxShadow: 'none',
-                  }}
-                  _hover={{
-                    borderBottom: '3px solid #cf3350',
-                  }}
-                  _placeholder={{
-                    color: '#cf3350',
-                    opacity: '0.6',
-                    fontSize: '12px',
-                  }}
-                  placeholder="Select Province"
-                  onChange={(e) => {
-                    const newProvince = e.target.value;
-                    setSelectedProvince(newProvince);
-
-                    clients.forEach((client, index) => {
-                      client.years.forEach((yearItem, yearIndex) => {
-                        if (client.province === 'QC') {
-                          handleConfirmationNumberChange(
-                            index,
-                            yearIndex,
-                            'quebec',
-                            '',
-                          );
-                        }
-                      });
-                    });
-                  }}
-                  value={selectedProvince}
-                >
-                  {provinces.map((prov: any) => (
-                    <option key={prov.province} value={prov.province}>
-                      {prov.province}
-                    </option>
-                  ))}
-                </Select>
-                <Select
-                  border="none"
-                  borderRadius="0px"
-                  color="#cf3350"
-                  fontWeight="bold"
-                  fontSize="14px"
-                  borderBottom="2px solid #cf3350"
-                  _focus={{
-                    borderBottom: '3px solid #cf3350',
-                    boxShadow: 'none',
-                  }}
-                  _hover={{
-                    borderBottom: '3px solid #cf3350',
-                  }}
-                  _placeholder={{
-                    color: '#cf3350',
-                    opacity: '0.6',
-                    fontSize: '12px',
-                  }}
-                  placeholder="Select Language"
-                  onChange={(e) => setLanguage(e.target.value)}
-                  value={language}
-                  width="100px"
-                >
-                  <option value="en">EN</option>
-                  <option value="fr">FR</option>
-                </Select>
-                <IconButton
-                  aria-label="Add Client"
-                  onClick={addClient}
-                  fontSize="18px"
-                  borderRadius="25px"
-                  background="transparent"
-                  _hover={{ background: '#dfdfdfff' }}
-                  icon={<MdAdd color="#cf3350" size="25px" />}
-                />
-              </HStack>
-            </Box>
-            <Box overflowY="auto" height="calc(100% - 50px)">
-              <ClientDetails
-                clients={clients}
-                /* eslint-disable-next-line react/jsx-no-bind */
-                handleClientChange={handleClientChange}
-                handleConfirmationNumberChange={handleConfirmationNumberChange}
-                addYear={addYear}
-                selectedProvince={selectedProvince}
-                removeClient={removeClient}
-                removeYear={removeYear}
-                onDragEnd={onDragEnd}
-              />
-            </Box>
-          </Box>
-        </VStack>
-        <Box
-          bg="#f1f1f1"
-          padding="20px"
-          borderRadius="10px"
-          flex={1}
-          height="calc(50vh + 60px)"
-          boxShadow="4px 8px 16px rgba(0, 0, 0, 0.1), 2px 4px 6px rgba(0, 0, 0, 0.05)"
-          border="1px solid #e0e0e0"
-        >
-          <Box
-            display="flex"
-            alignItems="center"
-            mb={4}
-            justifyContent="space-between"
-          >
-            <Heading size="sm">Price Details</Heading>{' '}
-            <Checkbox
-              isChecked={includeTaxes}
-              onChange={(e) => setIncludeTaxes(e.target.checked)}
-              color="#cf3350"
-              fontWeight="bold"
-              colorScheme="red"
-            >
-              Include Taxes
-            </Checkbox>
-          </Box>
-          <Box overflowY="auto" height="50vh">
-            <PriceSelection
-              prices={prices}
-              selectedPrices={selectedPrices}
-              setSelectedPrices={setSelectedPrices}
-              language={language}
-              taxRates={taxRates}
-              includeTaxes={includeTaxes}
-            />
-          </Box>
-        </Box>
-      </HStack>
+    <VStack spacing={4} align="stretch" w="100%">
+      {/* Save Directory Bar */}
       <Box
-        bg="#f1f1f1"
-        padding="20px"
-        borderRadius="10px"
-        w="100%"
-        mt="15px"
-        boxShadow="4px 8px 16px rgba(0, 0, 0, 0.1), 2px 4px 6px rgba(0, 0, 0, 0.05)"
-        border="1px solid #e0e0e0"
+        bg="white"
+        borderRadius="12px"
+        border="1px solid #edf2f7"
+        boxShadow="0 1px 3px rgba(0,0,0,0.04)"
+        px={4}
+        py="10px"
+        display="flex"
+        alignItems="center"
+        gap={3}
       >
-        {' '}
-        <Box justifyContent="center">
-          <Box
-            alignItems="center"
-            justifyContent="space-between"
-            display="flex"
+        <HStack
+          flex="1"
+          border="1.5px solid #e2e8f0"
+          borderRadius="8px"
+          cursor="pointer"
+          onClick={openDirectoryDialog}
+          px={3}
+          py="10px"
+          spacing={2}
+          _hover={{ borderColor: '#cf3350', bg: '#fff8f9' }}
+          transition="all 0.15s"
+        >
+          <FaFolderOpen size={15} color="#cf3350" style={{ flexShrink: 0 }} />
+          <Text
+            fontSize="13px"
+            color={directory ? 'gray.700' : 'gray.400'}
+            noOfLines={1}
+            flex="1"
           >
-            <Heading size="sm">Invoice Details</Heading>
-            <Button
-              p={4}
-              onClick={runPythonScript}
-              bg="#cf3350"
-              color="white"
-              fontSize="16px"
-              width="fit-content"
-              _hover={{ opacity: '0.5' }}
-            >
-              Confirm & Generate Documents
-            </Button>{' '}
-          </Box>
-          <InvoiceDetails
-            invoiceDetails={invoiceDetails}
-            setInvoiceDetails={setInvoiceDetails}
-          />
-        </Box>
+            {directory?.path ||
+              'Click to select a directory to save files in...'}
+          </Text>
+        </HStack>
+        <Button
+          size="md"
+          variant="outline"
+          colorScheme="gray"
+          fontWeight="600"
+          onClick={resetAll}
+          flexShrink={0}
+        >
+          Reset All
+        </Button>
       </Box>
+
+      {/* Top Row */}
+      <HStack gap={4} align="stretch" w="100%">
+        {/* Confirmation Details */}
+        <SectionCard
+          flex="0 0 58%"
+          height="52vh"
+          title="Confirmation Details"
+          subtitle={`${clients.length} client${clients.length !== 1 ? 's' : ''} added`}
+          icon={<FaUsers size={16} />}
+          actions={
+            <HStack spacing={1}>
+              <FormSelect
+                width="95px"
+                placeholder="Province"
+                onChange={(e) => {
+                  const newProvince = e.target.value;
+                  setSelectedProvince(newProvince);
+                  clients.forEach((client, index) => {
+                    client.years.forEach((_yearItem, yearIndex) => {
+                      if (client.province === 'QC') {
+                        handleConfirmationNumberChange(
+                          index,
+                          yearIndex,
+                          'quebec',
+                          '',
+                        );
+                      }
+                    });
+                  });
+                }}
+                value={selectedProvince}
+              >
+                {provinces.map((prov: any) => (
+                  <option key={prov.province} value={prov.province}>
+                    {prov.province}
+                  </option>
+                ))}
+              </FormSelect>
+              <FormSelect
+                width="80px"
+                placeholder="Lang"
+                onChange={(e) => setLanguage(e.target.value)}
+                value={language}
+              >
+                <option value="en">EN</option>
+                <option value="fr">FR</option>
+              </FormSelect>
+            </HStack>
+          }
+          contentProps={{ overflowY: 'auto', p: 4 }}
+        >
+          <ClientDetails
+            clients={clients}
+            /* eslint-disable-next-line react/jsx-no-bind */
+            handleClientChange={handleClientChange}
+            handleConfirmationNumberChange={handleConfirmationNumberChange}
+            addYear={addYear}
+            selectedProvince={selectedProvince}
+            removeClient={removeClient}
+            removeYear={removeYear}
+            onDragEnd={onDragEnd}
+          />
+          <Button
+            w="100%"
+            bg="#fcf7f7"
+            color="#cf3350"
+            fontWeight="500"
+            fontSize="14px"
+            borderRadius="8px"
+            border="1px solid #cf3350"
+            _hover={{ bg: '#fff0f3', border: '1px solid #cf3350' }}
+            onClick={addClient}
+          >
+            + Add Another Client
+          </Button>
+        </SectionCard>
+
+        {/* Price Details */}
+        <SectionCard
+          flex={1}
+          height="52vh"
+          title="Price Details"
+          icon={<MdAttachMoney size={18} />}
+          actions={
+            <FormLabel
+              htmlFor="include-taxes"
+              display="flex"
+              alignItems="center"
+              gap={2}
+              mb={0}
+              cursor="pointer"
+              fontSize="sm"
+              color="gray.600"
+              fontWeight="600"
+            >
+              <Switch
+                id="include-taxes"
+                isChecked={includeTaxes}
+                onChange={(e) => setIncludeTaxes(e.target.checked)}
+                colorScheme="red"
+                size="sm"
+              />
+              Taxes
+            </FormLabel>
+          }
+          contentProps={{ overflowY: 'auto', p: 4 }}
+        >
+          <PriceSelection
+            prices={prices}
+            selectedPrices={selectedPrices}
+            setSelectedPrices={setSelectedPrices}
+            language={language}
+            taxRates={taxRates}
+            includeTaxes={includeTaxes}
+          />
+        </SectionCard>
+      </HStack>
+
+      {/* Invoice Details */}
+      <SectionCard
+        w="100%"
+        title="Invoice Details"
+        subtitle="Client billing information"
+        icon={<MdReceipt size={18} />}
+        actions={
+          <Button
+            leftIcon={<MdCheckCircle />}
+            onClick={runPythonScript}
+            bg="#cf3350"
+            color="white"
+            fontSize="16px"
+            size="sm"
+            _hover={{ opacity: 0.8 }}
+            borderRadius="8px"
+            px={4}
+          >
+            Confirm &amp; Generate
+          </Button>
+        }
+        contentProps={{ p: 5 }}
+      >
+        <InvoiceDetails
+          invoiceDetails={invoiceDetails}
+          setInvoiceDetails={setInvoiceDetails}
+        />
+      </SectionCard>
     </VStack>
   );
 }
