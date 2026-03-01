@@ -908,6 +908,7 @@ def child_benefit(doc, return_summary, year):
             amount_ranges = []
             current_amount = None
             start_month = None
+            prev_month = None
 
             for month, amount in filtered_months.items():
                 # Automatically determine the year from month
@@ -917,16 +918,21 @@ def child_benefit(doc, return_summary, year):
                     current_amount = amount
                     start_month = month
                 elif abs(current_amount - amount) > 0.3:
-                    amount_ranges.append((start_month, month, current_amount, year))
+                    amount_ranges.append((start_month, prev_month, current_amount, year))
                     current_amount = amount
                     start_month = month
 
+                prev_month = month
+
             # Handle the last range
             if start_month:
-                amount_ranges.append((start_month, month, current_amount, year))
+                amount_ranges.append((start_month, prev_month, current_amount, year))
 
             for start, end, amount, year in amount_ranges:
-                para.add_run(f'${amount:,.2f}/month from {start} to {end}')
+                if start == end:
+                    para.add_run(f'${amount:,.2f} in {start}\n')
+                else:
+                    para.add_run(f'${amount:,.2f}/month from {start} to {end}\n')
 
 # Section: Quebec Family Allowance
 def quebec_family_allowance(doc, return_summary, year):
@@ -1761,7 +1767,10 @@ def child_benefitFR(doc, return_summary, year):
                 amount_ranges.append((start_month, prev_month, current_amount, year))
 
             for start, end, amount, year in amount_ranges:
-                para.add_run(f'{format_currency(amount)} /mois de {start} à {end}\n')
+                if start == end:
+                    para.add_run(f'{format_currency(amount)} en {start}\n')
+                else:
+                    para.add_run(f'{format_currency(amount)} /mois de {start} à {end}\n')
 
 
 def quebec_family_allowanceFR(doc, return_summary, year):

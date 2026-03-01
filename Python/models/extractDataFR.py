@@ -296,6 +296,56 @@ def extract_solidarity_creditFR(solidarity_lines, year):
 
 import re
 
+def parse_fa_trimestriel(line, month_label):
+    """
+    Extract the trimestriel (quarterly) amount from a QC Family Allowance line.
+    The line ends with: ... [count cols] [trim_$] [trim_¢] [mens_$] [mens_¢]
+    So trimestriel is at tokens[-4:-2] and mensuel at tokens[-2:].
+    For trimestriel >= 1000, tokens[-5] is a thousands lead — validated using mensuel * 3.
+    """
+    after_month = line.split(month_label)[-1].strip()
+    tokens = after_month.split()
+
+    if len(tokens) < 4:
+        return 0.0
+
+    if not (re.match(r'^\d{1,3}$', tokens[-2]) and re.match(r'^\d{2}$', tokens[-1])):
+        return 0.0
+    mensuel = float(tokens[-2] + '.' + tokens[-1])
+
+    if not (re.match(r'^\d{1,3}$', tokens[-4]) and re.match(r'^\d{2}$', tokens[-3])):
+        return 0.0
+    candidate = float(tokens[-4] + '.' + tokens[-3])
+
+    # If tokens[-4] is exactly 3 digits, tokens[-5] might be a thousands lead (e.g. "1 596 96")
+    # Use mensuel * 3 ≈ trimestriel to decide: pick whichever is closer to expected
+    if re.match(r'^\d{3}$', tokens[-4]) and len(tokens) >= 5 and re.match(r'^\d{1,3}$', tokens[-5]):
+        big_candidate = float(tokens[-5] + tokens[-4] + '.' + tokens[-3])
+        expected = mensuel * 3
+        if abs(big_candidate - expected) < abs(candidate - expected):
+            return big_candidate
+
+    return candidate
+
+
+def parse_benefit_amount(line, month_label):
+    """
+    Extract the monetary amount (Montant column) from a benefit table line.
+    The table has 3 count columns after the month label before the amount:
+    (Nb personnes à charge, Nb enfants handicapés, Nb enfants en garde partagée).
+    Skipping those 3 columns avoids absorbing a preceding count digit into the amount.
+    """
+    after_month = line.split(month_label)[-1].strip()
+    tokens = after_month.split()
+    if len(tokens) <= 3:
+        return 0.0
+    after_counts_str = ' '.join(tokens[3:])
+    match = re.search(r'(\d{1,3}(?:\s\d{3})*\s\d{2})', after_counts_str)
+    if match:
+        return convert_to_float(match.group(1).replace(' ', ''))
+    return 0.0
+
+
 def extract_child_benefitFR(child_benefit_lines, year):
     result_child_benefit = {
         "ccb_amount": 0.0,
@@ -313,9 +363,8 @@ def extract_child_benefitFR(child_benefit_lines, year):
         "june_amount": 0.0
     }
 
-    # Helper to parse French-formatted amounts like "10 455 48"
+    # Helper to parse French-formatted amounts like "10 455 48" (no preceding count columns)
     def parse_amount_from_line(line):
-        # Match groups of digits separated by spaces (at least two groups)
         match = re.search(r'((?:\d{1,3}(?:\s\d{3})*)\s\d{2})', line)
         if match:
             raw_amount = match.group(1).replace(' ', '')
@@ -323,7 +372,7 @@ def extract_child_benefitFR(child_benefit_lines, year):
                 return float(raw_amount[:-2] + '.' + raw_amount[-2:])
         return 0.0
 
-    # Extract the overall CCB amount
+    # Extract the overall CCB amount (no count columns on this line)
     for line in child_benefit_lines:
         if "Prestation totale = " in line:
             result_child_benefit["ccb_amount"] = parse_amount_from_line(line)
@@ -347,7 +396,7 @@ def extract_child_benefitFR(child_benefit_lines, year):
     for line in child_benefit_lines:
         for month, key in month_map.items():
             if month in line:
-                result_child_benefit[key] = parse_amount_from_line(line)
+                result_child_benefit[key] = parse_benefit_amount(line, month)
                 break
 
     if result_child_benefit["ccb_amount"] == 0:
@@ -367,8 +416,6 @@ def extract_family_allowanceFR(family_allowance_lines, year):
         "april_amount": 0.0
     }
 
-    number_pattern = r'(\d{1,3}(?:\s\d{3})*\s\d{2}|\d{1,3}\s\d{2})'
-
     month_map = {
         f"Juillet {year + 1}": "july_amount",
         f"Octobre {year + 1}": "october_amount",
@@ -379,18 +426,7 @@ def extract_family_allowanceFR(family_allowance_lines, year):
     for line in family_allowance_lines:
         for month, key in month_map.items():
             if month in line:
-                amounts = re.findall(number_pattern, line)
-                if amounts:
-                    if len(amounts) >= 2:
-                        result_family_allowance[key] = convert_to_float(amounts[-2].replace(' ', ''))
-                    elif len(amounts) == 1:
-                        result_family_allowance[key] = convert_to_float(amounts[0].replace(' ', ''))
-
-
-    # Apply the condition to remove the leftmost digit from July amount if needed
-    if result_family_allowance["october_amount"] > 0:
-        if result_family_allowance["july_amount"] > 2 * result_family_allowance["october_amount"]:
-            result_family_allowance["july_amount"] = float(str(result_family_allowance["july_amount"])[1:])
+                result_family_allowance[key] = parse_fa_trimestriel(line, month)
 
     result_family_allowance["fa_amount"] = (
         result_family_allowance["july_amount"] +

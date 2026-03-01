@@ -63,7 +63,13 @@ function Sidebar() {
   >('idle');
   const [isUpdateModalOpen, setIsUpdateModalOpen] = React.useState(false);
 
+  // Ref-based guard prevents duplicate concurrent calls without adding
+  // isCheckingUpdate to useCallback deps (which would re-run the useEffect)
+  const isCheckingRef = React.useRef(false);
+
   const handleCheckForUpdates = React.useCallback(async () => {
+    if (isCheckingRef.current) return;
+    isCheckingRef.current = true;
     setIsCheckingUpdate(true);
     setUpdateStatus('idle');
     try {
@@ -73,6 +79,7 @@ function Sidebar() {
       if (result && !result.available && result.message) {
         setUpdateStatus('up-to-date');
         setIsCheckingUpdate(false);
+        isCheckingRef.current = false;
         return;
       }
 
@@ -80,15 +87,18 @@ function Sidebar() {
       if (result && result.error) {
         setUpdateStatus('error');
         setIsCheckingUpdate(false);
+        isCheckingRef.current = false;
         return;
       }
 
-      // The update events will handle setting the status for production builds
-      // If no events fire within 10 seconds, assume up to date
+      // The update events will handle setting the status for production builds.
+      // If no events fire within 10 seconds, treat as error rather than silently
+      // showing "up to date" (a timeout ≠ confirmed up-to-date).
       setTimeout(() => {
         setIsCheckingUpdate((checking) => {
           if (checking) {
-            setUpdateStatus('up-to-date');
+            setUpdateStatus('error');
+            isCheckingRef.current = false;
             return false;
           }
           return checking;
@@ -97,32 +107,42 @@ function Sidebar() {
     } catch (error) {
       setUpdateStatus('error');
       setIsCheckingUpdate(false);
+      isCheckingRef.current = false;
     }
   }, []);
 
   React.useEffect(() => {
-    window.electron.getAppVersion().then((v: any) => {
+    window.electron.getAppVersion().then((v: string) => {
       setVersion(v);
     });
 
     // Listen for update events
-    window.electron.onUpdateAvailable(() => {
+    const unsubAvailable = window.electron.onUpdateAvailable(() => {
       setUpdateStatus('update-available');
       setIsCheckingUpdate(false);
+      isCheckingRef.current = false;
     });
 
-    window.electron.onUpdateNotAvailable(() => {
+    const unsubNotAvailable = window.electron.onUpdateNotAvailable(() => {
       setUpdateStatus('up-to-date');
       setIsCheckingUpdate(false);
+      isCheckingRef.current = false;
     });
 
-    window.electron.onUpdateError(() => {
+    const unsubError = window.electron.onUpdateError(() => {
       setUpdateStatus('error');
       setIsCheckingUpdate(false);
+      isCheckingRef.current = false;
     });
 
     // Automatically check for updates on load
     handleCheckForUpdates();
+
+    return () => {
+      unsubAvailable?.();
+      unsubNotAvailable?.();
+      unsubError?.();
+    };
   }, [handleCheckForUpdates]);
 
   const mainNavItems = [

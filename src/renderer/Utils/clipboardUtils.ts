@@ -33,12 +33,12 @@ export function wrapInEmailHtml(content: string, _subject?: string): string {
   // To preserve formatting (bold, italic, links) AND keep Gmail Smart Compose
   // working, the pasted HTML must look identical to what Gmail generates natively:
   //   - <div> per line (not <p>)
-  //   - no style= or class= attributes (Gmail strips them anyway and flags foreign content)
   //   - semantic tags only: <b>/<strong>, <em>/<i>, <a href>, <br>
+  // Wrap in a div with Arial 10pt as default font so email clients render it correctly
   const processed = content
     .replace(/<p\b([^>]*)>/gi, '<div$1>')
     .replace(/<\/p>/gi, '</div>');
-  return processed;
+  return `<div style="font-family: Arial, sans-serif; font-size: 10pt;">${processed}</div>`;
 }
 
 /**

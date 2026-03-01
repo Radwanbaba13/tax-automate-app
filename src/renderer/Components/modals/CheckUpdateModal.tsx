@@ -29,63 +29,62 @@ type CheckStatus =
 function CheckUpdateModal({ isOpen, onClose }: CheckUpdateModalProps) {
   const [status, setStatus] = React.useState<CheckStatus>('checking');
 
-  React.useEffect(() => {
-    if (isOpen) {
-      setStatus('checking');
+  const performCheck = React.useCallback(async () => {
+    setStatus('checking');
+    try {
+      const result = await window.electron.checkForUpdates();
 
-      // Perform the check
-      const performCheck = async () => {
-        try {
-          const result = await window.electron.checkForUpdates();
+      // Handle development mode response
+      if (result && !result.available && result.message) {
+        setStatus('dev-mode');
+        return;
+      }
 
-          // Handle development mode response
-          if (result && !result.available && result.message) {
-            setStatus('dev-mode');
-            return;
-          }
-
-          // If there's an error in the result
-          if (result && result.error) {
-            setStatus('error');
-            return;
-          }
-
-          // Set timeout in case events don't fire
-          setTimeout(() => {
-            setStatus((currentStatus) => {
-              if (currentStatus === 'checking') {
-                return 'up-to-date';
-              }
-              return currentStatus;
-            });
-          }, 5000);
-        } catch (error) {
-          setStatus('error');
-        }
-      };
-
-      performCheck();
-
-      // Listen for update events (unsubscribe on cleanup to prevent accumulation)
-      const unsubAvailable = window.electron.onUpdateAvailable(() => {
-        setStatus('update-available');
-      });
-
-      const unsubNotAvailable = window.electron.onUpdateNotAvailable(() => {
-        setStatus('up-to-date');
-      });
-
-      const unsubError = window.electron.onUpdateError(() => {
+      // If there's an error in the result
+      if (result && result.error) {
         setStatus('error');
-      });
+        return;
+      }
 
-      return () => {
-        unsubAvailable?.();
-        unsubNotAvailable?.();
-        unsubError?.();
-      };
+      // The update events will handle setting the status for production builds.
+      // If no events fire within 5 seconds, treat as error rather than silently
+      // showing "up to date" (a timeout ≠ confirmed up-to-date).
+      setTimeout(() => {
+        setStatus((currentStatus) => {
+          if (currentStatus === 'checking') {
+            return 'error';
+          }
+          return currentStatus;
+        });
+      }, 5000);
+    } catch {
+      setStatus('error');
     }
-  }, [isOpen]);
+  }, []);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    performCheck();
+
+    const unsubAvailable = window.electron.onUpdateAvailable(() => {
+      setStatus('update-available');
+    });
+
+    const unsubNotAvailable = window.electron.onUpdateNotAvailable(() => {
+      setStatus('up-to-date');
+    });
+
+    const unsubError = window.electron.onUpdateError(() => {
+      setStatus('error');
+    });
+
+    return () => {
+      unsubAvailable?.();
+      unsubNotAvailable?.();
+      unsubError?.();
+    };
+  }, [isOpen, performCheck]);
 
   const getModalContent = () => {
     switch (status) {
@@ -173,8 +172,11 @@ function CheckUpdateModal({ isOpen, onClose }: CheckUpdateModalProps) {
               </VStack>
             </ModalBody>
             <ModalFooter>
-              <Button colorScheme="red" onClick={onClose}>
+              <Button variant="ghost" mr={3} onClick={onClose}>
                 Close
+              </Button>
+              <Button colorScheme="red" onClick={performCheck}>
+                Try Again
               </Button>
             </ModalFooter>
           </>
@@ -212,6 +214,8 @@ function CheckUpdateModal({ isOpen, onClose }: CheckUpdateModalProps) {
     <Modal
       isOpen={isOpen}
       onClose={status === 'checking' ? () => {} : onClose}
+      closeOnEsc={status !== 'checking'}
+      closeOnOverlayClick={status !== 'checking'}
       isCentered
     >
       <ModalOverlay bg="blackAlpha.600" backdropFilter="blur(4px)" />

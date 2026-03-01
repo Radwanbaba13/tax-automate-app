@@ -3,11 +3,9 @@ import {
   Box,
   SimpleGrid,
   VStack,
-  HStack,
   Heading,
   Text,
   Icon,
-  useColorModeValue,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { MdEmail } from 'react-icons/md';
@@ -15,7 +13,6 @@ import { IoDocuments } from 'react-icons/io5';
 import { FaFileInvoiceDollar } from 'react-icons/fa';
 import { VscOpenPreview } from 'react-icons/vsc';
 import { IconType } from 'react-icons';
-import CheckUpdateModal from '../modals/CheckUpdateModal';
 
 interface NavigationCardProps {
   icon: IconType;
@@ -25,6 +22,41 @@ interface NavigationCardProps {
   color: string;
 }
 
+const NAVIGATION_CARDS = [
+  {
+    icon: IoDocuments,
+    title: 'Summary',
+    description:
+      'Generate comprehensive summary documents from PDF files with customizable configurations',
+    route: '/summary',
+    color: '#cf3350',
+  },
+  {
+    icon: FaFileInvoiceDollar,
+    title: 'Confirmation',
+    description:
+      'Create professional confirmation documents and invoices with detailed client information',
+    route: '/confirmation',
+    color: '#386498',
+  },
+  {
+    icon: VscOpenPreview,
+    title: 'Data Review',
+    description:
+      'Review and validate all processed data before generating final documents',
+    route: '/data-review',
+    color: '#2D7A3E',
+  },
+  {
+    icon: MdEmail,
+    title: 'Email Automation',
+    description:
+      'Automate email sending with customizable templates and attachments',
+    route: '/email-automation',
+    color: '#D97706',
+  },
+];
+
 function NavigationCard({
   icon,
   title,
@@ -33,7 +65,6 @@ function NavigationCard({
   color,
 }: NavigationCardProps) {
   const navigate = useNavigate();
-  const bgHover = useColorModeValue('gray.50', 'gray.700');
 
   return (
     <Box
@@ -50,7 +81,7 @@ function NavigationCard({
         transform: 'translateY(-8px)',
         boxShadow: '0 12px 24px rgba(0, 0, 0, 0.1)',
         borderColor: color,
-        bg: bgHover,
+        bg: 'gray.50',
       }}
       minH="240px"
     >
@@ -76,55 +107,6 @@ function NavigationCard({
 }
 
 function HomePage() {
-  const [version, setVersion] = React.useState('');
-  const [isCheckModalOpen, setIsCheckModalOpen] = React.useState(false);
-
-  React.useEffect(() => {
-    window.electron.getAppVersion().then((v: string) => {
-      setVersion(v);
-    });
-  }, []);
-
-  const handleCheckForUpdates = () => {
-    setIsCheckModalOpen(true);
-    // CheckUpdateModal calls checkForUpdates() itself on open
-  };
-
-  const navigationCards = [
-    {
-      icon: IoDocuments,
-      title: 'Summary',
-      description:
-        'Generate comprehensive summary documents from PDF files with customizable configurations',
-      route: '/summary',
-      color: '#cf3350',
-    },
-    {
-      icon: FaFileInvoiceDollar,
-      title: 'Confirmation',
-      description:
-        'Create professional confirmation documents and invoices with detailed client information',
-      route: '/confirmation',
-      color: '#386498',
-    },
-    {
-      icon: VscOpenPreview,
-      title: 'Data Review',
-      description:
-        'Review and validate all processed data before generating final documents',
-      route: '/data-review',
-      color: '#2D7A3E',
-    },
-    {
-      icon: MdEmail,
-      title: 'Email Automation',
-      description:
-        'Automate email sending with customizable templates and attachments',
-      route: '/email-automation',
-      color: '#D97706',
-    },
-  ];
-
   return (
     <Box w="100%" h="100vh" bg="gray.50" display="flex" flexDirection="column">
       {/* Header Bar */}
@@ -148,27 +130,9 @@ function HomePage() {
 
       {/* Subtitle Section */}
       <Box textAlign="center" py={4} bg="gray.50">
-        <Text fontSize="xl" color="gray.600" mb={2}>
+        <Text fontSize="xl" color="gray.600">
           Select a module below to get started
         </Text>
-        <HStack spacing={2} justify="center">
-          <Text fontSize="md" color="gray.500">
-            Version {version}
-          </Text>
-          <Text fontSize="xs" color="gray.400">
-            •
-          </Text>
-          <Text
-            fontSize="xs"
-            color="blue.600"
-            cursor="pointer"
-            fontWeight="500"
-            onClick={handleCheckForUpdates}
-            _hover={{ color: 'blue.700', textDecoration: 'underline' }}
-          >
-            Check for updates
-          </Text>
-        </HStack>
       </Box>
 
       {/* Cards Grid */}
@@ -184,7 +148,7 @@ function HomePage() {
           maxW="1600px"
           mx="auto"
         >
-          {navigationCards.map((card) => (
+          {NAVIGATION_CARDS.map((card) => (
             <NavigationCard
               key={card.route}
               icon={card.icon}
@@ -196,12 +160,6 @@ function HomePage() {
           ))}
         </SimpleGrid>
       </Box>
-
-      {/* Check Update Modal */}
-      <CheckUpdateModal
-        isOpen={isCheckModalOpen}
-        onClose={() => setIsCheckModalOpen(false)}
-      />
     </Box>
   );
 }

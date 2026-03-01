@@ -381,8 +381,62 @@ def extract_solidarity_credit(solidarity_lines, year):
     return solidarity_credit_result
 
 
+def parse_benefit_amount_en(line, month_label):
+    """
+    Extract the monthly CCB amount after skipping 3 count columns
+    (Nb of dependents, disabled children, shared custody) following the month label.
+    EN format: thousands use commas (e.g. "1,739"), cents separated by space.
+    """
+    after_month = line.split(month_label)[-1].strip()
+    tokens = after_month.split()
+    if len(tokens) <= 3:
+        return 0.0
+    amount_tokens = tokens[3:]
+    if len(amount_tokens) < 2:
+        return 0.0
+    cents = amount_tokens[-1]
+    dollars = amount_tokens[-2].replace(',', '')
+    if re.match(r'^\d+$', dollars) and re.match(r'^\d{2}$', cents):
+        return float(dollars + '.' + cents)
+    return 0.0
+
+
+def parse_fa_trimestriel_en(line, month_label):
+    """
+    Extract the trimestriel (quarterly) amount from an EN QC Family Allowance line.
+    The line ends with: ... [count cols] [trim_$] [trim_¢] [mens_$] [mens_¢]
+    EN format: >= 1000 amounts are single comma-separated tokens (e.g. "1,739").
+    Uses mensuel * 3 to validate whether tokens[-5] is a thousands lead or a count column.
+    """
+    after_month = line.split(month_label)[-1].strip()
+    tokens = after_month.split()
+
+    if len(tokens) < 4:
+        return 0.0
+
+    def is_dollar_token(t):
+        return bool(re.match(r'^\d{1,3}(?:,\d{3})*$', t))
+
+    if not (is_dollar_token(tokens[-2]) and re.match(r'^\d{2}$', tokens[-1])):
+        return 0.0
+    mensuel = float(tokens[-2].replace(',', '') + '.' + tokens[-1])
+
+    if not (is_dollar_token(tokens[-4]) and re.match(r'^\d{2}$', tokens[-3])):
+        return 0.0
+    candidate = float(tokens[-4].replace(',', '') + '.' + tokens[-3])
+
+    # Only check for an absorbed lead digit when tokens[-4] is plain 3-digit (no comma).
+    # EN >= 1000 amounts are already single comma tokens, so no lead digit issue there.
+    if re.match(r'^\d{3}$', tokens[-4]) and len(tokens) >= 5 and re.match(r'^\d{1,3}$', tokens[-5]):
+        big_candidate = float(tokens[-5] + tokens[-4] + '.' + tokens[-3])
+        expected = mensuel * 3
+        if abs(big_candidate - expected) < abs(candidate - expected):
+            return big_candidate
+
+    return candidate
+
+
 def extract_child_benefit(child_benefit_lines, year):
-    # Initialize the result dictionary
     child_benefit_result = {
         "ccb_amount": 0.0,
         "july_amount": 0.0,
@@ -399,53 +453,45 @@ def extract_child_benefit(child_benefit_lines, year):
         "june_amount": 0.0
     }
 
-    # For overall CCB amount, keep your original extraction if it works well:
+    month_map = {
+        f"July {year + 1}": "july_amount",
+        f"August {year + 1}": "august_amount",
+        f"September {year + 1}": "september_amount",
+        f"October {year + 1}": "october_amount",
+        f"November {year + 1}": "november_amount",
+        f"December {year + 1}": "december_amount",
+        f"January {year + 2}": "january_amount",
+        f"February {year + 2}": "february_amount",
+        f"March {year + 2}": "march_amount",
+        f"April {year + 2}": "april_amount",
+        f"May {year + 2}": "may_amount",
+        f"June {year + 2}": "june_amount"
+    }
+
     number_pattern = r'(\d{1,3}(?:,\d{3})*\s\d{2})|(\d{2}\s\d{2})'
-    for i, line in enumerate(child_benefit_lines):
+    for line in child_benefit_lines:
         if "Total entitlement = " in line:
             match = re.search(number_pattern, line)
             if match:
-                # This conversion assumes convert_to_float handles the conversion as needed.
                 child_benefit_result["ccb_amount"] = convert_to_float(
                     match.group(0).replace(',', '').replace(' ', '')
                 )
 
-        # Process monthly amounts by checking if the line contains a month indicator
-        if i < len(child_benefit_lines) - 1:
-            # Define the month mapping based on the given year
-            month_map = {
-                f"July {year + 1}": "july_amount",
-                f"August {year + 1}": "august_amount",
-                f"September {year + 1}": "september_amount",
-                f"October {year + 1}": "october_amount",
-                f"November {year + 1}": "november_amount",
-                f"December {year + 1}": "december_amount",
-                f"January {year + 2}": "january_amount",
-                f"February {year + 2}": "february_amount",
-                f"March {year + 2}": "march_amount",
-                f"April {year + 2}": "april_amount",
-                f"May {year + 2}": "may_amount",
-                f"June {year + 2}": "june_amount"
-            }
+        for month, key in month_map.items():
+            if month in line:
+                child_benefit_result[key] = parse_benefit_amount_en(line, month)
+                break
 
-            for month, key in month_map.items():
-                if month in line:
-                    # Extract all numeric tokens (digits with optional commas)
-                    tokens = re.findall(r'\d+(?:,\d+)*', line)
-                    if len(tokens) >= 2:
-                        # Assume the last two tokens represent the dollars and cents
-                        dollars = tokens[-2].replace(',', '')
-                        cents = tokens[-1]
-                        # Construct a string like "75.48" then convert to float
-                        amount = float(dollars + '.' + cents)
-                        child_benefit_result[key] = amount
-                    break  # Exit loop once the month is processed
+    if child_benefit_result["ccb_amount"] == 0:
+        child_benefit_result["ccb_amount"] = sum(
+            child_benefit_result[k] for k in child_benefit_result
+            if k.endswith("_amount") and k != "ccb_amount"
+        )
 
     return child_benefit_result
 
 
 def extract_family_allowance(family_allowance_lines, year):
-    # Initialize the result dictionary for Family Allowance
     family_allowance_result = {
         "fa_amount": 0.0,
         "july_amount": 0.0,
@@ -454,10 +500,6 @@ def extract_family_allowance(family_allowance_lines, year):
         "april_amount": 0.0
     }
 
-    # Updated pattern to capture both formats: ### ## or #,### ##
-    number_pattern = r'(\d{1,3}(?:,\d{3})*\s\d{2}|\d{1,3}\s\d{2})'
-
-    # Define months we are interested in, dynamically using the provided year
     month_map = {
         f"July {year + 1}": "july_amount",
         f"October {year + 1}": "october_amount",
@@ -465,29 +507,11 @@ def extract_family_allowance(family_allowance_lines, year):
         f"April {year + 2}": "april_amount"
     }
 
-    # Iterate through the lines to extract the Family Allowance amounts
     for line in family_allowance_lines:
-        # Check for the relevant months in the line
         for month, key in month_map.items():
             if month in line:
-                # Use regex to find all matching amounts in the line
-                amounts = re.findall(number_pattern, line)
-                if amounts:
-                        if len(amounts) > 2:
-                            # Combine the first two parts (e.g., '1' and '96' -> '196')
-                            full_amount_str = amounts[0].replace(',', '').replace(' ', '') + amounts[1].replace(',', '').replace(' ', '')
-                            family_allowance_result[key] = convert_to_float(full_amount_str)
-                        elif len(amounts) <= 2:
-                            # If there's only one amount, use it as is
-                            family_allowance_result[key] = convert_to_float(amounts[0].replace(',', '').replace(' ', ''))
+                family_allowance_result[key] = parse_fa_trimestriel_en(line, month)
 
-    # Apply the condition to remove the leftmost digit from July amount if needed
-    if family_allowance_result["october_amount"] > 0:
-        if family_allowance_result["july_amount"] > 2 * family_allowance_result["october_amount"]:
-            family_allowance_result["july_amount"] = float(str(family_allowance_result["july_amount"])[1:])
-
-
-    # Calculate the total Family Allowance amount by summing the relevant monthly amounts
     family_allowance_result["fa_amount"] = (
         family_allowance_result["july_amount"] +
         family_allowance_result["october_amount"] +

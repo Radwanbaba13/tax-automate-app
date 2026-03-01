@@ -39,6 +39,8 @@ function HtmlContentViewer({ html, ...props }: HtmlContentViewerProps) {
     <Box
       dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
       sx={{
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '10pt',
         '& p': { marginBottom: '0.5em' },
         '& ul, & ol': { paddingLeft: '1.5em', marginBottom: '0.5em' },
         '& li': { marginBottom: '0.25em' },

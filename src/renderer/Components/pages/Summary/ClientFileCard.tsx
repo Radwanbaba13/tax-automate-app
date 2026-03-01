@@ -2,12 +2,12 @@ import React from 'react';
 import {
   Box,
   HStack,
-  Button,
   IconButton,
   Divider,
   Text,
   Select,
   Switch,
+  FormLabel,
 } from '@chakra-ui/react';
 import { AiOutlineClose } from 'react-icons/ai';
 
@@ -47,103 +47,113 @@ function ClientFileCard({
   return (
     <Box
       borderWidth="1px"
-      borderRadius="md"
-      bg="gray.50"
+      borderRadius="lg"
+      bg="white"
       p={4}
       boxShadow="sm"
-      borderColor="brand.200"
+      borderColor="gray.200"
     >
-      <HStack spacing={1}>
-        {TITLE_OPTIONS.map((title) => (
-          <Button
-            key={title.value}
-            onClick={() => onUpdateFile(index, { title: title.value })}
-            size="sm"
-            colorScheme={fileItem.title === title.value ? 'brand' : 'gray'}
-            variant={fileItem.title === title.value ? 'solid' : 'outline'}
-          >
-            {title.display}
-          </Button>
-        ))}
-        <Box
-          display="flex"
-          width="100%"
-          justifyContent="right"
-          alignItems="center"
-        >
-          <IconButton
-            aria-label="Remove Client"
-            borderRadius="50px"
-            icon={<AiOutlineClose size="20px" />}
-            onClick={() => onRemoveFile(index)}
-            colorScheme="red"
-            size="md"
-            variant="ghost"
-            mr="5px"
-          />
-        </Box>
+      {/* Row 1: Title selector + close button */}
+      <HStack justify="space-between" align="center">
+        <HStack spacing={1}>
+          {TITLE_OPTIONS.map((title) => (
+            <Box
+              key={title.value}
+              as="button"
+              onClick={() => onUpdateFile(index, { title: title.value })}
+              px={3}
+              py={1}
+              borderRadius="full"
+              fontSize="xs"
+              fontWeight="600"
+              border="1.5px solid"
+              cursor="pointer"
+              transition="all 0.15s"
+              bg={fileItem.title === title.value ? '#cf3350' : 'transparent'}
+              color={fileItem.title === title.value ? 'white' : 'gray.500'}
+              borderColor={
+                fileItem.title === title.value ? '#cf3350' : 'gray.300'
+              }
+              _hover={{
+                borderColor: '#cf3350',
+                color: fileItem.title === title.value ? 'white' : '#cf3350',
+              }}
+            >
+              {title.display}
+            </Box>
+          ))}
+        </HStack>
+
+        <IconButton
+          aria-label="Remove Client"
+          icon={<AiOutlineClose size="16px" />}
+          onClick={() => onRemoveFile(index)}
+          variant="ghost"
+          colorScheme="gray"
+          size="sm"
+        />
       </HStack>
 
-      <Divider mt={2} mb={2} />
+      <Divider my={3} />
 
-      <HStack
-        spacing={4}
-        mt={5}
-        justifyContent="space-between"
-        alignItems="center"
-      >
-        <Text fontWeight="bold">{fileItem.label || 'Untitled File'}</Text>
+      {/* Row 2: Client name + toggle switches */}
+      <HStack justify="space-between" align="center">
+        <Text fontWeight="600" fontSize="md" color="gray.800">
+          {fileItem.label || 'Untitled File'}
+        </Text>
 
-        <HStack spacing={2}>
-          <Button
-            onClick={() =>
-              onUpdateFile(index, { isNewcomer: !fileItem.isNewcomer })
-            }
-            size="sm"
-            colorScheme={fileItem.isNewcomer ? 'brand' : 'gray'}
-            variant={fileItem.isNewcomer ? 'solid' : 'outline'}
+        <HStack spacing={5}>
+          <FormLabel
+            htmlFor={`newcomer-${index}`}
+            display="flex"
+            alignItems="center"
+            gap={2}
+            mb={0}
+            cursor="pointer"
+            fontSize="sm"
+            color="gray.600"
+            fontWeight="500"
           >
             <Switch
+              id={`newcomer-${index}`}
               isChecked={fileItem.isNewcomer}
               onChange={() =>
                 onUpdateFile(index, { isNewcomer: !fileItem.isNewcomer })
               }
-              colorScheme="red"
-              size="md"
-              marginRight="8px"
+              colorScheme="brand"
+              size="sm"
             />
             Newcomer
-          </Button>
+          </FormLabel>
 
-          <Button
-            onClick={() =>
-              onUpdateFile(index, { isMailQC: !fileItem.isMailQC })
-            }
-            size="sm"
-            colorScheme={fileItem.isMailQC ? 'blue' : 'gray'}
-            variant={fileItem.isMailQC ? 'solid' : 'outline'}
+          <FormLabel
+            htmlFor={`mailqc-${index}`}
+            display="flex"
+            alignItems="center"
+            gap={2}
+            mb={0}
+            cursor="pointer"
+            fontSize="sm"
+            color="gray.600"
+            fontWeight="500"
           >
             <Switch
+              id={`mailqc-${index}`}
               isChecked={fileItem.isMailQC}
               onChange={() =>
                 onUpdateFile(index, { isMailQC: !fileItem.isMailQC })
               }
               colorScheme="blue"
-              size="md"
-              marginRight="8px"
+              size="sm"
             />
             Mail QC
-          </Button>
+          </FormLabel>
         </HStack>
       </HStack>
 
+      {/* Row 3: Couple-with selector (only when multiple files) */}
       {allFiles.length >= 2 && (
-        <HStack
-          spacing={4}
-          mt={5}
-          justifyContent="space-between"
-          alignItems="center"
-        >
+        <HStack spacing={4} mt={4} justify="space-between" align="center">
           <Select
             placeholder="Individual Summary"
             value={fileItem.coupleWith}
@@ -176,19 +186,30 @@ function ClientFileCard({
                 </option>
               ))}
           </Select>
+
           {fileItem.coupleWith !== 'Individual Summary' && (
-            <Switch
-              isChecked={fileItem.isPrimary}
-              onChange={() => {
-                // Allow only one file to be primary
-                const newPrimary = !fileItem.isPrimary;
-                onUpdateFile(index, { isPrimary: newPrimary });
-              }}
-              colorScheme="green"
-              fontSize="18px"
+            <FormLabel
+              htmlFor={`primary-${index}`}
+              display="flex"
+              alignItems="center"
+              gap={2}
+              mb={0}
+              cursor="pointer"
+              fontSize="sm"
+              color="gray.600"
+              fontWeight="500"
             >
+              <Switch
+                id={`primary-${index}`}
+                isChecked={fileItem.isPrimary}
+                onChange={() =>
+                  onUpdateFile(index, { isPrimary: !fileItem.isPrimary })
+                }
+                colorScheme="green"
+                size="sm"
+              />
               Primary
-            </Switch>
+            </FormLabel>
           )}
         </HStack>
       )}
