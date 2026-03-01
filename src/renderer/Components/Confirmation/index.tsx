@@ -473,6 +473,7 @@ function ConfirmationComponent() {
         display="flex"
         alignItems="center"
         gap={3}
+        _dark={{ bg: '#181818', borderColor: '#2a2a2a', boxShadow: 'none' }}
       >
         <HStack
           flex="1"
@@ -483,8 +484,13 @@ function ConfirmationComponent() {
           px={3}
           py="10px"
           spacing={2}
-          _hover={{ borderColor: '#cf3350', bg: '#fff8f9' }}
+          _hover={{
+            borderColor: '#cf3350',
+            bg: '#fff8f9',
+            _dark: { bg: '#202020' },
+          }}
           transition="all 0.15s"
+          _dark={{ borderColor: '#3a3a3a' }}
         >
           <FaFolderOpen size={15} color="#cf3350" style={{ flexShrink: 0 }} />
           <Text
@@ -492,6 +498,7 @@ function ConfirmationComponent() {
             color={directory ? 'gray.700' : 'gray.400'}
             noOfLines={1}
             flex="1"
+            _dark={{ color: directory ? 'gray.200' : 'gray.500' }}
           >
             {directory?.path ||
               'Click to select a directory to save files in...'}
@@ -580,6 +587,12 @@ function ConfirmationComponent() {
             borderRadius="8px"
             border="1px solid #cf3350"
             _hover={{ bg: '#fff0f3', border: '1px solid #cf3350' }}
+            _dark={{
+              bg: '#2a1018',
+              color: '#f08090',
+              borderColor: '#cf3350',
+              _hover: { bg: '#3a1520' },
+            }}
             onClick={addClient}
           >
             + Add Another Client

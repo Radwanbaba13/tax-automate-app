@@ -50,6 +50,7 @@ function ClientFileCard({
       borderWidth="1px"
       borderRadius="lg"
       bg="white"
+      _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
       p={4}
       boxShadow="sm"
       borderColor="gray.200"

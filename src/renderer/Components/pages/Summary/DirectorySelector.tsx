@@ -27,8 +27,13 @@ function DirectorySelector({
         px={3}
         py="8px"
         spacing={2}
-        _hover={{ borderColor: '#cf3350', bg: '#fff8f9' }}
+        _hover={{
+          borderColor: '#cf3350',
+          bg: '#fff8f9',
+          _dark: { bg: '#202020' },
+        }}
         transition="all 0.15s"
+        _dark={{ borderColor: '#3a3a3a' }}
       >
         <FaFolderOpen size={15} color="#cf3350" style={{ flexShrink: 0 }} />
         <Text
@@ -36,6 +41,7 @@ function DirectorySelector({
           color={directory ? 'gray.700' : 'gray.400'}
           noOfLines={1}
           flex="1"
+          _dark={{ color: directory ? 'gray.200' : 'gray.500' }}
         >
           {directory || 'Click to select a save directory...'}
         </Text>

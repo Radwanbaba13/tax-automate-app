@@ -1,4 +1,9 @@
-import { extendTheme, type ThemeConfig } from '@chakra-ui/react';
+import {
+  extendTheme,
+  type ThemeConfig,
+  type StyleFunctionProps,
+} from '@chakra-ui/react';
+import { mode } from '@chakra-ui/theme-tools';
 
 // Color palette focused on red with minimal blue accents
 const colors = {
@@ -34,12 +39,13 @@ const config: ThemeConfig = {
 };
 
 const styles = {
-  global: {
+  global: (props: StyleFunctionProps) => ({
     body: {
-      bg: 'gray.50',
-      color: 'gray.600',
+      // Light mode unchanged, dark mode uses a neutral dark gray
+      bg: mode('gray.50', '#101010')(props),
+      color: mode('gray.700', 'gray.100')(props),
     },
-  },
+  }),
 };
 
 const fonts = {
@@ -79,6 +85,12 @@ const components = {
         _hover: {
           bg: 'gray.100',
         },
+        _dark: {
+          color: 'gray.200',
+          _hover: {
+            bg: 'gray.700',
+          },
+        },
       },
     },
     defaultProps: {
@@ -93,6 +105,11 @@ const components = {
         boxShadow: 'sm',
         border: '1px solid',
         borderColor: 'gray.200',
+        _dark: {
+          bg: '#181818',
+          borderColor: '#2a2a2a',
+          boxShadow: 'none',
+        },
       },
     },
   },

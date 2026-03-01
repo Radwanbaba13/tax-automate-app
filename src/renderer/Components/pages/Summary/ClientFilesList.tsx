@@ -61,11 +61,18 @@ function ClientFilesList({
             borderRadius="md"
             border="1px dashed"
             borderColor="gray.300"
+            _dark={{ bg: '#151515', borderColor: '#3a3a3a' }}
           >
-            <Text fontSize="md" fontWeight="600" color="gray.600" mb={2}>
+            <Text
+              fontSize="md"
+              fontWeight="600"
+              color="gray.600"
+              mb={2}
+              _dark={{ color: 'gray.100' }}
+            >
               No files selected
             </Text>
-            <Text fontSize="sm" color="gray.500">
+            <Text fontSize="sm" color="gray.500" _dark={{ color: 'gray.300' }}>
               Please select PDF files to process by clicking the upload button
             </Text>
           </Box>

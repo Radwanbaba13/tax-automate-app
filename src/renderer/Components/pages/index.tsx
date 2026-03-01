@@ -1,18 +1,22 @@
 import React from 'react';
 import {
   Box,
+  Button,
   SimpleGrid,
   VStack,
   Heading,
   Text,
   Icon,
   HStack,
+  useColorMode,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { useNavigate } from 'react-router-dom';
 import { MdEmail } from 'react-icons/md';
 import { IoDocuments } from 'react-icons/io5';
 import { FaFileInvoiceDollar } from 'react-icons/fa';
 import { VscOpenPreview } from 'react-icons/vsc';
+import { FiMoon, FiSun } from 'react-icons/fi';
 import { IconType } from 'react-icons';
 
 interface NavigationCardProps {
@@ -66,6 +70,11 @@ function NavigationCard({
   color,
 }: NavigationCardProps) {
   const navigate = useNavigate();
+  const cardBg = useColorModeValue('white', '#181818');
+  const cardBorder = useColorModeValue('gray.200', '#2a2a2a');
+  const cardHoverBg = useColorModeValue('gray.50', '#222222');
+  const titleColor = useColorModeValue('gray.800', 'gray.50');
+  const descColor = useColorModeValue('gray.600', 'gray.400');
 
   return (
     <Box
@@ -73,8 +82,8 @@ function NavigationCard({
       p={{ base: 6, md: 8, lg: 10 }}
       borderRadius="xl"
       border="2px solid"
-      borderColor="gray.200"
-      bg="white"
+      borderColor={cardBorder}
+      bg={cardBg}
       cursor="pointer"
       onClick={() => navigate(route)}
       transition="all 0.3s ease"
@@ -82,7 +91,7 @@ function NavigationCard({
         transform: 'translateY(-8px)',
         boxShadow: '0 12px 24px rgba(0, 0, 0, 0.1)',
         borderColor: color,
-        bg: 'gray.50',
+        bg: cardHoverBg,
       }}
       minH="240px"
     >
@@ -90,16 +99,16 @@ function NavigationCard({
         <Box
           p={{ base: 3, md: 4 }}
           borderRadius="full"
-          bg={`${color}15`}
+          bg={`${color}20`}
           color={color}
           transition="all 0.3s"
         >
           <Icon as={icon} boxSize={{ base: 10, md: 12, lg: 14 }} />
         </Box>
-        <Heading size={{ base: 'md', md: 'lg' }} color="gray.800">
+        <Heading size={{ base: 'md', md: 'lg' }} color={titleColor}>
           {title}
         </Heading>
-        <Text color="gray.600" fontSize={{ base: 'sm', md: 'md' }}>
+        <Text color={descColor} fontSize={{ base: 'sm', md: 'md' }}>
           {description}
         </Text>
       </VStack>
@@ -109,6 +118,16 @@ function NavigationCard({
 
 function HomePage() {
   const [version, setVersion] = React.useState('');
+  const { colorMode, toggleColorMode } = useColorMode();
+
+  const pageBg = useColorModeValue('gray.50', '#101010');
+  const headerBg = useColorModeValue('white', '#181818');
+  const headerBorder = useColorModeValue('gray.200', '#2a2a2a');
+  const titleColor = useColorModeValue('gray.800', 'gray.50');
+  const subtitleColor = useColorModeValue('gray.600', 'gray.400');
+  const versionColor = useColorModeValue('gray.500', 'gray.500');
+  const toggleColor = useColorModeValue('gray.600', 'gray.300');
+  const toggleHoverBg = useColorModeValue('gray.100', 'gray.700');
 
   React.useEffect(() => {
     window.electron.getAppVersion().then((v: string) => {
@@ -117,34 +136,52 @@ function HomePage() {
   }, []);
 
   return (
-    <Box w="100%" h="100vh" bg="gray.50" display="flex" flexDirection="column">
+    <Box w="100%" h="100vh" bg={pageBg} display="flex" flexDirection="column">
       {/* Header Bar */}
       <Box
-        bg="white"
+        bg={headerBg}
         borderBottom="1px solid"
-        borderColor="gray.200"
+        borderColor={headerBorder}
         py={{ base: 4, md: 6 }}
-        textAlign="center"
+        px={6}
         height="100px"
+        display="flex"
+        alignItems="center"
+        justifyContent="center"
+        position="relative"
       >
         <Heading
           size={{ base: 'lg', md: 'xl', lg: '2xl' }}
-          color="gray.800"
+          color={titleColor}
           fontWeight="700"
-          mb={2}
         >
           Tax Automation Modules
         </Heading>
+        <Button
+          position="absolute"
+          right={6}
+          onClick={toggleColorMode}
+          variant="ghost"
+          leftIcon={colorMode === 'light' ? <FiMoon size={15} /> : <FiSun size={15} />}
+          size="sm"
+          fontWeight="500"
+          borderRadius="8px"
+          color={toggleColor}
+          _hover={{ bg: toggleHoverBg }}
+          px={3}
+        >
+          {colorMode === 'light' ? 'Dark Mode' : 'Light Mode'}
+        </Button>
       </Box>
 
       {/* Subtitle Section */}
-      <Box textAlign="center" py={4} bg="gray.50">
-        <Text fontSize="xl" color="gray.600" mb={2}>
+      <Box textAlign="center" py={4} bg={pageBg}>
+        <Text fontSize="xl" color={subtitleColor} mb={2}>
           Select a module below to get started
         </Text>
         {version && (
           <HStack spacing={2} justify="center">
-            <Text fontSize="md" color="gray.500">
+            <Text fontSize="md" color={versionColor}>
               Version {version}
             </Text>
           </HStack>
@@ -156,7 +193,7 @@ function HomePage() {
         flex="1"
         p={{ base: 8, md: 10, lg: 12 }}
         overflow="auto"
-        bg="gray.50"
+        bg={pageBg}
       >
         <SimpleGrid
           columns={{ base: 1, lg: 2 }}

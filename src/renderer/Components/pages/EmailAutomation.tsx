@@ -711,6 +711,7 @@ function EmailAutomationComponent() {
                   <Box
                     p={4}
                     bg="white"
+                    _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
                     borderRadius="md"
                     border="1px solid"
                     borderColor="gray.200"
@@ -772,7 +773,12 @@ function EmailAutomationComponent() {
 
               if (filteredTemplates.length === 0) {
                 return (
-                  <Box py={8} textAlign="center" color="gray.500">
+                  <Box
+                    py={8}
+                    textAlign="center"
+                    color="gray.500"
+                    _dark={{ color: 'gray.400' }}
+                  >
                     <Text>
                       {templateSearchQuery
                         ? 'No templates found matching your search.'
@@ -815,6 +821,22 @@ function EmailAutomationComponent() {
                               ? 'blue.50'
                               : 'gray.50',
                           borderColor: 'blue.300',
+                          _dark: {
+                            bg:
+                              selectedTemplateId === template.id
+                                ? '#243447'
+                                : '#202020',
+                          },
+                        }}
+                        _dark={{
+                          borderColor:
+                            selectedTemplateId === template.id
+                              ? 'blue.300'
+                              : '#2a2a2a',
+                          bg:
+                            selectedTemplateId === template.id
+                              ? '#1f2933'
+                              : '#181818',
                         }}
                         onClick={() => handleTemplateClick(template)}
                         transition="all 0.2s"
@@ -844,12 +866,18 @@ function EmailAutomationComponent() {
                                   fontSize="xs"
                                   color="gray.500"
                                   fontStyle="italic"
+                                  _dark={{ color: 'gray.400' }}
                                 >
                                   Subject ({inquiryLanguage}): {currentSubject}
                                 </Text>
                               ) : null;
                             })()}
-                            <Text fontSize="sm" color="gray.600" noOfLines={2}>
+                            <Text
+                              fontSize="sm"
+                              color="gray.600"
+                              noOfLines={2}
+                              _dark={{ color: 'gray.300' }}
+                            >
                               {(() => {
                                 const content =
                                   inquiryLanguage === 'EN' && template.contentEN

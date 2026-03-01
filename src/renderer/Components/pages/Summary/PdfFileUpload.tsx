@@ -40,6 +40,7 @@ function PdfFileUpload({
           border="2px dashed"
           borderColor="brand.500"
           bg="white"
+          _dark={{ bg: '#181818', _hover: { bg: '#202020' } }}
           borderRadius="md"
           p={8}
           cursor="pointer"

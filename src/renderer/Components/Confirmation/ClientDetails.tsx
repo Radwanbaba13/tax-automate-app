@@ -77,6 +77,7 @@ function ClientDetails({
           key={`client-${clientIndex}`}
           bg="white"
           border="1px solid #edf2f7"
+          _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
           borderRadius="12px"
           boxShadow="0 1px 1px rgba(0,0,0,0.05)"
           p={4}
@@ -178,6 +179,11 @@ function ClientDetails({
                               color="red.600"
                               borderRadius="50px"
                               _hover={{ bg: 'red.200' }}
+                              _dark={{
+                                bg: '#3a1520',
+                                color: '#fc8181',
+                                _hover: { bg: '#4a1e28' },
+                              }}
                             />
                           )}
                           {/* Drag Handle */}
@@ -331,6 +337,12 @@ function ClientDetails({
                               border="1px solid #386498"
                               borderRadius="50px"
                               width="40px"
+                              _dark={{
+                                bg: '#162030',
+                                borderColor: '#386498',
+                                color: '#7eb8e8',
+                                _hover: { bg: '#1e2e40' },
+                              }}
                             />
                           )}
                           {client.years.length - 1 !== yearIndex && (

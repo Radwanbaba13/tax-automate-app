@@ -160,6 +160,7 @@ function AdminSettingsComponent() {
               <TabPanel>
                 <Box
                   bg="white"
+                  _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
                   borderRadius="lg"
                   boxShadow="sm"
                   border="1px solid"
@@ -174,6 +175,7 @@ function AdminSettingsComponent() {
               <TabPanel>
                 <Box
                   bg="white"
+                  _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
                   borderRadius="lg"
                   boxShadow="sm"
                   border="1px solid"
@@ -188,6 +190,7 @@ function AdminSettingsComponent() {
               <TabPanel>
                 <Box
                   bg="white"
+                  _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
                   borderRadius="lg"
                   boxShadow="sm"
                   border="1px solid"

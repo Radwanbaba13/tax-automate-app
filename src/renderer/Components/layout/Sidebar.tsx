@@ -9,6 +9,7 @@ import {
   Divider,
   Spinner,
   Button,
+  useColorModeValue,
 } from '@chakra-ui/react';
 import { Link, useLocation } from 'react-router-dom';
 import { MdEmail, MdSettings } from 'react-icons/md';
@@ -29,19 +30,27 @@ interface NavItemProps {
 }
 
 function NavItem({ icon, label, to, isActive }: NavItemProps) {
+  const inactiveColor = useColorModeValue('gray.700', 'gray.200');
+  const hoverBg = useColorModeValue('gray.50', 'gray.700');
+  const activeBg = useColorModeValue('#cf335010', 'rgba(207, 51, 80, 0.18)');
+  const activeHoverBg = useColorModeValue(
+    '#cf335015',
+    'rgba(207, 51, 80, 0.24)',
+  );
+
   return (
     <Link to={to} style={{ width: '100%', textDecoration: 'none' }}>
       <HStack
         px={2}
         py={2}
         cursor="pointer"
-        bg={isActive ? '#cf335010' : 'transparent'}
-        color={isActive ? '#cf3350' : 'gray.700'}
+        bg={isActive ? activeBg : 'transparent'}
+        color={isActive ? '#cf3350' : inactiveColor}
         fontWeight={isActive ? '600' : '500'}
         borderLeft={isActive ? '3px solid' : '3px solid transparent'}
         borderColor={isActive ? '#cf3350' : 'transparent'}
         _hover={{
-          bg: isActive ? '#cf335015' : 'gray.50',
+          bg: isActive ? activeHoverBg : hoverBg,
           transform: 'translateX(4px)',
         }}
         transition="all 0.2s ease"
@@ -136,9 +145,9 @@ function Sidebar() {
     <Box
       w="220px"
       h="100vh"
-      bg="white"
+      bg={useColorModeValue('white', '#151515')}
       borderRight="1px solid"
-      borderColor="gray.200"
+      borderColor={useColorModeValue('gray.200', '#2a2a2a')}
       position="fixed"
       left={0}
       top={0}
