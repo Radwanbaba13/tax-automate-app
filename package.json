@@ -1,6 +1,6 @@
 {
   "name": "tax-automate-app",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Tax document automation and summary application",
   "keywords": [
     "electron",
