@@ -109,7 +109,7 @@ async function main() {
   const userMsg = await prompt(
     `Commit message (press Enter to use "${defaultMsg}"): `,
   );
-  const commitMsg = userMsg || defaultMsg;
+  const commitMsg = userMsg ? `Release ${tagName}: ${userMsg}` : defaultMsg;
 
   console.log(`Committing changes: "${commitMsg}" on branch ${branch}`);
   execSync(`git commit -m "${commitMsg}"`, { stdio: 'inherit' });
