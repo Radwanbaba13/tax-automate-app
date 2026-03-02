@@ -52,7 +52,6 @@ function ConfirmationComponent() {
   const [selectedPrices, setSelectedPrices] = useState<PriceListItem[]>([]);
   const [includeTaxes, setIncludeTaxes] = useState(true);
 
-  // State for invoice details
   const [invoiceDetails, setInvoiceDetails] = useState({
     companyName: '',
     fullName: '',
@@ -138,7 +137,6 @@ function ConfirmationComponent() {
         const { data, error } = await api.priceList.getAll();
         if (error) throw error;
 
-        // Parse service field from JSON strings if needed
         const parsedPrices = (data || []).map((item: any) => {
           let service = { en: '', fr: '' };
 
@@ -208,7 +206,6 @@ function ConfirmationComponent() {
         const { data, error } = await api.taxRates.getByProvince(province);
 
         if (error) throw error;
-        // Ensure taxRates is always an array
         setTaxRates(data ? [data] : []);
       } catch {
         showToast({
@@ -225,11 +222,9 @@ function ConfirmationComponent() {
 
   const addYear = (clientIndex) => {
     setClients((prevClients) => {
-      // Create a new array to avoid mutating the state directly
       const updatedClients = prevClients.map((client, index) => {
         const updatedClient = { ...client };
 
-        // If this is the client we want to add a year to
         if (index === clientIndex) {
           const newYear = {
             year: '',
@@ -286,7 +281,6 @@ function ConfirmationComponent() {
     setClients(updatedClients);
   };
 
-  // Inside the addClient function, initialize the years array
   const addClient = () => {
     setClients([
       ...clients,
@@ -306,7 +300,6 @@ function ConfirmationComponent() {
     ]);
   };
 
-  // Update handleClientChange function to accommodate years
   const handleClientChange = React.useCallback(
     (clientIndex, field, yearIndex, yearField, value) => {
       setClients((prevClients) => {
@@ -336,7 +329,6 @@ function ConfirmationComponent() {
       setClients((prevClients) => {
         const updatedClients = [...prevClients];
 
-        // Ensure the specific year exists and update the confirmation number
         if (updatedClients[clientIndex]?.years[yearIndex]) {
           const client = { ...updatedClients[clientIndex] };
           const years = [...client.years];
@@ -371,9 +363,7 @@ function ConfirmationComponent() {
         }
         return undefined;
       })
-      .catch(() => {
-        // Handle directory selection errors silently
-      });
+      .catch(() => {});
   };
 
   const runPythonScript = async () => {
@@ -391,7 +381,6 @@ function ConfirmationComponent() {
     const invoiceDetailsJson = JSON.stringify(invoiceDetails);
     const taxRatesJson = JSON.stringify(taxRates[0]);
 
-    // Run Python script and wait for response
     await window.electron.runPythonScript('createConfirmationDocuments', [
       directory.path,
       clientsJson,
@@ -416,7 +405,6 @@ function ConfirmationComponent() {
     });
   };
 
-  // Set up a listener to handle the result of the script
   React.useEffect(() => {
     window.electron.onPythonResult((result) => {
       if (!result.success) {
@@ -462,7 +450,6 @@ function ConfirmationComponent() {
 
   return (
     <VStack spacing={4} align="stretch" w="100%">
-      {/* Save Directory Bar */}
       <Box
         bg="white"
         borderRadius="12px"
@@ -516,9 +503,7 @@ function ConfirmationComponent() {
         </Button>
       </Box>
 
-      {/* Top Row */}
       <HStack gap={4} align="stretch" w="100%">
-        {/* Confirmation Details */}
         <SectionCard
           flex="0 0 58%"
           height="52vh"
@@ -599,7 +584,6 @@ function ConfirmationComponent() {
           </Button>
         </SectionCard>
 
-        {/* Price Details */}
         <SectionCard
           flex={1}
           height="52vh"
@@ -640,7 +624,6 @@ function ConfirmationComponent() {
         </SectionCard>
       </HStack>
 
-      {/* Invoice Details */}
       <SectionCard
         w="100%"
         title="Invoice Details"

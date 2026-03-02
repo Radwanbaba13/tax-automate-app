@@ -40,7 +40,6 @@ function SummaryConfig() {
         const { data: sectionData } = await api.configurations.get();
 
         if (sectionData) {
-          // Helper function to parse JSON strings or return default structure
           const parseSection = (section: any) => {
             if (!section) return { en: [], fr: [] };
             if (typeof section === 'string') {

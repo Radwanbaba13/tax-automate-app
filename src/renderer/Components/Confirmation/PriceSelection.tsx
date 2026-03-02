@@ -47,7 +47,6 @@ function PriceSelection({
     provRate: 0,
   });
 
-  // Get tax rates for the selected province
   const getTaxRates = () => {
     const taxRate = taxRates && taxRates.length > 0 ? taxRates[0] : null;
 
@@ -56,9 +55,7 @@ function PriceSelection({
       : { fedRate: 0, provRate: 0 };
   };
 
-  // Calculate subtotal, total, and tax amounts
   const calculateTotals = () => {
-    // First, calculate all fixed amounts (type === 'number')
     let subtotal = 0;
     const percentageAdjustments: number[] = [];
 
@@ -70,7 +67,6 @@ function PriceSelection({
       }
     });
 
-    // Apply percentage adjustments to the subtotal
     percentageAdjustments.forEach((percentage) => {
       subtotal += (subtotal * percentage) / 100;
     });
@@ -78,7 +74,6 @@ function PriceSelection({
     const rates = getTaxRates();
     const { fedRate, provRate } = rates;
 
-    // Calculate taxes only if includeTaxes is true
     if (includeTaxes) {
       const fedTax = (subtotal * fedRate) / 100;
       const provTax = (subtotal * provRate) / 100;
@@ -92,7 +87,6 @@ function PriceSelection({
       };
     }
 
-    // If taxes are not included, total equals subtotal
     return {
       subtotal: subtotal.toFixed(2),
       total: subtotal.toFixed(2),
@@ -113,7 +107,6 @@ function PriceSelection({
     setSelectedPrices(updatedPrices);
   };
 
-  // Handle drag end
   const onDragEnd = (result: any) => {
     if (!result.destination) return;
 
@@ -274,7 +267,8 @@ function PriceSelection({
                         aria-label="Remove Price"
                         borderRadius="25px"
                         background="transparent"
-                        _hover={{ background: '#dfdfdfff' }}
+                        _hover={{ background: '#dfdfdf' }}
+                        _dark={{ _hover: { background: '#2a2a2a' } }}
                         icon={<MdClose color="#cf3350" size="20px" />}
                       />
                     </HStack>
@@ -293,7 +287,7 @@ function PriceSelection({
                 Subtotal: ${totals.subtotal}
               </Text>
               {totals.fedRate > 0 && (
-                <Text fontSize="14px" textAlign="right" color="gray.600">
+                <Text fontSize="14px" textAlign="right" color="gray.600" _dark={{ color: 'gray.300' }}>
                   Federal Tax ({totals.fedRate}%): $
                   {(
                     (parseFloat(totals.subtotal) * totals.fedRate) /
@@ -302,7 +296,7 @@ function PriceSelection({
                 </Text>
               )}
               {totals.provRate > 0 && (
-                <Text fontSize="14px" textAlign="right" color="gray.600">
+                <Text fontSize="14px" textAlign="right" color="gray.600" _dark={{ color: 'gray.300' }}>
                   Provincial Tax ({provRateLabel}%): $
                   {(
                     (parseFloat(totals.subtotal) * totals.provRate) /

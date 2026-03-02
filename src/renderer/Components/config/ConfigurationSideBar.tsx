@@ -33,13 +33,11 @@ function ConfigurationSidebar({
   isSidebarOpen,
   setIsSidebarOpen,
 }: ConfigurationSidebarProps) {
-  // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [selectedConfig, setSelectedConfig] = useState('summary');
   const [password, setPassword] = useState('');
   const [wrongPassword, setWrongPassword] = useState(false);
 
-  // Password change state
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -57,7 +55,6 @@ function ConfigurationSidebar({
     }
   }, [isSidebarOpen]);
 
-  // Function to handle password submission
   const handleAuth = async () => {
     const { data, error } = await api.users.verifyPassword(password);
 
@@ -74,7 +71,6 @@ function ConfigurationSidebar({
     }
   };
 
-  // Function to handle password change
   const handlePasswordChange = async () => {
     if (!oldPassword || !newPassword || !confirmNewPassword) {
       setPasswordChangeError('All fields are required.');
@@ -114,7 +110,6 @@ function ConfigurationSidebar({
     setSelectedConfig(e.target.value);
   };
 
-  // Open password modal when sidebar opens
   React.useEffect(() => {
     if (isSidebarOpen && !isAuthenticated) {
       onOpen();
@@ -267,7 +262,6 @@ function ConfigurationSidebar({
                   </Text>
                 )}
 
-                {/* Old Password Input */}
                 <Text
                   mb={1}
                   mt="20px"
@@ -317,7 +311,6 @@ function ConfigurationSidebar({
                   </InputRightElement>
                 </InputGroup>
 
-                {/* New Password Input */}
                 <Text
                   mb={1}
                   mt="20px"
@@ -367,7 +360,6 @@ function ConfigurationSidebar({
                   </InputRightElement>
                 </InputGroup>
 
-                {/* Confirm New Password Input */}
                 <Text
                   mb={1}
                   color="#7c7c7c"

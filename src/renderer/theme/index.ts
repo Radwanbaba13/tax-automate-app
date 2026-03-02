@@ -144,6 +144,23 @@ const components = {
             borderColor: 'brand.500',
             boxShadow: '0 0 0 1px #cf3350',
           },
+          _dark: {
+            bg: '#1e1e1e',
+            borderColor: '#2a2a2a',
+            color: 'gray.100',
+            _hover: {
+              borderColor: '#3a3a3a',
+            },
+            _focus: {
+              borderColor: 'brand.500',
+              boxShadow: '0 0 0 1px #cf3350',
+            },
+          },
+        },
+        icon: {
+          _dark: {
+            color: 'gray.400',
+          },
         },
       },
     },

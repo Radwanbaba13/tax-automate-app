@@ -83,7 +83,6 @@ function ClientDetails({
           p={4}
           mb={3}
         >
-          {/* Client Title and Name */}
           <FormControl mb={4}>
             <HStack spacing={4}>
               <FormSelect
@@ -132,7 +131,6 @@ function ClientDetails({
             </HStack>
           </FormControl>
 
-          {/* Draggable and Sortable Years */}
           <DragDropContext
             onDragEnd={(result) => onDragEnd(result, clientIndex)}
           >
@@ -168,7 +166,6 @@ function ClientDetails({
                           spacing={1}
                           align="start"
                         >
-                          {/* Remove Year */}
                           {client.years.length > 1 && (
                             <IconButton
                               aria-label="Remove Year"
@@ -186,7 +183,6 @@ function ClientDetails({
                               }}
                             />
                           )}
-                          {/* Drag Handle */}
                           <IconButton
                             aria-label="Drag Year"
                             icon={<MdDragIndicator size="20px" />}
@@ -197,7 +193,6 @@ function ClientDetails({
                             // eslint-disable-next-line react/jsx-props-no-spreading
                             {...draggableProvided.dragHandleProps}
                           />
-                          {/* Year and Confirmation Numbers */}
                           <FormSelect
                             width="150px"
                             placeholder="Year"
@@ -325,7 +320,6 @@ function ClientDetails({
                               }
                             />
                           </HStack>
-                          {/* Add Year (only for the last year) */}
                           {client.years.length - 1 === yearIndex && (
                             <IconButton
                               aria-label="Add Year"

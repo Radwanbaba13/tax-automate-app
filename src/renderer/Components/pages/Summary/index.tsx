@@ -37,7 +37,6 @@ function SummaryComponent() {
         const { data: sectionData } = await api.configurations.get();
 
         if (sectionData) {
-          // Helper function to parse JSON strings or return default structure
           const parseSection = (section: any) => {
             if (!section) return { en: [], fr: [] };
             if (typeof section === 'string') {
@@ -106,9 +105,7 @@ function SummaryComponent() {
         }
         return undefined;
       })
-      .catch(() => {
-        // Handle file selection errors silently
-      });
+      .catch(() => {});
   };
 
   const openDirectoryDialog = () => {
@@ -122,16 +119,13 @@ function SummaryComponent() {
         }
         return undefined;
       })
-      .catch(() => {
-        // Handle directory selection errors silently
-      });
+      .catch(() => {});
   };
 
   const handleUpdateFile = (index: number, updates: Partial<ClientFile>) => {
     const updatedFiles = [...clientFiles];
     updatedFiles[index] = { ...updatedFiles[index], ...updates };
 
-    // Handle isPrimary - only one can be primary
     if (updates.isPrimary !== undefined) {
       updatedFiles.forEach((file, i) => {
         if (i !== index) {
@@ -140,7 +134,6 @@ function SummaryComponent() {
       });
     }
 
-    // Handle Mail QC cascade - if Mail QC is disabled, also disable Sent Mail QC
     if (updates.isMailQC === false) {
       updatedFiles[index].isSentMailQC = false;
     }
@@ -151,10 +144,8 @@ function SummaryComponent() {
   const handleCoupleWithChange = (index: number, selectedValue: string) => {
     const updatedFiles = [...clientFiles];
 
-    // Update coupleWith for the current file
     updatedFiles[index].coupleWith = selectedValue;
 
-    // Reset the coupleWith of the other files
     updatedFiles.forEach((clientFile, i) => {
       if (i !== index && clientFile.label === selectedValue) {
         clientFile.coupleWith = clientFiles[index].label;
@@ -163,7 +154,6 @@ function SummaryComponent() {
       }
     });
 
-    // Ensure only one file can be primary
     updatedFiles.forEach((clientFile, i) => {
       clientFile.isPrimary =
         i === index && selectedValue !== 'Individual Summary';
@@ -211,7 +201,6 @@ function SummaryComponent() {
     const clientsJson = JSON.stringify(clientFiles);
     const configurationJson = JSON.stringify(configuration);
 
-    // Call the Python script via Electron
     window.electron.runPythonScript('createSummaryDocuments', [
       clientsJson,
       directory,
@@ -219,7 +208,6 @@ function SummaryComponent() {
     ]);
   };
 
-  // Set up a listener to handle the result of the script
   useEffect(() => {
     window.electron.onPythonResult((result) => {
       setIsLoading(false);

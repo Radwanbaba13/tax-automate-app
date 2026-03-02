@@ -30,12 +30,10 @@ import SummaryConfig from '../config/SummaryConfig';
 import PriceListConfig from '../config/PriceListConfig';
 
 function AdminSettingsComponent() {
-  // Authentication state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [wrongPassword, setWrongPassword] = useState(false);
 
-  // Password change state
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
@@ -46,14 +44,12 @@ function AdminSettingsComponent() {
 
   const { isOpen, onOpen, onClose } = useDisclosure();
 
-  // Open authentication modal on mount
   useEffect(() => {
     if (!isAuthenticated) {
       onOpen();
     }
   }, [isAuthenticated, onOpen]);
 
-  // Function to handle password submission for authentication
   const handleAuth = async () => {
     const { data, error } = await api.users.verifyPassword(password);
 
@@ -68,7 +64,6 @@ function AdminSettingsComponent() {
     }
   };
 
-  // Function to handle password change
   const handlePasswordChange = async () => {
     if (!oldPassword || !newPassword || !confirmNewPassword) {
       setPasswordChangeError('All fields are required.');
@@ -106,7 +101,6 @@ function AdminSettingsComponent() {
 
   return (
     <>
-      {/* Authentication Modal */}
       <Modal
         isOpen={isOpen}
         onClose={onClose}
@@ -145,7 +139,6 @@ function AdminSettingsComponent() {
         </ModalContent>
       </Modal>
 
-      {/* Main Content - Only show if authenticated */}
       {isAuthenticated && (
         <VStack spacing={6} align="stretch" w="100%">
           <Tabs colorScheme="brand">
@@ -156,7 +149,6 @@ function AdminSettingsComponent() {
             </TabList>
 
             <TabPanels>
-              {/* Summary Configuration Tab */}
               <TabPanel>
                 <Box
                   bg="white"
@@ -171,7 +163,6 @@ function AdminSettingsComponent() {
                 </Box>
               </TabPanel>
 
-              {/* Price List Configuration Tab */}
               <TabPanel>
                 <Box
                   bg="white"
@@ -186,7 +177,6 @@ function AdminSettingsComponent() {
                 </Box>
               </TabPanel>
 
-              {/* Account Settings Tab */}
               <TabPanel>
                 <Box
                   bg="white"
@@ -208,7 +198,6 @@ function AdminSettingsComponent() {
                       </Box>
                     )}
 
-                    {/* Old Password Input */}
                     <Box>
                       <Text
                         mb={2}
@@ -241,7 +230,6 @@ function AdminSettingsComponent() {
                       </InputGroup>
                     </Box>
 
-                    {/* New Password Input */}
                     <Box>
                       <Text
                         mb={2}
@@ -274,7 +262,6 @@ function AdminSettingsComponent() {
                       </InputGroup>
                     </Box>
 
-                    {/* Confirm New Password Input */}
                     <Box>
                       <Text
                         mb={2}

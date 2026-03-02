@@ -542,6 +542,13 @@ function EmailAutomationComponent() {
   };
 
   return (
+    <Tabs colorScheme="brand">
+      <TabList>
+        <Tab>Templates</Tab>
+        <Tab>Reply Assistant</Tab>
+      </TabList>
+      <TabPanels>
+        <TabPanel px={0} pt={4}>
     <VStack spacing={4} align="stretch" w="100%">
       <HStack spacing={4} align="stretch" w="100%">
         {/* Left Column - Email Generation */}
@@ -1182,6 +1189,23 @@ function EmailAutomationComponent() {
         </AlertDialogOverlay>
       </AlertDialog>
     </VStack>
+        </TabPanel>
+        <TabPanel px={0} pt={4}>
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="center"
+            minH="300px"
+            color="gray.400"
+            _dark={{ color: 'gray.500' }}
+          >
+            <Text fontSize="lg" fontWeight="medium">
+              Work in progress
+            </Text>
+          </Box>
+        </TabPanel>
+      </TabPanels>
+    </Tabs>
   );
 }
 

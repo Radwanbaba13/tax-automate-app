@@ -38,7 +38,6 @@ function PriceListConfig() {
         const { data: priceData } = await api.priceList.getAll();
         const { data: taxData } = await api.taxRates.getAll();
 
-        // Parse service field from JSON strings if needed
         const parsedPriceData = (priceData || []).map((item: any) => {
           let service = { en: '', fr: '' };
 

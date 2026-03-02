@@ -71,6 +71,8 @@ function FormSelect({
       borderRadius="0px"
       fontWeight="bold"
       fontSize="14px"
+      bg="transparent"
+      _dark={{ bg: 'transparent' }}
       {...styles}
       {...props}
     >

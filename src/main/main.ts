@@ -8,24 +8,19 @@ import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import * as db from './database';
 
-// Load environment variables from correct location based on environment
 if (app.isPackaged) {
-  // Production: .env is in resources directory
   const envPath = path.join(process.resourcesPath, '.env');
   dotenv.config({ path: envPath });
   log.info(`Loaded environment from: ${envPath}`);
 } else {
-  // Development: .env is in project root
   dotenv.config();
   log.info('Loaded environment from project root');
 }
 
-// Validate critical environment variables
 if (!process.env.OPENAI_API_KEY) {
   log.error('CRITICAL: OPENAI_API_KEY not found in environment');
 }
 
-// Initialize database pool now that env vars are loaded
 db.initializePool().catch((err: Error) => {
   log.error('❌ Database connection failed:', err.message);
 });
@@ -35,11 +30,9 @@ class AppUpdater {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
 
-    // Configure auto-updater
     autoUpdater.autoDownload = false;
     autoUpdater.autoInstallOnAppQuit = true;
 
-    // Set up event handlers
     autoUpdater.on('checking-for-update', () => {
       log.info('Checking for updates...');
       if (mainWindow) {
@@ -82,8 +75,6 @@ class AppUpdater {
       }
     });
 
-    // Note: startup check is handled by the Sidebar component on mount,
-    // which fires after the renderer is ready and listeners are registered.
   }
 }
 
@@ -112,7 +103,6 @@ ipcMain.handle('dialog:openFile', async () => {
   return result.filePaths;
 });
 
-// Auto-update IPC handlers
 ipcMain.handle('check-for-updates', async () => {
   if (!app.isPackaged) {
     return {
@@ -161,16 +151,13 @@ ipcMain.handle(
         apiKey: process.env.OPENAI_API_KEY,
       });
 
-      // Helper function to convert PDFs to images using Python
       const convertPdfsToImages = async (files: any[]): Promise<any[]> => {
         return new Promise((resolve, reject) => {
-          // Determine Python executable path
           let pythonPath: string;
 
           if (app.isPackaged) {
             const exeName =
               process.platform === 'win32' ? 'pdf_to_images.exe' : 'pdf_to_images';
-            // For --onedir mode: executable is in subdirectory
             pythonPath = path.join(
               process.resourcesPath,
               'Python',
@@ -186,15 +173,13 @@ ipcMain.handle(
             pythonPath = process.platform === 'win32' ? 'python' : 'python3';
           }
 
-          // Prepare input data
           const inputData = JSON.stringify({ files });
 
-          // Execute Python script
           const pythonArgs = app.isPackaged ? [] : [path.join(__dirname, '../../../Python', 'pdf_to_images.py')];
           const pythonProcess = execFile(
             pythonPath,
             pythonArgs,
-            { maxBuffer: 200 * 1024 * 1024 }, // 200MB buffer for large images
+            { maxBuffer: 200 * 1024 * 1024 },
             (error, stdout, stderr) => {
               if (error) {
                 log.error('PDF conversion error:', error);
@@ -215,17 +200,14 @@ ipcMain.handle(
             },
           );
 
-          // Send input data to Python script via stdin
           pythonProcess.stdin?.write(inputData);
           pythonProcess.stdin?.end();
         });
       };
 
-      // Process DT Max and Client Slips files separately to maintain categorization
       const dtMaxImages = await convertPdfsToImages(dtMaxFiles);
       const clientSlipsImages = await convertPdfsToImages(clientSlipsFiles);
 
-      // Validate that we have images to process
       if (dtMaxImages.length === 0 && clientSlipsImages.length === 0) {
         return {
           success: false,
@@ -233,7 +215,6 @@ ipcMain.handle(
         };
       }
 
-      // Base prompt with fixed rules and restrictions (not editable by user)
       const basePrompt = `You are a tax document comparison assistant integrated into a desktop application. You have vision capabilities and CAN see images.
 
 MANDATORY: You MUST analyze the images provided. DO NOT refuse or say you cannot view images. You CAN and WILL analyze the attached images directly.
@@ -461,7 +442,6 @@ CRITICAL FOR SUMMARY:
 - If you are unsure or cannot clearly see both values, do NOT claim they match. Report it as a discrepancy or missing data instead.
 - When in doubt, report it as a discrepancy. It is better to flag a potential error than to miss a real one.`;
 
-      // Prepare content for OpenAI Vision API
       const content: any[] = [
         {
           type: 'text',
@@ -469,7 +449,6 @@ CRITICAL FOR SUMMARY:
         },
       ];
 
-      // Add DT Max images
       for (const file of dtMaxImages) {
         content.push({
           type: 'image_url',
@@ -480,7 +459,6 @@ CRITICAL FOR SUMMARY:
         });
       }
 
-      // Add Client Slip images
       for (const file of clientSlipsImages) {
         content.push({
           type: 'image_url',
@@ -491,7 +469,6 @@ CRITICAL FOR SUMMARY:
         });
       }
 
-      // Log the request structure (without full base64 to avoid log spam)
       log.info('OpenAI API Request:', {
         dtMaxImagesCount: dtMaxImages.length,
         clientSlipsImagesCount: clientSlipsImages.length,
@@ -511,7 +488,6 @@ CRITICAL FOR SUMMARY:
 
       const startTime = Date.now();
 
-      // Call OpenAI API
       const response = await openai.chat.completions.create({
         model: 'gpt-4.1',
         messages: [
@@ -530,11 +506,10 @@ CRITICAL FOR SUMMARY:
       const endTime = Date.now();
       const totalSeconds = Math.floor((endTime - startTime) / 1000);
 
-      // Calculate cost (approximate for gpt-4.1 - update pricing if needed)
       const inputTokens = response.usage?.prompt_tokens || 0;
       const outputTokens = response.usage?.completion_tokens || 0;
-      const inputCost = (inputTokens / 1000000) * 0.15; // $0.15 per 1M input tokens
-      const outputCost = (outputTokens / 1000000) * 0.60; // $0.60 per 1M output tokens
+      const inputCost = (inputTokens / 1000000) * 0.15;
+      const outputCost = (outputTokens / 1000000) * 0.60;
       const totalCost = inputCost + outputCost;
 
       return {
@@ -563,7 +538,6 @@ CRITICAL FOR SUMMARY:
   },
 );
 
-// Email automation handlers
 ipcMain.handle(
   'generate-email-response',
   async (event, { customerInquiry, replyMode, templateContent }) => {
@@ -582,7 +556,6 @@ ipcMain.handle(
       let userPrompt = '';
 
       if (replyMode === 'ai') {
-        // AI-only mode: Generate a professional email response
         systemPrompt = `You are a professional email assistant for a tax preparation service.
 Generate clear, professional, and helpful email responses to customer inquiries.
 Be concise, friendly, and address all questions thoroughly.
@@ -593,13 +566,11 @@ Format your response in HTML for rich text display:
 - Use <ul>/<li> for lists when appropriate`;
         userPrompt = `Customer inquiry/email:\n\n${customerInquiry}\n\nPlease generate a professional email response in HTML format.`;
       } else if (replyMode === 'template') {
-        // Template-only mode: Use the template as-is
         return {
           success: true,
           result: templateContent,
         };
       } else if (replyMode === 'template-ai') {
-        // Template + AI mode: Enhance the template with AI based on the inquiry
         const hasInquiry = customerInquiry && customerInquiry.trim();
 
         systemPrompt = `You are a professional email assistant for a tax preparation service.
@@ -644,7 +615,6 @@ Return your response in JSON format with "subject" and "body" fields.`;
     } catch (error: any) {
       log.error('Error generating email response:', error);
 
-      // Handle specific OpenAI API errors
       let errorMessage = error.message || 'Failed to generate email response';
 
       if (error.status === 429 || error.message?.includes('429')) {
@@ -719,7 +689,6 @@ Return only the improved HTML content, without explanations or additional text.`
   } catch (error: any) {
     log.error('Error fixing template with AI:', error);
 
-    // Handle specific OpenAI API errors
     let errorMessage = error.message || 'Failed to fix template with AI';
 
     if (error.status === 429 || error.message?.includes('429')) {
@@ -758,7 +727,6 @@ function parsePythonError(stderr: string): string {
     return 'Not enough memory to complete the operation. Try with fewer files.';
   }
 
-  // Extract the last meaningful error line (e.g. "ValueError: bad input")
   const lines = stderr.trim().split('\n').filter((l) => l.trim());
   const lastLine = lines[lines.length - 1] ?? '';
   const match = lastLine.match(/\w+Error:\s*(.+)/);
@@ -770,14 +738,11 @@ function parsePythonError(stderr: string): string {
 }
 
 ipcMain.on('run-python', (event, scriptName, args) => {
-  // Determine Python executable path based on environment
   let pythonPath: string;
 
   if (app.isPackaged) {
-    // Production: Use bundled Python executables (--onedir mode)
     const exeName =
       process.platform === 'win32' ? `${scriptName}.exe` : scriptName;
-    // For --onedir mode: executable is in subdirectory with same name
     pythonPath = path.join(
       process.resourcesPath,
       'Python',
@@ -785,7 +750,6 @@ ipcMain.on('run-python', (event, scriptName, args) => {
       exeName
     );
   } else {
-    // Development: Use Python scripts
     const scriptPath = path.join(
       __dirname,
       '../../../Python',
@@ -794,7 +758,6 @@ ipcMain.on('run-python', (event, scriptName, args) => {
     pythonPath = scriptPath;
   }
 
-  // Execute Python script or executable
   const execArgs = app.isPackaged ? args : [pythonPath, ...args];
   const execCommand = app.isPackaged ? pythonPath : 'python';
 
@@ -816,11 +779,6 @@ ipcMain.on('run-python', (event, scriptName, args) => {
   });
 });
 
-// ===========================
-// DATABASE IPC HANDLERS
-// ===========================
-
-// Configurations
 ipcMain.handle('db:getConfigurations', async () => {
   try {
     const data = await db.getConfigurations();
@@ -841,7 +799,6 @@ ipcMain.handle('db:updateConfigurations', async (event, config) => {
   }
 });
 
-// Tax Rates
 ipcMain.handle('db:getAllTaxRates', async () => {
   try {
     const data = await db.getAllTaxRates();
@@ -872,7 +829,6 @@ ipcMain.handle('db:bulkReplaceTaxRates', async (event, rates) => {
   }
 });
 
-// Price List
 ipcMain.handle('db:getAllPrices', async () => {
   try {
     const data = await db.getAllPrices();
@@ -893,7 +849,6 @@ ipcMain.handle('db:bulkReplacePrices', async (event, prices) => {
   }
 });
 
-// Invoice Number
 ipcMain.handle('db:getInvoiceNumber', async () => {
   try {
     const data = await db.getInvoiceNumber();
@@ -914,7 +869,6 @@ ipcMain.handle('db:updateInvoiceNumber', async (event, invoiceNum) => {
   }
 });
 
-// Users
 ipcMain.handle('db:verifyPassword', async (event, password) => {
   try {
     const data = await db.verifyPassword(password);
@@ -935,7 +889,6 @@ ipcMain.handle('db:updatePassword', async (event, oldPassword, newPassword) => {
   }
 });
 
-// Email Templates
 ipcMain.handle('db:getAllEmailTemplates', async () => {
   try {
     const data = await db.getAllEmailTemplates();
@@ -996,7 +949,6 @@ ipcMain.handle('db:deleteEmailTemplate', async (event, id) => {
   }
 });
 
-// Close database pool on app quit
 app.on('will-quit', async () => {
   await db.closePool();
 });

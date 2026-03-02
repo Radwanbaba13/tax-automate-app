@@ -55,7 +55,6 @@ function ClientFileCard({
       boxShadow="sm"
       borderColor="gray.200"
     >
-      {/* Row 1: Title selector + close button */}
       <HStack justify="space-between" align="center">
         <OptionChips
           options={TITLE_OPTIONS.map((t) => ({
@@ -78,9 +77,8 @@ function ClientFileCard({
 
       <Divider my={3} />
 
-      {/* Row 2: Client name + toggle switches */}
       <HStack justify="space-between" align="center">
-        <Text fontWeight="600" fontSize="md" color="gray.800">
+        <Text fontWeight="600" fontSize="md" color="gray.800" _dark={{ color: 'gray.100' }}>
           {fileItem.label || 'Untitled File'}
         </Text>
 
@@ -94,6 +92,7 @@ function ClientFileCard({
             cursor="pointer"
             fontSize="sm"
             color="gray.600"
+            _dark={{ color: 'gray.300' }}
             fontWeight="500"
           >
             <Switch
@@ -117,6 +116,7 @@ function ClientFileCard({
             cursor="pointer"
             fontSize="sm"
             color="gray.600"
+            _dark={{ color: 'gray.300' }}
             fontWeight="500"
           >
             <Switch
@@ -133,7 +133,6 @@ function ClientFileCard({
         </HStack>
       </HStack>
 
-      {/* Row 3: Couple-with selector (only when multiple files) */}
       {allFiles.length >= 2 && (
         <HStack spacing={4} mt={4} justify="space-between" align="center">
           <FormSelect
@@ -161,6 +160,7 @@ function ClientFileCard({
               cursor="pointer"
               fontSize="sm"
               color="gray.600"
+              _dark={{ color: 'gray.300' }}
               fontWeight="500"
             >
               <Switch

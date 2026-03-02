@@ -31,7 +31,6 @@ function SectionCard({
       overflow="hidden"
       {...boxProps}
     >
-      {/* Header */}
       <HStack
         px={5}
         py="12px"
@@ -85,7 +84,6 @@ function SectionCard({
         {actions && <Box flexShrink={0}>{actions}</Box>}
       </HStack>
 
-      {/* Content */}
       <Box flex={1} minH={0} {...contentProps}>
         {children}
       </Box>

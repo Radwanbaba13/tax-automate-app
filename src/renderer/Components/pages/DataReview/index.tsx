@@ -5,7 +5,6 @@ import CustomInstructions from './CustomInstructions';
 import FileUploadPanel from './FileUploadPanel';
 import ResultsPanel from './ResultsPanel';
 
-// Default user-editable prompt for specific comparison instructions
 const DEFAULT_USER_PROMPT = `Compare all fields systematically:
 
 - Income amounts (employment, self-employment, investments, etc.)
@@ -27,18 +26,15 @@ function DataReviewComponent() {
   } | null>(null);
   const [debugInfo, setDebugInfo] = React.useState<any>(null);
 
-  // Load saved prompt from localStorage on mount, or use default
   React.useEffect(() => {
     const savedPrompt = localStorage.getItem('dataReviewLastPrompt');
     if (savedPrompt) {
       setAiPrompt(savedPrompt);
     } else {
-      // Save default prompt to localStorage on first load
       localStorage.setItem('dataReviewLastPrompt', DEFAULT_USER_PROMPT);
     }
   }, []);
 
-  // Save prompt to localStorage whenever it changes
   const handlePromptChange = (value: string) => {
     setAiPrompt(value);
     localStorage.setItem('dataReviewLastPrompt', value);
@@ -97,7 +93,6 @@ function DataReviewComponent() {
     setMetrics(null);
 
     try {
-      // Convert File objects to base64 format for IPC
       const convertFilesToBase64 = async (files: File[]): Promise<any[]> => {
         const promises = files.map(async (file) => {
           const base64 = await new Promise<string>((resolve, reject) => {
@@ -123,7 +118,6 @@ function DataReviewComponent() {
       const dtMaxFilesData = await convertFilesToBase64(dtMaxFiles);
       const clientSlipsFilesData = await convertFilesToBase64(clientSlipsFiles);
 
-      // Call OpenAI via IPC
       const response = await window.electron.compareWithOpenAI(
         dtMaxFilesData,
         clientSlipsFilesData,
@@ -183,7 +177,6 @@ function DataReviewComponent() {
       w="100%"
       h="calc(100vh - 170px)"
     >
-      {/* Left Panel - Inputs */}
       <VStack
         spacing={4}
         align="stretch"
@@ -214,7 +207,6 @@ function DataReviewComponent() {
         />
       </VStack>
 
-      {/* Right Panel - Results */}
       <ResultsPanel
         isComparing={isComparing}
         comparisonResult={comparisonResult}

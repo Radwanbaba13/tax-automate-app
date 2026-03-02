@@ -1,15 +1,6 @@
-/**
- * Database Module
- * Handles MySQL database connections and queries for the Electron app
- *
- * All functions return data directly or throw errors
- * Error handling is done in IPC handlers in main.ts
- */
-
 import mysql from 'mysql2/promise';
 import { randomUUID } from 'crypto';
 
-// Lazily created pool — initialized after dotenv has loaded env vars
 let pool: mysql.Pool | null = null;
 
 function getPool(): mysql.Pool {
@@ -33,15 +24,6 @@ export async function initializePool(): Promise<void> {
   connection.release();
 }
 
-/**
- * ===========================
- * CONFIGURATIONS
- * ===========================
- */
-
-/**
- * Get configuration
- */
 export async function getConfigurations() {
   const [rows] = await getPool().execute(
     "SELECT fed_auth_section, qc_auth_section, summary_section FROM configurations WHERE id = '1' LIMIT 1",
@@ -49,9 +31,6 @@ export async function getConfigurations() {
   return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
 }
 
-/**
- * Update configuration
- */
 export async function updateConfigurations(config: {
   fed_auth_section: any;
   qc_auth_section: any;
@@ -72,15 +51,6 @@ export async function updateConfigurations(config: {
   return config;
 }
 
-/**
- * ===========================
- * TAX RATES
- * ===========================
- */
-
-/**
- * Get all tax rates
- */
 export async function getAllTaxRates() {
   const [rows] = await getPool().execute(
     'SELECT province, fedRate, provRate FROM tax_rates ORDER BY province ASC',
@@ -88,9 +58,6 @@ export async function getAllTaxRates() {
   return rows;
 }
 
-/**
- * Get tax rate by province
- */
 export async function getTaxRateByProvince(province: string) {
   const [rows] = await getPool().execute(
     'SELECT province, fedRate, provRate FROM tax_rates WHERE province = ? LIMIT 1',
@@ -99,9 +66,6 @@ export async function getTaxRateByProvince(province: string) {
   return Array.isArray(rows) && rows.length > 0 ? rows[0] : null;
 }
 
-/**
- * Bulk replace tax rates (delete all + insert new)
- */
 export async function bulkReplaceTaxRates(
   rates: Array<{ province: string; fedRate: number; provRate: number }>,
 ) {
@@ -110,10 +74,8 @@ export async function bulkReplaceTaxRates(
   try {
     await connection.beginTransaction();
 
-    // Delete all existing tax rates (except dummy record with province=0)
     await connection.execute("DELETE FROM tax_rates WHERE province != '0'");
 
-    // Filter out empty provinces and trim them
     const validRates = rates
       .filter((rate) => rate.province && rate.province.trim() !== '')
       .map((rate) => ({
@@ -121,7 +83,6 @@ export async function bulkReplaceTaxRates(
         province: rate.province.trim(),
       }));
 
-    // Remove duplicates by province (keep first occurrence) - compare trimmed values
     const seenProvinces = new Set<string>();
     const uniqueRates = validRates.filter((rate) => {
       const provinceUpper = rate.province.toUpperCase();
@@ -132,30 +93,26 @@ export async function bulkReplaceTaxRates(
       return true;
     });
 
-    // Insert new tax rates
     if (uniqueRates.length > 0) {
       const insertQuery =
         'INSERT INTO tax_rates (province, fedRate, provRate) VALUES (?, ?, ?)';
 
       for (const rate of uniqueRates) {
-        // Triple-check province is not empty and is valid before inserting
         const province = rate.province?.trim();
         if (!province || province === '' || province === '0') {
-          continue; // Skip empty or invalid provinces
+          continue;
         }
 
-        // Ensure fedRate and provRate are valid numbers
         const fedRate = Number(rate.fedRate);
         const provRate = Number(rate.provRate);
 
         if (isNaN(fedRate) || isNaN(provRate)) {
-          continue; // Skip invalid rates
+          continue;
         }
 
         try {
           await connection.execute(insertQuery, [province, fedRate, provRate]);
         } catch (insertError: any) {
-          // If it's a duplicate key error, skip this entry
           if (
             insertError.code === 'ER_DUP_ENTRY' ||
             insertError.message?.includes('Duplicate entry')
@@ -166,7 +123,6 @@ export async function bulkReplaceTaxRates(
             );
             continue;
           }
-          // Re-throw other errors
           throw insertError;
         }
       }

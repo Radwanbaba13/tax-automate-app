@@ -2,7 +2,6 @@ const { app, Menu, BrowserWindow, dialog } = require('electron');
 const { autoUpdater } = require('electron-updater');
 const log = require('electron-log');
 
-// Function to toggle fullscreen
 function toggleFullscreen() {
   const focusedWindow = BrowserWindow.getFocusedWindow();
   if (focusedWindow) {
@@ -10,7 +9,6 @@ function toggleFullscreen() {
   }
 }
 
-// Function to toggle dev tools
 function toggleDevTools() {
   const focusedWindow = BrowserWindow.getFocusedWindow();
   if (focusedWindow) {
@@ -18,7 +16,6 @@ function toggleDevTools() {
   }
 }
 
-// Function to manually check for updates
 async function checkForUpdates() {
   const focusedWindow = BrowserWindow.getFocusedWindow();
 
@@ -35,7 +32,6 @@ async function checkForUpdates() {
   try {
     log.info('Manual update check triggered');
 
-    // Show a dialog that we're checking
     dialog.showMessageBox({
       type: 'info',
       title: 'Checking for Updates',
@@ -53,7 +49,6 @@ async function checkForUpdates() {
         buttons: ['OK'],
       });
     } else {
-      // Update is available - the auto-updater events will handle showing the update modal
       log.info('Update found:', result.updateInfo);
     }
   } catch (error) {

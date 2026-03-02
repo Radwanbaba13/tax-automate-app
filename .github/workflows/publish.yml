@@ -38,7 +38,6 @@ jobs:
 
       - name: Validate required secrets
         run: |
-          # Fail fast if required secrets are missing (DB_*)
           if [ -z "${{ secrets.DB_HOST }}" ] || [ -z "${{ secrets.DB_USER }}" ] || [ -z "${{ secrets.DB_PASSWORD }}" ] || [ -z "${{ secrets.DB_NAME }}" ]; then
             echo "Missing one or more required DB secrets (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME)."
             exit 1
@@ -53,7 +52,6 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
         run: |
-          # Use printf with env vars (not inline secrets) to safely handle special chars like $ in passwords
           printf 'OPENAI_API_KEY=%s\n' "$OPENAI_API_KEY" > .env.production
           printf 'DB_HOST=%s\n' "$DB_HOST" >> .env.production
           printf 'DB_USER=%s\n' "$DB_USER" >> .env.production
@@ -68,21 +66,9 @@ jobs:
           npm run build
       - name: Publish Windows release to GitHub
         env:
-          # Add Windows code signing certificate if available
-          # CSC_LINK: ${{ secrets.WIN_CSC_LINK }}
-          # CSC_KEY_PASSWORD: ${{ secrets.WIN_CSC_KEY_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           npx electron-builder build --win --publish always
-
-      # Extra safety: explicitly upload built assets to the GitHub Release.
-      # This ensures the .exe and latest.yml actually appear under "Assets",
-      # even if electron-builder's built‑in publisher silently fails.
-      - name: List build output
-        run: |
-          echo "Contents of release/build:"
-          ls release/build
-        shell: bash
 
       - name: Force upload installer and latest.yml to GitHub Release
         env:
@@ -92,7 +78,6 @@ jobs:
           TAG_NAME="${GITHUB_REF_NAME}"
           echo "Tag name: $TAG_NAME"
 
-          # Find installer (.exe) and latest*.yml produced by electron-builder
           EXE_FILE=$(ls release/build/*.exe | head -n 1 || true)
           YML_FILE=$(ls release/build/latest*.yml | head -n 1 || true)
 
@@ -105,7 +90,6 @@ jobs:
             exit 1
           fi
 
-          # Ensure the release exists (it should for tag pushes) and upload assets
           gh release upload "$TAG_NAME" "$EXE_FILE" "$YML_FILE" --clobber
         shell: bash
 
@@ -115,48 +99,3 @@ jobs:
         run: |
           gh release edit "${GITHUB_REF_NAME}" --draft=false --latest
         shell: bash
-
-  # build-macos:
-  #   runs-on: macos-latest
-
-  #   steps:
-  #     - name: Checkout git repo
-  #       uses: actions/checkout@v3
-
-  #     - name: Install Node and NPM
-  #       uses: actions/setup-node@v3
-  #       with:
-  #         node-version: 22
-  #         cache: npm
-
-  #     - name: Setup Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: '3.11'
-
-  #     - name: Install Python dependencies
-  #       run: |
-  #         python -m pip install --upgrade pip
-  #         pip install pyinstaller
-  #         pip install -r Python/requirements.txt
-
-  #     - name: Build Python executables
-  #       run: npm run build:python
-
-  #     - name: Install and build Electron app
-  #       run: |
-  #         npm install
-  #         npm run postinstall
-  #         npm run build
-
-  #     - name: Publish macOS release
-  #       env:
-  #         # Add macOS code signing certificates if available
-  #         # APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_ID_PASS }}
-  #         # APPLE_ID: ${{ secrets.APPLE_ID }}
-  #         # APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-  #         # CSC_LINK: ${{ secrets.MAC_CSC_LINK }}
-  #         # CSC_KEY_PASSWORD: ${{ secrets.MAC_CSC_KEY_PASSWORD }}
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #       run: |
-  #         npx electron-builder build --mac --publish always

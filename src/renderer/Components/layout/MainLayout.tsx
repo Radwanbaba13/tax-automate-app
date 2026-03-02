@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Button,
@@ -26,30 +26,29 @@ const routeTitles: Record<string, string> = {
   '/admin-settings': 'Admin Settings',
 };
 
-const SIDEBAR_WIDTH = '220px';
-
 function MainLayout({ children }: MainLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const location = useLocation();
   const pageTitle = routeTitles[location.pathname] || 'Page';
   const isHomePage = location.pathname === '/';
   const { colorMode, toggleColorMode } = useColorMode();
 
+  const sidebarW = sidebarOpen ? '220px' : '64px';
+
   return (
     <Box position="relative" h="100vh" w="100vw" overflow="hidden">
-      {/* Sidebar */}
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} onToggle={() => setSidebarOpen((o) => !o)} />
 
-      {/* Main Content Area */}
       <Box
         position="absolute"
-        left={SIDEBAR_WIDTH}
+        left={sidebarW}
         top={0}
         right={0}
         bottom={0}
         overflowY="auto"
+        transition="left 0.25s ease"
         bg={useColorModeValue('gray.50', '#101010')}
       >
-        {/* Header with Breadcrumb and Page Title - Hidden on Home Page */}
         {!isHomePage && (
           <Box
             bg={useColorModeValue('white', '#181818')}
@@ -72,7 +71,13 @@ function MainLayout({ children }: MainLayoutProps) {
               <Button
                 onClick={toggleColorMode}
                 variant="ghost"
-                leftIcon={colorMode === 'light' ? <FiMoon size={15} /> : <FiSun size={15} />}
+                leftIcon={
+                  colorMode === 'light' ? (
+                    <FiMoon size={15} />
+                  ) : (
+                    <FiSun size={15} />
+                  )
+                }
                 size="sm"
                 fontWeight="500"
                 borderRadius="8px"
@@ -86,7 +91,6 @@ function MainLayout({ children }: MainLayoutProps) {
           </Box>
         )}
 
-        {/* Page Content */}
         <Box p={!isHomePage ? 8 : 0} w="100%">
           {children}
         </Box>
