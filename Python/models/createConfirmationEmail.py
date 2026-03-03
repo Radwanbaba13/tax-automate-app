@@ -387,7 +387,6 @@ def add_tax_summary_fees_section_french(doc, selected_prices, gst_rate, qst_rate
     adjusted_subtotal = subtotal + adjustment_amount
 
     if includeTaxes:
-        raise ValueError (gst_rate)
         gst = adjusted_subtotal * (gst_rate / 100)
         qst = adjusted_subtotal * (qst_rate / 100) if province == "QC" else 0
     else:

@@ -1,6 +1,5 @@
 import fitz  # PyMuPDF
 import datetime
-import locale
 import os
 import sys
 
@@ -321,14 +320,13 @@ def create_confirmation_invoice_french(directory_path, selected_prices, invoice_
     if invoice_details.get('email') or invoice_details.get('phoneNumber'):
         page.insert_text((10, 280), f"{invoice_details.get('email', 'N/A')}         {invoice_details.get('phoneNumber', 'N/A')}", fontname=text_style[0], fontsize=9)
 
-    # Set locale to French
-    locale.setlocale(locale.LC_TIME, "fr_FR.UTF-8")
-
-    # Format date properly in French and ensure correct encoding
-    formatted_date = datetime.date.today().strftime('%d %B %Y')
-
-    # Ensure the output is correctly encoded
-    formatted_date = formatted_date.encode('latin1').decode('utf-8')
+    # Format date in French without relying on system locale (not portable on Windows)
+    _fr_months = [
+        "janvier", "février", "mars", "avril", "mai", "juin",
+        "juillet", "août", "septembre", "octobre", "novembre", "décembre",
+    ]
+    today = datetime.date.today()
+    formatted_date = f"{today.day} {_fr_months[today.month - 1]} {today.year}"
 
     align_label_and_value("Numéro de facture :", formatted_invoice_number, 220)
     align_label_and_value("Date de facture :", formatted_date, 240)
