@@ -12,6 +12,7 @@ interface FileUploadPanelProps {
   onClearDtMax: () => void;
   onClearClientSlips: () => void;
   onCompare: () => void;
+  onNewReview: () => void;
   isComparing: boolean;
   isDisabled: boolean;
 }
@@ -24,6 +25,7 @@ function FileUploadPanel({
   onClearDtMax,
   onClearClientSlips,
   onCompare,
+  onNewReview,
   isComparing,
   isDisabled,
 }: FileUploadPanelProps) {
@@ -31,6 +33,16 @@ function FileUploadPanel({
     <SectionCard
       icon={<MdCloudUpload size={18} />}
       title="Upload Documents"
+      actions={
+        <Button
+          size="xs"
+          variant="ghost"
+          colorScheme="purple"
+          onClick={onNewReview}
+        >
+          New Review
+        </Button>
+      }
       contentProps={{ p: 4 }}
     >
       <VStack spacing={4} align="stretch">

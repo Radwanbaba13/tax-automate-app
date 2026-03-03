@@ -42,17 +42,23 @@ jobs:
             echo "Missing one or more required DB secrets (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME)."
             exit 1
           fi
+          if [ -z "${{ secrets.DELTEC_API_URL }}" ] || [ -z "${{ secrets.DELTEC_SANKARI_API_KEY }}" ]; then
+            echo "Missing one or more required Deltec API secrets (DELTEC_API_URL, DELTEC_SANKARI_API_KEY)."
+            exit 1
+          fi
         shell: bash
 
       - name: Create production .env file
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DELTEC_API_URL: ${{ secrets.DELTEC_API_URL }}
+          DELTEC_SANKARI_API_KEY: ${{ secrets.DELTEC_SANKARI_API_KEY }}
           DB_HOST: ${{ secrets.DB_HOST }}
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
         run: |
-          printf 'OPENAI_API_KEY=%s\n' "$OPENAI_API_KEY" > .env.production
+          printf 'DELTEC_API_URL=%s\n' "$DELTEC_API_URL" > .env.production
+          printf 'DELTEC_SANKARI_API_KEY=%s\n' "$DELTEC_SANKARI_API_KEY" >> .env.production
           printf 'DB_HOST=%s\n' "$DB_HOST" >> .env.production
           printf 'DB_USER=%s\n' "$DB_USER" >> .env.production
           printf 'DB_PASSWORD=%s\n' "$DB_PASSWORD" >> .env.production

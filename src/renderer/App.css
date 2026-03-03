@@ -1,4 +1,4 @@
- body {
+body {
   position: relative;
   color: #fff;
   height: 100vh;
@@ -9,4 +9,30 @@
   align-items: center;
 }
 
+.chakra-ui-dark select option {
+  background-color: #1e1e1e;
+  color: #e2e8f0;
+}
 
+/* Global scrollbar styling */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cf3350;
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8293f;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}

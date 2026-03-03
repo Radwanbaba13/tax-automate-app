@@ -105,16 +105,16 @@ function ResultsPanel({
       title="Comparison Results"
       actions={
         metrics && !isComparing ? (
-          <HStack spacing={4} fontSize="sm" color="gray.600">
+          <HStack spacing={4} fontSize="sm" color="gray.600" _dark={{ color: 'gray.400' }}>
             <HStack spacing={1}>
               <Text fontWeight="600">Cost:</Text>
-              <Text color="green.600" fontWeight="700">
+              <Text color="green.600" _dark={{ color: 'green.400' }} fontWeight="700">
                 ${metrics.cost.toFixed(4)}
               </Text>
             </HStack>
             <HStack spacing={1}>
               <Text fontWeight="600">Time:</Text>
-              <Text color="blue.600" fontWeight="700">
+              <Text color="blue.600" _dark={{ color: 'blue.400' }} fontWeight="700">
                 {metrics.timeMinutes > 0 && `${metrics.timeMinutes}m `}
                 {metrics.timeSeconds}s
               </Text>
@@ -128,7 +128,7 @@ function ResultsPanel({
         {isComparing && (
           <VStack spacing={4} flex="1" justify="center">
             <Spinner size="xl" color="purple.500" thickness="4px" />
-            <Text color="gray.600">AI is analyzing the files...</Text>
+            <Text color="gray.600" _dark={{ color: 'gray.400' }}>AI is analyzing the files...</Text>
           </VStack>
         )}
 
@@ -137,13 +137,14 @@ function ResultsPanel({
             <Box
               flex="1"
               bg="gray.50"
+              _dark={{ bg: 'whiteAlpha.50', borderColor: 'gray.600' }}
               p={4}
               borderRadius="md"
               border="1px solid"
               borderColor="gray.200"
               overflow="auto"
             >
-              <Text whiteSpace="pre-wrap" fontFamily="monospace" fontSize="sm">
+              <Text whiteSpace="pre-wrap" fontFamily="monospace" fontSize="sm" color="gray.800" _dark={{ color: 'gray.100' }}>
                 {comparisonResult}
               </Text>
             </Box>

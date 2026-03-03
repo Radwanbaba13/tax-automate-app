@@ -28,6 +28,11 @@ import {
   AlertDialogHeader,
   AlertDialogContent,
   AlertDialogOverlay,
+  Accordion,
+  AccordionItem,
+  AccordionButton,
+  AccordionPanel,
+  AccordionIcon,
 } from '@chakra-ui/react';
 import { keyframes } from '@emotion/react';
 import {
@@ -37,9 +42,10 @@ import {
   MdEdit,
   MdAutoFixHigh,
   MdAutoAwesome,
-  MdInbox,
   MdReply,
   MdBookmarks,
+  MdSearch,
+  MdHistory,
 } from 'react-icons/md';
 import { showToast } from '../../Utils/toast';
 import SectionCard from '../common/SectionCard';
@@ -61,6 +67,28 @@ interface EmailTemplate {
   contentEN: string;
   contentFR: string;
   createdAt: string;
+}
+
+interface SuggestSource {
+  subject: string;
+  score: number;
+  date: string;
+  customerText: string;
+  agentText: string;
+}
+
+function formatSourceDate(dateStr: string): string {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return dateStr;
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  } catch {
+    return dateStr;
+  }
 }
 
 // Sparkle animation for AI button
@@ -115,6 +143,18 @@ function EmailAutomationComponent() {
   const [isFixing, setIsFixing] = useState(false);
   const [fixingLanguage, setFixingLanguage] = useState<'EN' | 'FR'>('EN');
   const [, setIsTemplatesLoading] = useState(false);
+
+  // Reply Assistant state
+  const [ragQuery, setRagQuery] = useState('');
+  const [isFetchingSuggestions, setIsFetchingSuggestions] = useState(false);
+  const [suggestions, setSuggestions] = useState<
+    [string, string, string] | null
+  >(null);
+  const [sources, setSources] = useState<SuggestSource[]>([]);
+  const [selectedSuggestion, setSelectedSuggestion] = useState<number | null>(
+    null,
+  );
+  const [selectedReply, setSelectedReply] = useState('');
 
   // Load templates from DB on mount (fallback to localStorage if DB fails)
   useEffect(() => {
@@ -391,13 +431,13 @@ function EmailAutomationComponent() {
       // Handle specific API errors
       if (errorMessage.includes('429') || errorMessage.includes('quota')) {
         userMessage =
-          'API quota exceeded. Please check your OpenAI billing and plan.';
+          'API quota exceeded. Please check your Deltec API configuration.';
       } else if (
         errorMessage.includes('401') ||
         errorMessage.includes('unauthorized')
       ) {
         userMessage =
-          'Invalid API key. Please check your OpenAI API key configuration.';
+          'Invalid API key. Please check your Deltec API key configuration.';
       } else if (errorMessage.includes('rate limit')) {
         userMessage =
           'Rate limit exceeded. Please wait a moment and try again.';
@@ -456,30 +496,9 @@ function EmailAutomationComponent() {
       });
 
       if (response.success) {
-        const result = response.result || '';
-        let emailContent = '';
-        let extractedSubject = '';
-
-        // Try to parse as JSON first
-        try {
-          const jsonMatch = result.match(/\{[\s\S]*\}/);
-          if (jsonMatch) {
-            const parsed = JSON.parse(jsonMatch[0]);
-            extractedSubject = parsed.subject || '';
-            emailContent = parsed.body || parsed.content || '';
-          }
-        } catch {
-          // Not JSON, try to extract subject from text format
-          const subjectMatch = result.match(/Subject:\s*(.+?)(\n\n|\n|$)/i);
-          if (subjectMatch) {
-            extractedSubject = subjectMatch[1].trim();
-            emailContent = result
-              .replace(/Subject:\s*.+?(\n\n|\n|$)/i, '')
-              .trim();
-          } else {
-            emailContent = result;
-          }
-        }
+        const result = response.result;
+        let emailContent = result?.body || '';
+        const extractedSubject = result?.subject || '';
 
         // Set subject
         if (extractedSubject) {
@@ -488,14 +507,6 @@ function EmailAutomationComponent() {
           } else {
             setGeneratedSubjectFR(extractedSubject);
           }
-        }
-
-        // Add professional signature block if not already present (HTML format)
-        const signature = `<p>Sincerely,</p><p><strong>Nawaf Sankari</strong><br><em>Fiscal Specialist and Financial Security Advisor</em><br><strong>Sankari Inc.</strong> — Fiscal and Financial Services<br><a href="http://www.sankari.ca">www.sankari.ca</a><br>taxdeclaration@sankari.ca</p>`;
-
-        // Check if signature already exists
-        if (!emailContent.includes('Nawaf Sankari')) {
-          emailContent += signature;
         }
 
         setGeneratedEmail(emailContent);
@@ -509,13 +520,13 @@ function EmailAutomationComponent() {
       // Handle specific API errors
       if (errorMessage.includes('429') || errorMessage.includes('quota')) {
         userMessage =
-          'API quota exceeded. Please check your OpenAI billing and plan.';
+          'API quota exceeded. Please check your Deltec API configuration.';
       } else if (
         errorMessage.includes('401') ||
         errorMessage.includes('unauthorized')
       ) {
         userMessage =
-          'Invalid API key. Please check your OpenAI API key configuration.';
+          'Invalid API key. Please check your Deltec API key configuration.';
       } else if (errorMessage.includes('rate limit')) {
         userMessage =
           'Rate limit exceeded. Please wait a moment and try again.';
@@ -541,668 +552,1038 @@ function EmailAutomationComponent() {
     });
   };
 
+  const handleGetSuggestions = async () => {
+    if (!ragQuery.trim()) return;
+    setIsFetchingSuggestions(true);
+    setSuggestions(null);
+    setSources([]);
+    setSelectedSuggestion(null);
+    setSelectedReply('');
+    try {
+      const response = await window.electron.suggestReplies(ragQuery);
+      if (!response.success) {
+        const code = response.code;
+        if (code === 'IRRELEVANT_QUERY') {
+          showToast({
+            title: 'Not a support inquiry',
+            description:
+              'This message does not appear to be a customer support inquiry. Please paste an actual customer email.',
+            status: 'warning',
+          });
+        } else if (code === 'NO_RELEVANT_CASES') {
+          showToast({
+            title: 'No similar cases found',
+            description:
+              'No past support cases matched this inquiry. Try rephrasing or providing more detail.',
+            status: 'warning',
+          });
+        } else {
+          showToast({
+            title: 'Failed to get suggestions',
+            description: response.error || 'An unexpected error occurred.',
+            status: 'error',
+          });
+        }
+        return;
+      }
+      setSuggestions(response.result!.suggestions);
+      setSources(response.result!.sources);
+    } catch (error: any) {
+      showToast({
+        title: 'Failed to get suggestions',
+        description: error.message || 'An unexpected error occurred.',
+        status: 'error',
+      });
+    } finally {
+      setIsFetchingSuggestions(false);
+    }
+  };
+
+  const handleUseSuggestion = (index: number, text: string) => {
+    setSelectedSuggestion(index);
+    setSelectedReply(text);
+  };
+
+  const handleCopySelectedReply = async () => {
+    await navigator.clipboard.writeText(selectedReply);
+    showToast({
+      title: 'Copied!',
+      description: 'Reply copied to clipboard.',
+      status: 'success',
+      duration: 2000,
+    });
+  };
+
+  const handleCopySuggestion = async (text: string, index: number) => {
+    setSelectedSuggestion(index);
+    const escaped = text
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/\n/g, '<br>');
+    const html = `<span style="font-family: Arial, sans-serif; font-size: 10pt;">${escaped}</span>`;
+    await copyRichText(html);
+    showToast({
+      title: 'Copied!',
+      description: 'Reply copied to clipboard.',
+      status: 'success',
+      duration: 2000,
+    });
+  };
+
   return (
     <Tabs colorScheme="brand">
       <TabList>
-        <Tab>Templates</Tab>
-        <Tab>Reply Assistant</Tab>
+        <Tab fontWeight="bold">Templates</Tab>
+        <Tab fontWeight="bold">Reply Assistant</Tab>
       </TabList>
       <TabPanels>
         <TabPanel px={0} pt={4}>
-    <VStack spacing={4} align="stretch" w="100%">
-      <HStack spacing={4} align="stretch" w="100%">
-        {/* Left Column - Email Generation */}
-        <VStack spacing={4} flex={1} align="stretch">
-          {/* Customer Inquiry Input */}
-          <SectionCard
-            icon={<MdInbox size={18} />}
-            title="Customer Inquiry / Email"
-            subtitle="Optional"
-            actions={
-              <SegmentedControl
-                options={[
-                  { label: 'EN', value: 'EN', colorScheme: 'red' },
-                  { label: 'FR', value: 'FR', colorScheme: 'blue' },
-                ]}
-                value={inquiryLanguage}
-                onChange={(v) => setInquiryLanguage(v as 'EN' | 'FR')}
-              />
-            }
-            contentProps={{ p: 4 }}
-          >
-            <Textarea
-              placeholder="Paste customer email or inquiry here..."
-              value={customerInquiry}
-              onChange={(e) => setCustomerInquiry(e.target.value)}
-              minH="150px"
-              resize="vertical"
-            />
-          </SectionCard>
-
-          {/* Response Input */}
-          <SectionCard
-            icon={<MdReply size={18} />}
-            title="Your Response"
-            actions={
-              <Button
-                leftIcon={<MdContentCopy />}
-                size="sm"
-                onClick={async () => {
-                  if (isHtmlContent(responseText)) {
-                    await copyRichText(wrapInEmailHtml(responseText));
-                  } else {
-                    await navigator.clipboard.writeText(responseText);
-                  }
-                  showToast({
-                    title: 'Copied!',
-                    description: 'Response copied to clipboard.',
-                    status: 'success',
-                    duration: 2000,
-                  });
-                }}
-                isDisabled={!htmlToPlainText(responseText).trim()}
-              >
-                Copy
-              </Button>
-            }
-            contentProps={{ p: 4 }}
-          >
-            <VStack spacing={3} align="stretch">
-              <Box>
-                <Text mb={2} fontSize="sm" fontWeight="medium" color="gray.600">
-                  Subject ({inquiryLanguage})
-                </Text>
-                <Input
-                  placeholder={`Email subject (${inquiryLanguage})...`}
-                  value={
-                    inquiryLanguage === 'EN'
-                      ? responseSubjectEN
-                      : responseSubjectFR
-                  }
-                  onChange={(e) => {
-                    if (inquiryLanguage === 'EN') {
-                      setResponseSubjectEN(e.target.value);
-                    } else {
-                      setResponseSubjectFR(e.target.value);
-                    }
-                  }}
-                />
-              </Box>
-              <Box>
-                <Text mb={2} fontSize="sm" fontWeight="medium" color="gray.600">
-                  Content
-                </Text>
-                <RichTextEditor
-                  value={responseText}
-                  onChange={setResponseText}
-                  placeholder="Type your response here, or click on a template to load it..."
-                  minHeight="200px"
-                />
-              </Box>
-            </VStack>
-          </SectionCard>
-
-          {/* Refine with AI Button */}
-          <Button
-            leftIcon={<MdAutoAwesome />}
-            colorScheme="purple"
-            size="md"
-            onClick={handleRefineWithAI}
-            isLoading={isGenerating}
-            loadingText="Refining..."
-            sx={{
-              '& svg': {
-                animation: isGenerating
-                  ? `${sparkle} 2s ease-in-out infinite`
-                  : 'none',
-              },
-            }}
-          >
-            Refine with AI
-          </Button>
-
-          {/* Generated Email Output */}
-          {generatedEmail && (
-            <SectionCard
-              icon={<MdAutoAwesome size={18} />}
-              title="Generated Email"
-              actions={
-                <Button
-                  leftIcon={<MdContentCopy />}
-                  size="sm"
-                  onClick={handleCopyEmail}
-                >
-                  Copy to Clipboard
-                </Button>
-              }
-              contentProps={{ p: 4 }}
+          <VStack spacing={4} align="stretch" w="100%">
+            <HStack
+              spacing={4}
+              align="stretch"
+              w="100%"
+              minH="calc(100vh - 110px)"
             >
-              <VStack spacing={3} align="stretch">
-                {(() => {
-                  const currentSubject =
-                    inquiryLanguage === 'EN'
-                      ? generatedSubjectEN
-                      : generatedSubjectFR;
-                  return currentSubject ? (
+              {/* Left Column - Email Generation */}
+              <VStack spacing={4} flex={1} align="stretch" height="100%">
+                {/* Response Input */}
+                <SectionCard
+                  icon={<MdReply size={18} />}
+                  title="Your Response"
+                  actions={
+                    <HStack spacing={2}>
+                      <SegmentedControl
+                        options={[
+                          { label: 'EN', value: 'EN', colorScheme: 'red' },
+                          { label: 'FR', value: 'FR', colorScheme: 'blue' },
+                        ]}
+                        value={inquiryLanguage}
+                        onChange={(v) => setInquiryLanguage(v as 'EN' | 'FR')}
+                      />
+                      <Button
+                        leftIcon={<MdContentCopy />}
+                        size="sm"
+                        onClick={async () => {
+                          if (isHtmlContent(responseText)) {
+                            await copyRichText(wrapInEmailHtml(responseText));
+                          } else {
+                            await navigator.clipboard.writeText(responseText);
+                          }
+                          showToast({
+                            title: 'Copied!',
+                            description: 'Response copied to clipboard.',
+                            status: 'success',
+                            duration: 2000,
+                          });
+                        }}
+                        isDisabled={!htmlToPlainText(responseText).trim()}
+                      >
+                        Copy
+                      </Button>
+                    </HStack>
+                  }
+                  contentProps={{ p: 4 }}
+                >
+                  <VStack spacing={3} align="stretch">
                     <Box>
                       <Text
+                        mb={2}
                         fontSize="sm"
                         fontWeight="medium"
                         color="gray.600"
-                        mb={1}
                       >
                         Subject ({inquiryLanguage})
                       </Text>
-                      <Box
-                        p={3}
-                        bg="gray.50"
-                        borderRadius="md"
-                        border="1px solid"
-                        borderColor="gray.200"
-                        fontWeight="medium"
-                      >
-                        {currentSubject}
-                      </Box>
+                      <Input
+                        placeholder={`Email subject (${inquiryLanguage})...`}
+                        value={
+                          inquiryLanguage === 'EN'
+                            ? responseSubjectEN
+                            : responseSubjectFR
+                        }
+                        onChange={(e) => {
+                          if (inquiryLanguage === 'EN') {
+                            setResponseSubjectEN(e.target.value);
+                          } else {
+                            setResponseSubjectFR(e.target.value);
+                          }
+                        }}
+                      />
                     </Box>
-                  ) : null;
-                })()}
-                <Box>
-                  <Text
-                    fontSize="sm"
-                    fontWeight="medium"
-                    color="gray.600"
-                    mb={1}
-                  >
-                    Content
-                  </Text>
-                  <Box
-                    p={4}
-                    bg="white"
-                    _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
-                    borderRadius="md"
-                    border="1px solid"
-                    borderColor="gray.200"
-                    maxH="400px"
-                    overflowY="auto"
-                    fontSize="sm"
-                    lineHeight="1.6"
-                  >
-                    <HtmlContentViewer html={generatedEmail} color="gray.700" />
-                  </Box>
-                </Box>
-              </VStack>
-            </SectionCard>
-          )}
-        </VStack>
-
-        {/* Right Column - Templates */}
-        <VStack spacing={4} flex={1} align="stretch">
-          <SectionCard
-            icon={<MdBookmarks size={18} />}
-            title="Email Templates"
-            subtitle={
-              templates.length > 0
-                ? `${templates.length} template${templates.length !== 1 ? 's' : ''}`
-                : undefined
-            }
-            actions={
-              <Button
-                leftIcon={<MdAdd />}
-                size="sm"
-                colorScheme="blue"
-                onClick={onCreateOpen}
-              >
-                Create
-              </Button>
-            }
-            contentProps={{ p: 4 }}
-          >
-            <Box mb={4}>
-              <Input
-                placeholder="Search templates by name or subject..."
-                value={templateSearchQuery}
-                onChange={(e) => setTemplateSearchQuery(e.target.value)}
-                size="sm"
-              />
-            </Box>
-
-            {(() => {
-              // Filter templates based on search query
-              const filteredTemplates = templates.filter((template) => {
-                if (!templateSearchQuery.trim()) return true;
-                const query = templateSearchQuery.toLowerCase();
-                return (
-                  template.name.toLowerCase().includes(query) ||
-                  template.subjectEN.toLowerCase().includes(query) ||
-                  template.subjectFR.toLowerCase().includes(query)
-                );
-              });
-
-              if (filteredTemplates.length === 0) {
-                return (
-                  <Box
-                    py={8}
-                    textAlign="center"
-                    color="gray.500"
-                    _dark={{ color: 'gray.400' }}
-                  >
-                    <Text>
-                      {templateSearchQuery
-                        ? 'No templates found matching your search.'
-                        : 'No templates yet. Create your first template!'}
-                    </Text>
-                  </Box>
-                );
-              }
-
-              return (
-                <VStack
-                  spacing={2}
-                  align="stretch"
-                  maxH="600px"
-                  overflowY="auto"
-                >
-                  {filteredTemplates.map((template) => {
-                    const hasEN = !!htmlToPlainText(template.contentEN).trim();
-                    const hasFR = !!htmlToPlainText(template.contentFR).trim();
-                    return (
-                      <Box
-                        key={template.id}
-                        p={3}
-                        border="2px solid"
-                        borderColor={
-                          selectedTemplateId === template.id
-                            ? 'blue.400'
-                            : 'gray.200'
-                        }
-                        borderRadius="md"
-                        cursor="pointer"
-                        bg={
-                          selectedTemplateId === template.id
-                            ? 'blue.50'
-                            : 'white'
-                        }
-                        _hover={{
-                          bg:
-                            selectedTemplateId === template.id
-                              ? 'blue.50'
-                              : 'gray.50',
-                          borderColor: 'blue.300',
-                          _dark: {
-                            bg:
-                              selectedTemplateId === template.id
-                                ? '#243447'
-                                : '#202020',
-                          },
-                        }}
-                        _dark={{
-                          borderColor:
-                            selectedTemplateId === template.id
-                              ? 'blue.300'
-                              : '#2a2a2a',
-                          bg:
-                            selectedTemplateId === template.id
-                              ? '#1f2933'
-                              : '#181818',
-                        }}
-                        onClick={() => handleTemplateClick(template)}
-                        transition="all 0.2s"
+                    <Box>
+                      <Text
+                        mb={2}
+                        fontSize="sm"
+                        fontWeight="medium"
+                        color="gray.600"
                       >
-                        <HStack justify="space-between">
-                          <VStack align="start" spacing={1} flex={1}>
-                            <HStack>
-                              <Text fontWeight="medium">{template.name}</Text>
-                              {hasEN && (
-                                <Badge colorScheme="red" fontSize="xs">
-                                  EN
-                                </Badge>
-                              )}
-                              {hasFR && (
-                                <Badge colorScheme="blue" fontSize="xs">
-                                  FR
-                                </Badge>
-                              )}
-                            </HStack>
-                            {(() => {
-                              const currentSubject =
-                                inquiryLanguage === 'EN'
-                                  ? template.subjectEN
-                                  : template.subjectFR;
-                              return currentSubject ? (
-                                <Text
-                                  fontSize="xs"
-                                  color="gray.500"
-                                  fontStyle="italic"
-                                  _dark={{ color: 'gray.400' }}
-                                >
-                                  Subject ({inquiryLanguage}): {currentSubject}
-                                </Text>
-                              ) : null;
-                            })()}
+                        Content
+                      </Text>
+                      <RichTextEditor
+                        value={responseText}
+                        onChange={setResponseText}
+                        placeholder="Type your response here, or click on a template to load it..."
+                        minHeight="200px"
+                      />
+                    </Box>
+                  </VStack>
+                </SectionCard>
+
+                {/* Refine with AI Button */}
+                <Button
+                  leftIcon={<MdAutoAwesome />}
+                  colorScheme="purple"
+                  size="md"
+                  onClick={handleRefineWithAI}
+                  isLoading={isGenerating}
+                  loadingText="Refining..."
+                  sx={{
+                    '& svg': {
+                      animation: isGenerating
+                        ? `${sparkle} 2s ease-in-out infinite`
+                        : 'none',
+                    },
+                  }}
+                >
+                  Refine with AI
+                </Button>
+
+                {/* Generated Email Output */}
+                {generatedEmail && (
+                  <SectionCard
+                    icon={<MdAutoAwesome size={18} />}
+                    title="Generated Email"
+                    actions={
+                      <Button
+                        leftIcon={<MdContentCopy />}
+                        size="sm"
+                        onClick={handleCopyEmail}
+                      >
+                        Copy to Clipboard
+                      </Button>
+                    }
+                    contentProps={{ p: 4 }}
+                  >
+                    <VStack spacing={3} align="stretch">
+                      {(() => {
+                        const currentSubject =
+                          inquiryLanguage === 'EN'
+                            ? generatedSubjectEN
+                            : generatedSubjectFR;
+                        return currentSubject ? (
+                          <Box>
                             <Text
                               fontSize="sm"
+                              fontWeight="medium"
                               color="gray.600"
-                              noOfLines={2}
-                              _dark={{ color: 'gray.300' }}
+                              _dark={{ color: 'gray.400' }}
+                              mb={1}
                             >
-                              {(() => {
-                                const content =
-                                  inquiryLanguage === 'EN' && template.contentEN
-                                    ? template.contentEN
-                                    : template.contentFR || template.contentEN;
-
-                                // Strip HTML for preview
-                                const plainText = htmlToPlainText(content);
-                                return `${plainText.substring(0, 100)}...`;
-                              })()}
+                              Subject ({inquiryLanguage})
                             </Text>
-                          </VStack>
-                          <HStack onClick={(e) => e.stopPropagation()}>
-                            <IconButton
-                              aria-label="Edit"
-                              icon={<MdEdit />}
-                              size="sm"
-                              colorScheme="blue"
-                              variant="ghost"
-                              onClick={() => openEditModal(template)}
-                            />
-                            <IconButton
-                              aria-label="Delete"
-                              icon={<MdDelete />}
-                              size="sm"
-                              colorScheme="red"
-                              variant="ghost"
-                              onClick={() => {
-                                setTemplateToDelete(template.id);
-                                onDeleteOpen();
+                            <Box
+                              p={3}
+                              bg="gray.50"
+                              _dark={{
+                                bg: '#1e1e1e',
+                                borderColor: '#2a2a2a',
+                                color: 'gray.100',
                               }}
-                            />
-                          </HStack>
-                        </HStack>
+                              borderRadius="md"
+                              border="1px solid"
+                              borderColor="gray.200"
+                              fontWeight="medium"
+                            >
+                              {currentSubject}
+                            </Box>
+                          </Box>
+                        ) : null;
+                      })()}
+                      <Box>
+                        <Text
+                          fontSize="sm"
+                          fontWeight="medium"
+                          color="gray.600"
+                          _dark={{ color: 'gray.400' }}
+                          mb={1}
+                        >
+                          Content
+                        </Text>
+                        <Box
+                          p={4}
+                          bg="white"
+                          _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
+                          borderRadius="md"
+                          border="1px solid"
+                          borderColor="gray.200"
+                          maxH="400px"
+                          overflowY="auto"
+                          fontSize="sm"
+                          lineHeight="1.6"
+                        >
+                          <HtmlContentViewer
+                            html={generatedEmail}
+                            color="gray.700"
+                            _dark={{ color: 'gray.100' }}
+                          />
+                        </Box>
                       </Box>
-                    );
-                  })}
-                </VStack>
-              );
-            })()}
-          </SectionCard>
-        </VStack>
-      </HStack>
+                    </VStack>
+                  </SectionCard>
+                )}
+              </VStack>
 
-      {/* Create Template Modal */}
-      <Modal
-        isOpen={isCreateOpen}
-        onClose={onCreateClose}
-        size="xl"
-        closeOnOverlayClick={false}
-      >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Create Email Template</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <Box>
-                <Text mb={2} fontWeight="medium">
-                  Template Name
-                </Text>
-                <Input
-                  placeholder="e.g., Common Question Response"
-                  value={newTemplateName}
-                  onChange={(e) => setNewTemplateName(e.target.value)}
-                />
-              </Box>
-              <Tabs>
-                <TabList>
-                  <Tab>English (EN)</Tab>
-                  <Tab>Français (FR)</Tab>
-                </TabList>
-                <TabPanels>
-                  <TabPanel px={0}>
-                    <VStack spacing={3} align="stretch">
-                      <Box>
-                        <Text mb={2} fontWeight="medium">
-                          Subject (EN)
-                        </Text>
-                        <Input
-                          placeholder="Email subject in English..."
-                          value={newTemplateSubjectEN}
-                          onChange={(e) =>
-                            setNewTemplateSubjectEN(e.target.value)
-                          }
-                        />
-                      </Box>
-                      <Box>
-                        <Text mb={2} fontWeight="medium">
-                          Content (EN)
-                        </Text>
-                        <RichTextEditor
-                          value={newTemplateContentEN}
-                          onChange={setNewTemplateContentEN}
-                          placeholder="Enter your English email template content here..."
-                          minHeight="200px"
-                        />
-                      </Box>
-                    </VStack>
-                  </TabPanel>
-                  <TabPanel px={0}>
-                    <VStack spacing={3} align="stretch">
-                      <Box>
-                        <Text mb={2} fontWeight="medium">
-                          Subject (FR)
-                        </Text>
-                        <Input
-                          placeholder="Sujet de l'email en français..."
-                          value={newTemplateSubjectFR}
-                          onChange={(e) =>
-                            setNewTemplateSubjectFR(e.target.value)
-                          }
-                        />
-                      </Box>
-                      <Box>
-                        <Text mb={2} fontWeight="medium">
-                          Content (FR)
-                        </Text>
-                        <RichTextEditor
-                          value={newTemplateContentFR}
-                          onChange={setNewTemplateContentFR}
-                          placeholder="Entrez le contenu de votre modèle d'email en français ici..."
-                          minHeight="200px"
-                        />
-                      </Box>
-                    </VStack>
-                  </TabPanel>
-                </TabPanels>
-              </Tabs>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onCreateClose}>
-              Cancel
-            </Button>
-            <Button colorScheme="blue" onClick={handleCreateTemplate}>
-              Create Template
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Edit Template Modal */}
-      <Modal
-        isOpen={isEditOpen}
-        onClose={onEditClose}
-        size="xl"
-        closeOnOverlayClick={false}
-      >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Edit Email Template</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            <VStack spacing={4} align="stretch">
-              <Box>
-                <Text mb={2} fontWeight="medium">
-                  Template Name
-                </Text>
-                <Input
-                  value={newTemplateName}
-                  onChange={(e) => setNewTemplateName(e.target.value)}
-                />
-              </Box>
-              <Tabs>
-                <TabList>
-                  <Tab>English (EN)</Tab>
-                  <Tab>Français (FR)</Tab>
-                </TabList>
-                <TabPanels>
-                  <TabPanel px={0}>
-                    <VStack spacing={3} align="stretch">
-                      <Box>
-                        <Text mb={2} fontWeight="medium">
-                          Subject (EN)
-                        </Text>
-                        <Input
-                          placeholder="Email subject in English..."
-                          value={newTemplateSubjectEN}
-                          onChange={(e) =>
-                            setNewTemplateSubjectEN(e.target.value)
-                          }
-                        />
-                      </Box>
-                      <Box>
-                        <HStack justify="space-between" mb={2}>
-                          <Text fontWeight="medium">Content (EN)</Text>
-                          <Button
-                            leftIcon={<MdAutoFixHigh />}
-                            size="xs"
-                            colorScheme="purple"
-                            variant="outline"
-                            onClick={() => {
-                              setFixingLanguage('EN');
-                              handleFixTemplate();
-                            }}
-                            isLoading={isFixing && fixingLanguage === 'EN'}
-                            loadingText="Fixing..."
-                          >
-                            Fix with AI
-                          </Button>
-                        </HStack>
-                        <RichTextEditor
-                          value={newTemplateContentEN}
-                          onChange={setNewTemplateContentEN}
-                          placeholder="Enter your English email template content here..."
-                          minHeight="200px"
-                        />
-                      </Box>
-                    </VStack>
-                  </TabPanel>
-                  <TabPanel px={0}>
-                    <VStack spacing={3} align="stretch">
-                      <Box>
-                        <Text mb={2} fontWeight="medium">
-                          Subject (FR)
-                        </Text>
-                        <Input
-                          placeholder="Sujet de l'email en français..."
-                          value={newTemplateSubjectFR}
-                          onChange={(e) =>
-                            setNewTemplateSubjectFR(e.target.value)
-                          }
-                        />
-                      </Box>
-                      <Box>
-                        <HStack justify="space-between" mb={2}>
-                          <Text fontWeight="medium">Content (FR)</Text>
-                          <Button
-                            leftIcon={<MdAutoFixHigh />}
-                            size="xs"
-                            colorScheme="purple"
-                            variant="outline"
-                            onClick={() => {
-                              setFixingLanguage('FR');
-                              handleFixTemplate();
-                            }}
-                            isLoading={isFixing && fixingLanguage === 'FR'}
-                            loadingText="Fixing..."
-                          >
-                            Fix with AI
-                          </Button>
-                        </HStack>
-                        <RichTextEditor
-                          value={newTemplateContentFR}
-                          onChange={setNewTemplateContentFR}
-                          placeholder="Entrez le contenu de votre modèle d'email en français ici..."
-                          minHeight="200px"
-                        />
-                      </Box>
-                    </VStack>
-                  </TabPanel>
-                </TabPanels>
-              </Tabs>
-            </VStack>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="ghost" mr={3} onClick={onEditClose}>
-              Cancel
-            </Button>
-            <Button colorScheme="blue" onClick={handleEditTemplate}>
-              Save Changes
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Delete Confirmation Dialog */}
-      <AlertDialog
-        isOpen={isDeleteOpen}
-        leastDestructiveRef={deleteRef}
-        onClose={onDeleteClose}
-        isCentered
-      >
-        <AlertDialogOverlay>
-          <AlertDialogContent>
-            <AlertDialogHeader fontSize="lg" fontWeight="bold">
-              Delete Template
-            </AlertDialogHeader>
-            <AlertDialogBody>
-              Are you sure you want to delete this template? This action cannot
-              be undone.
-            </AlertDialogBody>
-            <AlertDialogFooter>
-              <Button ref={deleteRef} onClick={onDeleteClose}>
-                Cancel
-              </Button>
-              <Button
-                colorScheme="red"
-                ml={3}
-                onClick={() => {
-                  if (templateToDelete) {
-                    handleDeleteTemplate(templateToDelete);
+              {/* Right Column - Templates */}
+              <VStack spacing={4} flex={1} align="stretch">
+                <SectionCard
+                  icon={<MdBookmarks size={18} />}
+                  title="Email Templates"
+                  subtitle={
+                    templates.length > 0
+                      ? `${templates.length} template${templates.length !== 1 ? 's' : ''}`
+                      : undefined
                   }
-                  onDeleteClose();
-                }}
-              >
-                Delete
-              </Button>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialogOverlay>
-      </AlertDialog>
-    </VStack>
+                  actions={
+                    <Button
+                      leftIcon={<MdAdd />}
+                      size="sm"
+                      colorScheme="blue"
+                      onClick={onCreateOpen}
+                    >
+                      Create
+                    </Button>
+                  }
+                  contentProps={{ p: 4 }}
+                >
+                  <Box mb={4}>
+                    <Input
+                      placeholder="Search templates by name or subject..."
+                      value={templateSearchQuery}
+                      onChange={(e) => setTemplateSearchQuery(e.target.value)}
+                      size="sm"
+                    />
+                  </Box>
+
+                  {(() => {
+                    // Filter templates based on search query
+                    const filteredTemplates = templates.filter((template) => {
+                      if (!templateSearchQuery.trim()) return true;
+                      const query = templateSearchQuery.toLowerCase();
+                      return (
+                        template.name.toLowerCase().includes(query) ||
+                        template.subjectEN.toLowerCase().includes(query) ||
+                        template.subjectFR.toLowerCase().includes(query)
+                      );
+                    });
+
+                    if (filteredTemplates.length === 0) {
+                      return (
+                        <Box
+                          py={8}
+                          textAlign="center"
+                          color="gray.500"
+                          _dark={{ color: 'gray.400' }}
+                        >
+                          <Text>
+                            {templateSearchQuery
+                              ? 'No templates found matching your search.'
+                              : 'No templates yet. Create your first template!'}
+                          </Text>
+                        </Box>
+                      );
+                    }
+
+                    return (
+                      <VStack
+                        spacing={2}
+                        align="stretch"
+                        maxH="600px"
+                        overflowY="auto"
+                      >
+                        {filteredTemplates.map((template) => {
+                          const hasEN = !!htmlToPlainText(
+                            template.contentEN,
+                          ).trim();
+                          const hasFR = !!htmlToPlainText(
+                            template.contentFR,
+                          ).trim();
+                          return (
+                            <Box
+                              key={template.id}
+                              p={3}
+                              border="2px solid"
+                              borderColor={
+                                selectedTemplateId === template.id
+                                  ? 'blue.400'
+                                  : 'gray.200'
+                              }
+                              borderRadius="md"
+                              cursor="pointer"
+                              bg={
+                                selectedTemplateId === template.id
+                                  ? 'blue.50'
+                                  : 'white'
+                              }
+                              _hover={{
+                                bg:
+                                  selectedTemplateId === template.id
+                                    ? 'blue.50'
+                                    : 'gray.50',
+                                borderColor: 'blue.300',
+                                _dark: {
+                                  bg:
+                                    selectedTemplateId === template.id
+                                      ? '#243447'
+                                      : '#202020',
+                                },
+                              }}
+                              _dark={{
+                                borderColor:
+                                  selectedTemplateId === template.id
+                                    ? 'blue.300'
+                                    : '#2a2a2a',
+                                bg:
+                                  selectedTemplateId === template.id
+                                    ? '#1f2933'
+                                    : '#181818',
+                              }}
+                              onClick={() => handleTemplateClick(template)}
+                              transition="all 0.2s"
+                            >
+                              <HStack justify="space-between">
+                                <VStack align="start" spacing={1} flex={1}>
+                                  <HStack>
+                                    <Text fontWeight="medium">
+                                      {template.name}
+                                    </Text>
+                                    {hasEN && (
+                                      <Badge colorScheme="red" fontSize="xs">
+                                        EN
+                                      </Badge>
+                                    )}
+                                    {hasFR && (
+                                      <Badge colorScheme="blue" fontSize="xs">
+                                        FR
+                                      </Badge>
+                                    )}
+                                  </HStack>
+                                  {(() => {
+                                    const currentSubject =
+                                      inquiryLanguage === 'EN'
+                                        ? template.subjectEN
+                                        : template.subjectFR;
+                                    return currentSubject ? (
+                                      <Text
+                                        fontSize="xs"
+                                        color="gray.500"
+                                        fontStyle="italic"
+                                        _dark={{ color: 'gray.400' }}
+                                      >
+                                        Subject ({inquiryLanguage}):{' '}
+                                        {currentSubject}
+                                      </Text>
+                                    ) : null;
+                                  })()}
+                                  <Text
+                                    fontSize="sm"
+                                    color="gray.600"
+                                    noOfLines={2}
+                                    _dark={{ color: 'gray.300' }}
+                                  >
+                                    {(() => {
+                                      const content =
+                                        inquiryLanguage === 'EN' &&
+                                        template.contentEN
+                                          ? template.contentEN
+                                          : template.contentFR ||
+                                            template.contentEN;
+
+                                      // Strip HTML for preview
+                                      const plainText =
+                                        htmlToPlainText(content);
+                                      return `${plainText.substring(0, 100)}...`;
+                                    })()}
+                                  </Text>
+                                </VStack>
+                                <HStack onClick={(e) => e.stopPropagation()}>
+                                  <IconButton
+                                    aria-label="Edit"
+                                    icon={<MdEdit />}
+                                    size="sm"
+                                    colorScheme="blue"
+                                    variant="ghost"
+                                    onClick={() => openEditModal(template)}
+                                  />
+                                  <IconButton
+                                    aria-label="Delete"
+                                    icon={<MdDelete />}
+                                    size="sm"
+                                    colorScheme="red"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setTemplateToDelete(template.id);
+                                      onDeleteOpen();
+                                    }}
+                                  />
+                                </HStack>
+                              </HStack>
+                            </Box>
+                          );
+                        })}
+                      </VStack>
+                    );
+                  })()}
+                </SectionCard>
+              </VStack>
+            </HStack>
+
+            {/* Create Template Modal */}
+            <Modal
+              isOpen={isCreateOpen}
+              onClose={onCreateClose}
+              size="xl"
+              closeOnOverlayClick={false}
+            >
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader>Create Email Template</ModalHeader>
+                <ModalCloseButton />
+                <ModalBody>
+                  <VStack spacing={4} align="stretch">
+                    <Box>
+                      <Text mb={2} fontWeight="medium">
+                        Template Name
+                      </Text>
+                      <Input
+                        placeholder="e.g., Common Question Response"
+                        value={newTemplateName}
+                        onChange={(e) => setNewTemplateName(e.target.value)}
+                      />
+                    </Box>
+                    <Tabs>
+                      <TabList>
+                        <Tab>English (EN)</Tab>
+                        <Tab>Français (FR)</Tab>
+                      </TabList>
+                      <TabPanels>
+                        <TabPanel px={0}>
+                          <VStack spacing={3} align="stretch">
+                            <Box>
+                              <Text mb={2} fontWeight="medium">
+                                Subject (EN)
+                              </Text>
+                              <Input
+                                placeholder="Email subject in English..."
+                                value={newTemplateSubjectEN}
+                                onChange={(e) =>
+                                  setNewTemplateSubjectEN(e.target.value)
+                                }
+                              />
+                            </Box>
+                            <Box>
+                              <Text mb={2} fontWeight="medium">
+                                Content (EN)
+                              </Text>
+                              <RichTextEditor
+                                value={newTemplateContentEN}
+                                onChange={setNewTemplateContentEN}
+                                placeholder="Enter your English email template content here..."
+                                minHeight="200px"
+                              />
+                            </Box>
+                          </VStack>
+                        </TabPanel>
+                        <TabPanel px={0}>
+                          <VStack spacing={3} align="stretch">
+                            <Box>
+                              <Text mb={2} fontWeight="medium">
+                                Subject (FR)
+                              </Text>
+                              <Input
+                                placeholder="Sujet de l'email en français..."
+                                value={newTemplateSubjectFR}
+                                onChange={(e) =>
+                                  setNewTemplateSubjectFR(e.target.value)
+                                }
+                              />
+                            </Box>
+                            <Box>
+                              <Text mb={2} fontWeight="medium">
+                                Content (FR)
+                              </Text>
+                              <RichTextEditor
+                                value={newTemplateContentFR}
+                                onChange={setNewTemplateContentFR}
+                                placeholder="Entrez le contenu de votre modèle d'email en français ici..."
+                                minHeight="200px"
+                              />
+                            </Box>
+                          </VStack>
+                        </TabPanel>
+                      </TabPanels>
+                    </Tabs>
+                  </VStack>
+                </ModalBody>
+                <ModalFooter>
+                  <Button variant="ghost" mr={3} onClick={onCreateClose}>
+                    Cancel
+                  </Button>
+                  <Button colorScheme="blue" onClick={handleCreateTemplate}>
+                    Create Template
+                  </Button>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
+
+            {/* Edit Template Modal */}
+            <Modal
+              isOpen={isEditOpen}
+              onClose={onEditClose}
+              size="xl"
+              closeOnOverlayClick={false}
+            >
+              <ModalOverlay />
+              <ModalContent>
+                <ModalHeader>Edit Email Template</ModalHeader>
+                <ModalCloseButton />
+                <ModalBody>
+                  <VStack spacing={4} align="stretch">
+                    <Box>
+                      <Text mb={2} fontWeight="medium">
+                        Template Name
+                      </Text>
+                      <Input
+                        value={newTemplateName}
+                        onChange={(e) => setNewTemplateName(e.target.value)}
+                      />
+                    </Box>
+                    <Tabs>
+                      <TabList>
+                        <Tab>English (EN)</Tab>
+                        <Tab>Français (FR)</Tab>
+                      </TabList>
+                      <TabPanels>
+                        <TabPanel px={0}>
+                          <VStack spacing={3} align="stretch">
+                            <Box>
+                              <Text mb={2} fontWeight="medium">
+                                Subject (EN)
+                              </Text>
+                              <Input
+                                placeholder="Email subject in English..."
+                                value={newTemplateSubjectEN}
+                                onChange={(e) =>
+                                  setNewTemplateSubjectEN(e.target.value)
+                                }
+                              />
+                            </Box>
+                            <Box>
+                              <HStack justify="space-between" mb={2}>
+                                <Text fontWeight="medium">Content (EN)</Text>
+                                <Button
+                                  leftIcon={<MdAutoFixHigh />}
+                                  size="xs"
+                                  colorScheme="purple"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setFixingLanguage('EN');
+                                    handleFixTemplate();
+                                  }}
+                                  isLoading={
+                                    isFixing && fixingLanguage === 'EN'
+                                  }
+                                  loadingText="Fixing..."
+                                >
+                                  Fix with AI
+                                </Button>
+                              </HStack>
+                              <RichTextEditor
+                                value={newTemplateContentEN}
+                                onChange={setNewTemplateContentEN}
+                                placeholder="Enter your English email template content here..."
+                                minHeight="200px"
+                              />
+                            </Box>
+                          </VStack>
+                        </TabPanel>
+                        <TabPanel px={0}>
+                          <VStack spacing={3} align="stretch">
+                            <Box>
+                              <Text mb={2} fontWeight="medium">
+                                Subject (FR)
+                              </Text>
+                              <Input
+                                placeholder="Sujet de l'email en français..."
+                                value={newTemplateSubjectFR}
+                                onChange={(e) =>
+                                  setNewTemplateSubjectFR(e.target.value)
+                                }
+                              />
+                            </Box>
+                            <Box>
+                              <HStack justify="space-between" mb={2}>
+                                <Text fontWeight="medium">Content (FR)</Text>
+                                <Button
+                                  leftIcon={<MdAutoFixHigh />}
+                                  size="xs"
+                                  colorScheme="purple"
+                                  variant="outline"
+                                  onClick={() => {
+                                    setFixingLanguage('FR');
+                                    handleFixTemplate();
+                                  }}
+                                  isLoading={
+                                    isFixing && fixingLanguage === 'FR'
+                                  }
+                                  loadingText="Fixing..."
+                                >
+                                  Fix with AI
+                                </Button>
+                              </HStack>
+                              <RichTextEditor
+                                value={newTemplateContentFR}
+                                onChange={setNewTemplateContentFR}
+                                placeholder="Entrez le contenu de votre modèle d'email en français ici..."
+                                minHeight="200px"
+                              />
+                            </Box>
+                          </VStack>
+                        </TabPanel>
+                      </TabPanels>
+                    </Tabs>
+                  </VStack>
+                </ModalBody>
+                <ModalFooter>
+                  <Button variant="ghost" mr={3} onClick={onEditClose}>
+                    Cancel
+                  </Button>
+                  <Button colorScheme="blue" onClick={handleEditTemplate}>
+                    Save Changes
+                  </Button>
+                </ModalFooter>
+              </ModalContent>
+            </Modal>
+
+            {/* Delete Confirmation Dialog */}
+            <AlertDialog
+              isOpen={isDeleteOpen}
+              leastDestructiveRef={deleteRef}
+              onClose={onDeleteClose}
+              isCentered
+            >
+              <AlertDialogOverlay>
+                <AlertDialogContent>
+                  <AlertDialogHeader fontSize="lg" fontWeight="bold">
+                    Delete Template
+                  </AlertDialogHeader>
+                  <AlertDialogBody>
+                    Are you sure you want to delete this template? This action
+                    cannot be undone.
+                  </AlertDialogBody>
+                  <AlertDialogFooter>
+                    <Button ref={deleteRef} onClick={onDeleteClose}>
+                      Cancel
+                    </Button>
+                    <Button
+                      colorScheme="red"
+                      ml={3}
+                      onClick={() => {
+                        if (templateToDelete) {
+                          handleDeleteTemplate(templateToDelete);
+                        }
+                        onDeleteClose();
+                      }}
+                    >
+                      Delete
+                    </Button>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialogOverlay>
+            </AlertDialog>
+          </VStack>
         </TabPanel>
         <TabPanel px={0} pt={4}>
-          <Box
-            display="flex"
-            alignItems="center"
-            justifyContent="center"
-            minH="300px"
-            color="gray.400"
-            _dark={{ color: 'gray.500' }}
-          >
-            <Text fontSize="lg" fontWeight="medium">
-              Work in progress
-            </Text>
-          </Box>
+          <VStack spacing={4} align="stretch" w="100%">
+            {/* Top row: equal-height left/right columns */}
+            <HStack alignItems="stretch" spacing={4} w="100%">
+              {/* LEFT: Customer Message */}
+              <Box w="50%" display="flex" flexDirection="column">
+                <SectionCard
+                  flex={1}
+                  icon={<MdSearch size={18} />}
+                  title="Customer Message"
+                  subtitle="Paste the customer's inquiry below"
+                  contentProps={{
+                    p: 4,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                  }}
+                >
+                  <Textarea
+                    flex={1}
+                    minH="180px"
+                    value={ragQuery}
+                    onChange={(e) => setRagQuery(e.target.value)}
+                    placeholder="Paste the customer's email or message here..."
+                    resize="none"
+                    fontSize="sm"
+                    _dark={{
+                      bg: '#1e1e1e',
+                      borderColor: '#3a3a3a',
+                      color: 'gray.100',
+                      _placeholder: { color: 'gray.600' },
+                    }}
+                  />
+                  <Button
+                    colorScheme="purple"
+                    size="md"
+                    onClick={handleGetSuggestions}
+                    isLoading={isFetchingSuggestions}
+                    loadingText="Searching..."
+                    isDisabled={!ragQuery.trim()}
+                    leftIcon={<MdAutoAwesome />}
+                    w="100%"
+                    flexShrink={0}
+                  >
+                    Get Suggestions
+                  </Button>
+                </SectionCard>
+              </Box>
+
+              {/* RIGHT: Suggested Replies */}
+              <Box w="50%">
+                <SectionCard
+                  h="100%"
+                  icon={<MdAutoAwesome size={18} />}
+                  title="Suggested Replies"
+                  contentProps={{ p: 4 }}
+                >
+                  {suggestions === null ? (
+                    <Box
+                      display="flex"
+                      flexDirection="column"
+                      alignItems="center"
+                      justifyContent="center"
+                      h="100%"
+                      py={10}
+                    >
+                      <Box color="gray.200" _dark={{ color: 'gray.700' }}>
+                        <MdAutoAwesome size={30} />
+                      </Box>
+                      <Text
+                        mt={3}
+                        fontSize="sm"
+                        color="gray.400"
+                        _dark={{ color: 'gray.600' }}
+                        textAlign="center"
+                        maxW="240px"
+                      >
+                        Suggestions will appear here after you submit a customer
+                        message
+                      </Text>
+                    </Box>
+                  ) : (
+                    <VStack spacing={3} align="stretch">
+                      {suggestions.map((suggestion, i) => {
+                        const isSelected = selectedSuggestion === i;
+                        return (
+                          <Box
+                            key={i}
+                            p={3}
+                            borderRadius="10px"
+                            border="2px solid"
+                            borderColor={isSelected ? 'purple.400' : 'gray.200'}
+                            bg="white"
+                            _dark={{
+                              borderColor: isSelected
+                                ? 'purple.400'
+                                : '#2a2a2a',
+                              bg: '#181818',
+                            }}
+                            transition="border-color 0.15s"
+                          >
+                            <HStack
+                              justify="space-between"
+                              mb={2}
+                              align="center"
+                            >
+                              {isSelected ? (
+                                <Text
+                                  fontSize="xs"
+                                  color="purple.500"
+                                  _dark={{ color: 'purple.300' }}
+                                  fontWeight="600"
+                                >
+                                  Copied
+                                </Text>
+                              ) : (
+                                <Box />
+                              )}
+                              <Button
+                                size="xs"
+                                variant="ghost"
+                                leftIcon={<MdContentCopy size={12} />}
+                                onClick={() =>
+                                  handleCopySuggestion(suggestion, i)
+                                }
+                              >
+                                Copy
+                              </Button>
+                            </HStack>
+                            <Box
+                              fontSize="sm"
+                              color="gray.800"
+                              _dark={{ color: 'gray.100' }}
+                              whiteSpace="pre-wrap"
+                              lineHeight="1.65"
+                              maxH="110px"
+                              overflowY="auto"
+                              sx={{
+                                '&::-webkit-scrollbar': { width: '4px' },
+                                '&::-webkit-scrollbar-thumb': {
+                                  background: 'var(--chakra-colors-gray-300)',
+                                  borderRadius: '4px',
+                                },
+                              }}
+                            >
+                              {suggestion}
+                            </Box>
+                          </Box>
+                        );
+                      })}
+                    </VStack>
+                  )}
+                </SectionCard>
+              </Box>
+            </HStack>
+
+            {/* Source Cases — full page width */}
+            <SectionCard
+              icon={<MdHistory size={18} />}
+              title="Source Cases"
+              subtitle="Past support cases used as context"
+              contentProps={{ p: 4 }}
+            >
+              {sources.length === 0 ? (
+                <Box
+                  display="flex"
+                  flexDirection="column"
+                  alignItems="center"
+                  justifyContent="center"
+                  py={8}
+                >
+                  <Box color="gray.200" _dark={{ color: 'gray.700' }}>
+                    <MdHistory size={26} />
+                  </Box>
+                  <Text
+                    mt={3}
+                    fontSize="sm"
+                    color="gray.400"
+                    _dark={{ color: 'gray.600' }}
+                    textAlign="center"
+                    maxW="220px"
+                  >
+                    Similar past cases will appear here
+                  </Text>
+                </Box>
+              ) : (
+                <Accordion allowMultiple>
+                  {sources.map((source, idx) => (
+                    <AccordionItem key={idx} border="none" mb={2}>
+                      <AccordionButton
+                        px={3}
+                        py={2}
+                        bg="gray.50"
+                        borderRadius="8px"
+                        _hover={{ bg: 'gray.100' }}
+                        _dark={{ bg: '#1e1e1e', _hover: { bg: '#252525' } }}
+                      >
+                        <HStack flex={1} spacing={2} mr={2}>
+                          <Text
+                            fontSize="sm"
+                            fontWeight="medium"
+                            flex={1}
+                            textAlign="left"
+                            noOfLines={1}
+                            _dark={{ color: 'gray.100' }}
+                          >
+                            {source.subject}
+                          </Text>
+                          <Badge
+                            colorScheme={
+                              source.score >= 0.8
+                                ? 'green'
+                                : source.score >= 0.6
+                                  ? 'yellow'
+                                  : 'orange'
+                            }
+                            fontSize="xs"
+                          >
+                            {Math.round(source.score * 100)}% match
+                          </Badge>
+                          <Text fontSize="xs" color="gray.500">
+                            {formatSourceDate(source.date)}
+                          </Text>
+                        </HStack>
+                        <AccordionIcon />
+                      </AccordionButton>
+                      <AccordionPanel px={3} pt={3} pb={2}>
+                        <HStack align="flex-start" spacing={4}>
+                          <Box flex={1}>
+                            <Text
+                              fontSize="xs"
+                              fontWeight="600"
+                              color="gray.500"
+                              _dark={{ color: 'gray.400' }}
+                              mb={1}
+                            >
+                              Customer
+                            </Text>
+                            <Box
+                              p={2}
+                              bg="gray.50"
+                              borderRadius="6px"
+                              fontSize="xs"
+                              color="gray.700"
+                              lineHeight="1.5"
+                              _dark={{ bg: '#1e1e1e', color: 'gray.300' }}
+                            >
+                              {source.customerText}
+                            </Box>
+                          </Box>
+                          <Box flex={1}>
+                            <Text
+                              fontSize="xs"
+                              fontWeight="600"
+                              color="gray.500"
+                              _dark={{ color: 'gray.400' }}
+                              mb={1}
+                            >
+                              Reply
+                            </Text>
+                            <Box
+                              p={2}
+                              bg="purple.50"
+                              borderRadius="6px"
+                              fontSize="xs"
+                              color="gray.700"
+                              lineHeight="1.5"
+                              _dark={{ bg: '#1c1730', color: 'gray.300' }}
+                            >
+                              {source.agentText}
+                            </Box>
+                          </Box>
+                        </HStack>
+                      </AccordionPanel>
+                    </AccordionItem>
+                  ))}
+                </Accordion>
+              )}
+            </SectionCard>
+          </VStack>
         </TabPanel>
       </TabPanels>
     </Tabs>

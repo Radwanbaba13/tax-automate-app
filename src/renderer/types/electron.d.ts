@@ -48,11 +48,11 @@ export interface ElectronAPI {
   ) => void;
   onUpdateDownloaded: (callback: (info: UpdateInfo) => void) => void;
 
-  // OpenAI comparison API
+  // AI comparison API
   compareWithOpenAI: (
     dtMaxFiles: any[],
     clientSlipsFiles: any[],
-    prompt: string,
+    prompt?: string,
   ) => Promise<{
     success: boolean;
     result?: string;
@@ -70,7 +70,7 @@ export interface ElectronAPI {
     templateContent?: string;
   }) => Promise<{
     success: boolean;
-    result?: string;
+    result?: { subject: string; body: string };
     error?: string;
   }>;
   fixEmailTemplateWithAI: (
@@ -79,6 +79,21 @@ export interface ElectronAPI {
     success: boolean;
     result?: string;
     error?: string;
+  }>;
+  suggestReplies: (query: string) => Promise<{
+    success: boolean;
+    result?: {
+      suggestions: [string, string, string];
+      sources: Array<{
+        subject: string;
+        score: number;
+        date: string;
+        customerText: string;
+        agentText: string;
+      }>;
+    };
+    error?: string;
+    code?: string;
   }>;
 
   // Database API

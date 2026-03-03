@@ -27,7 +27,7 @@ function FileUploadDropZone({
 }: FileUploadDropZoneProps) {
   return (
     <Box>
-      <Text fontSize="sm" fontWeight="600" color="gray.800" mb={2}>
+      <Text fontSize="sm" fontWeight="600" color="gray.800" _dark={{ color: 'gray.100' }} mb={2}>
         {title}
       </Text>
       <Box
@@ -37,6 +37,7 @@ function FileUploadDropZone({
         p={4}
         transition="all 0.2s"
         _hover={{ borderColor: hoverBorderColor, bg: hoverBgColor }}
+        _dark={{ borderColor: 'gray.600', _hover: { bg: 'whiteAlpha.100' } }}
       >
         <VStack spacing={2}>
           <Icon as={FiFileText} boxSize={8} color="gray.400" />

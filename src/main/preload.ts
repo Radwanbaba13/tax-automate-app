@@ -50,6 +50,8 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.invoke('generate-email-response', options),
   fixEmailTemplateWithAI: (templateContent) =>
     ipcRenderer.invoke('fix-email-template-with-ai', templateContent),
+  suggestReplies: (query) =>
+    ipcRenderer.invoke('rag-suggest-replies', query),
 
   database: {
     getConfigurations: () => ipcRenderer.invoke('db:getConfigurations'),

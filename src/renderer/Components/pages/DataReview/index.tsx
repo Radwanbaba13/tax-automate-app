@@ -1,20 +1,10 @@
 import React from 'react';
 import { VStack, HStack } from '@chakra-ui/react';
 import { showToast } from '../../../Utils/toast';
-import CustomInstructions from './CustomInstructions';
 import FileUploadPanel from './FileUploadPanel';
 import ResultsPanel from './ResultsPanel';
 
-const DEFAULT_USER_PROMPT = `Compare all fields systematically:
-
-- Income amounts (employment, self-employment, investments, etc.)
-
-- Pay special attention to decimal errors and transposed digits
-
-- Flag ANY discrepancies, no matter how small (including cents)`;
-
 function DataReviewComponent() {
-  const [aiPrompt, setAiPrompt] = React.useState(DEFAULT_USER_PROMPT);
   const [dtMaxFiles, setDtMaxFiles] = React.useState<File[]>([]);
   const [clientSlipsFiles, setClientSlipsFiles] = React.useState<File[]>([]);
   const [isComparing, setIsComparing] = React.useState(false);
@@ -25,20 +15,6 @@ function DataReviewComponent() {
     timeSeconds: number;
   } | null>(null);
   const [debugInfo, setDebugInfo] = React.useState<any>(null);
-
-  React.useEffect(() => {
-    const savedPrompt = localStorage.getItem('dataReviewLastPrompt');
-    if (savedPrompt) {
-      setAiPrompt(savedPrompt);
-    } else {
-      localStorage.setItem('dataReviewLastPrompt', DEFAULT_USER_PROMPT);
-    }
-  }, []);
-
-  const handlePromptChange = (value: string) => {
-    setAiPrompt(value);
-    localStorage.setItem('dataReviewLastPrompt', value);
-  };
 
   const handleDtMaxUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const { files } = event.target;
@@ -79,15 +55,6 @@ function DataReviewComponent() {
       return;
     }
 
-    if (!aiPrompt.trim()) {
-      showToast({
-        title: 'Missing prompt',
-        description: 'Please enter an AI prompt for comparison',
-        status: 'warning',
-      });
-      return;
-    }
-
     setIsComparing(true);
     setComparisonResult('');
     setMetrics(null);
@@ -121,7 +88,6 @@ function DataReviewComponent() {
       const response = await window.electron.compareWithOpenAI(
         dtMaxFilesData,
         clientSlipsFilesData,
-        aiPrompt,
       );
 
       if (!response.success) {
@@ -142,7 +108,7 @@ function DataReviewComponent() {
 
       showToast({
         title: 'Comparison complete',
-        description: `AI has analyzed ${dtMaxFiles.length + clientSlipsFiles.length} files`,
+        description: `Analyzed ${dtMaxFiles.length + clientSlipsFiles.length} files`,
         status: 'success',
       });
     } catch (error: any) {
@@ -162,11 +128,10 @@ function DataReviewComponent() {
     setComparisonResult('');
     setMetrics(null);
     setDebugInfo(null);
-    toast({
+    showToast({
       title: 'New Review Started',
       description: 'All files and results have been cleared',
       status: 'success',
-      duration: 2000,
     });
   };
 
@@ -184,12 +149,6 @@ function DataReviewComponent() {
         minW="450px"
         h="calc(100vh - 170px)"
       >
-        <CustomInstructions
-          prompt={aiPrompt}
-          onPromptChange={handlePromptChange}
-          onNewReview={handleNewReview}
-        />
-
         <FileUploadPanel
           dtMaxFiles={dtMaxFiles}
           clientSlipsFiles={clientSlipsFiles}
@@ -198,11 +157,10 @@ function DataReviewComponent() {
           onClearDtMax={() => setDtMaxFiles([])}
           onClearClientSlips={() => setClientSlipsFiles([])}
           onCompare={handleCompare}
+          onNewReview={handleNewReview}
           isComparing={isComparing}
           isDisabled={
-            dtMaxFiles.length === 0 ||
-            clientSlipsFiles.length === 0 ||
-            !aiPrompt.trim()
+            dtMaxFiles.length === 0 || clientSlipsFiles.length === 0
           }
         />
       </VStack>
