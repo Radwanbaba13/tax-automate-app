@@ -51,12 +51,10 @@ import { showToast } from '../../Utils/toast';
 import SectionCard from '../common/SectionCard';
 import SegmentedControl from '../common/SegmentedControl';
 import RichTextEditor from '../common/RichTextEditor';
-import HtmlContentViewer from '../common/HtmlContentViewer';
 import {
   copyRichText,
   wrapInEmailHtml,
   htmlToPlainText,
-  isHtmlContent,
 } from '../../Utils/clipboardUtils';
 
 interface EmailTemplate {
@@ -496,8 +494,8 @@ function EmailAutomationComponent() {
       });
 
       if (response.success) {
-        const result = response.result;
-        let emailContent = result?.body || '';
+        const { result } = response;
+        const emailContent = result?.body || '';
         const extractedSubject = result?.subject || '';
 
         // Set subject
@@ -562,7 +560,7 @@ function EmailAutomationComponent() {
     try {
       const response = await window.electron.suggestReplies(ragQuery);
       if (!response.success) {
-        const code = response.code;
+        const { code } = response;
         if (code === 'IRRELEVANT_QUERY') {
           showToast({
             title: 'Not a support inquiry',
@@ -633,23 +631,18 @@ function EmailAutomationComponent() {
 
   return (
     <Tabs colorScheme="brand">
-      <TabList>
+      <TabList marginTop="-15px">
         <Tab fontWeight="bold">Templates</Tab>
         <Tab fontWeight="bold">Reply Assistant</Tab>
       </TabList>
       <TabPanels>
         <TabPanel px={0} pt={4}>
           <VStack spacing={4} align="stretch" w="100%">
-            <HStack
-              spacing={4}
-              align="stretch"
-              w="100%"
-              minH="calc(100vh - 110px)"
-            >
-              {/* Left Column - Email Generation */}
-              <VStack spacing={4} flex={1} align="stretch" height="100%">
-                {/* Response Input */}
+            <HStack spacing={4} align="stretch" w="100%">
+              <VStack spacing={4} flex={1} align="stretch">
+                {/* Your Response */}
                 <SectionCard
+                  minH="300px"
                   icon={<MdReply size={18} />}
                   title="Your Response"
                   actions={
@@ -666,11 +659,7 @@ function EmailAutomationComponent() {
                         leftIcon={<MdContentCopy />}
                         size="sm"
                         onClick={async () => {
-                          if (isHtmlContent(responseText)) {
-                            await copyRichText(wrapInEmailHtml(responseText));
-                          } else {
-                            await navigator.clipboard.writeText(responseText);
-                          }
+                          await copyRichText(wrapInEmailHtml(responseText));
                           showToast({
                             title: 'Copied!',
                             description: 'Response copied to clipboard.',
@@ -731,113 +720,123 @@ function EmailAutomationComponent() {
                   </VStack>
                 </SectionCard>
 
-                {/* Refine with AI Button */}
-                <Button
-                  leftIcon={<MdAutoAwesome />}
-                  colorScheme="purple"
-                  size="md"
-                  onClick={handleRefineWithAI}
-                  isLoading={isGenerating}
-                  loadingText="Refining..."
-                  sx={{
-                    '& svg': {
-                      animation: isGenerating
-                        ? `${sparkle} 2s ease-in-out infinite`
-                        : 'none',
-                    },
-                  }}
-                >
-                  Refine with AI
-                </Button>
-
-                {/* Generated Email Output */}
-                {generatedEmail && (
-                  <SectionCard
-                    icon={<MdAutoAwesome size={18} />}
-                    title="Generated Email"
-                    actions={
-                      <Button
-                        leftIcon={<MdContentCopy />}
-                        size="sm"
-                        onClick={handleCopyEmail}
-                      >
-                        Copy to Clipboard
-                      </Button>
-                    }
-                    contentProps={{ p: 4 }}
-                  >
-                    <VStack spacing={3} align="stretch">
-                      {(() => {
-                        const currentSubject =
-                          inquiryLanguage === 'EN'
-                            ? generatedSubjectEN
-                            : generatedSubjectFR;
-                        return currentSubject ? (
-                          <Box>
-                            <Text
-                              fontSize="sm"
-                              fontWeight="medium"
-                              color="gray.600"
-                              _dark={{ color: 'gray.400' }}
-                              mb={1}
-                            >
-                              Subject ({inquiryLanguage})
-                            </Text>
-                            <Box
-                              p={3}
-                              bg="gray.50"
-                              _dark={{
-                                bg: '#1e1e1e',
-                                borderColor: '#2a2a2a',
-                                color: 'gray.100',
-                              }}
-                              borderRadius="md"
-                              border="1px solid"
-                              borderColor="gray.200"
-                              fontWeight="medium"
-                            >
-                              {currentSubject}
+                {/* Refined Email / Placeholder - 40% */}
+                <Box display="flex" flexDirection="column">
+                  {generatedEmail ? (
+                    <SectionCard
+                      height="100%"
+                      icon={<MdAutoAwesome size={18} />}
+                      title="Generated Email"
+                      actions={
+                        <Button
+                          leftIcon={<MdContentCopy />}
+                          size="sm"
+                          onClick={handleCopyEmail}
+                        >
+                          Copy to Clipboard
+                        </Button>
+                      }
+                      contentProps={{ p: 4, overflowY: 'auto' }}
+                    >
+                      <VStack spacing={3} align="stretch">
+                        {(() => {
+                          const currentSubject =
+                            inquiryLanguage === 'EN'
+                              ? generatedSubjectEN
+                              : generatedSubjectFR;
+                          return currentSubject !== undefined ? (
+                            <Box>
+                              <Text
+                                mb={2}
+                                fontSize="sm"
+                                fontWeight="medium"
+                                color="gray.600"
+                              >
+                                Subject ({inquiryLanguage})
+                              </Text>
+                              <Input
+                                placeholder={`Email subject (${inquiryLanguage})...`}
+                                value={currentSubject}
+                                onChange={(e) => {
+                                  if (inquiryLanguage === 'EN') {
+                                    setGeneratedSubjectEN(e.target.value);
+                                  } else {
+                                    setGeneratedSubjectFR(e.target.value);
+                                  }
+                                }}
+                              />
                             </Box>
-                          </Box>
-                        ) : null;
-                      })()}
-                      <Box>
-                        <Text
-                          fontSize="sm"
-                          fontWeight="medium"
-                          color="gray.600"
-                          _dark={{ color: 'gray.400' }}
-                          mb={1}
-                        >
-                          Content
-                        </Text>
-                        <Box
-                          p={4}
-                          bg="white"
-                          _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
-                          borderRadius="md"
-                          border="1px solid"
-                          borderColor="gray.200"
-                          maxH="400px"
-                          overflowY="auto"
-                          fontSize="sm"
-                          lineHeight="1.6"
-                        >
-                          <HtmlContentViewer
-                            html={generatedEmail}
-                            color="gray.700"
-                            _dark={{ color: 'gray.100' }}
+                          ) : null;
+                        })()}
+                        <Box>
+                          <Text
+                            mb={2}
+                            fontSize="sm"
+                            fontWeight="medium"
+                            color="gray.600"
+                          >
+                            Content
+                          </Text>
+                          <RichTextEditor
+                            value={generatedEmail}
+                            onChange={setGeneratedEmail}
+                            placeholder="Generated email content..."
+                            minHeight="200px"
                           />
                         </Box>
-                      </Box>
-                    </VStack>
-                  </SectionCard>
-                )}
+                      </VStack>
+                    </SectionCard>
+                  ) : (
+                    <SectionCard
+                      height="100%"
+                      icon={<MdAutoAwesome size={18} />}
+                      title="Refined Email"
+                      contentProps={{ p: 4 }}
+                    >
+                      <VStack
+                        height="100%"
+                        justify="center"
+                        align="center"
+                        spacing={4}
+                      >
+                        <Text
+                          color="gray.400"
+                          fontSize="sm"
+                          textAlign="center"
+                          maxW="260px"
+                        >
+                          Refine your response with AI to generate a polished
+                          email
+                        </Text>
+                        <Button
+                          leftIcon={<MdAutoAwesome />}
+                          colorScheme="purple"
+                          size="md"
+                          onClick={handleRefineWithAI}
+                          isLoading={isGenerating}
+                          loadingText="Refining..."
+                          sx={{
+                            '& svg': {
+                              animation: isGenerating
+                                ? `${sparkle} 2s ease-in-out infinite`
+                                : 'none',
+                            },
+                          }}
+                        >
+                          Refine with AI
+                        </Button>
+                      </VStack>
+                    </SectionCard>
+                  )}
+                </Box>
               </VStack>
 
-              {/* Right Column - Templates */}
               <VStack spacing={4} flex={1} align="stretch">
+                {/* Right: Templates */}
                 <SectionCard
+                  height="100%"
+                  minH="500px"
+                  maxH="calc(100vh - 105px)"
                   icon={<MdBookmarks size={18} />}
                   title="Email Templates"
                   subtitle={
@@ -855,7 +854,7 @@ function EmailAutomationComponent() {
                       Create
                     </Button>
                   }
-                  contentProps={{ p: 4 }}
+                  contentProps={{ p: 4, overflowY: 'auto' }}
                 >
                   <Box mb={4}>
                     <Input
@@ -896,12 +895,7 @@ function EmailAutomationComponent() {
                     }
 
                     return (
-                      <VStack
-                        spacing={2}
-                        align="stretch"
-                        maxH="600px"
-                        overflowY="auto"
-                      >
+                      <VStack spacing={2} align="stretch">
                         {filteredTemplates.map((template) => {
                           const hasEN = !!htmlToPlainText(
                             template.contentEN,
@@ -1393,6 +1387,8 @@ function EmailAutomationComponent() {
                           <Box
                             key={i}
                             p={3}
+                            pr="56px"
+                            position="relative"
                             borderRadius="10px"
                             border="2px solid"
                             borderColor={isSelected ? 'purple.400' : 'gray.200'}
@@ -1405,34 +1401,6 @@ function EmailAutomationComponent() {
                             }}
                             transition="border-color 0.15s"
                           >
-                            <HStack
-                              justify="space-between"
-                              mb={2}
-                              align="center"
-                            >
-                              {isSelected ? (
-                                <Text
-                                  fontSize="xs"
-                                  color="purple.500"
-                                  _dark={{ color: 'purple.300' }}
-                                  fontWeight="600"
-                                >
-                                  Copied
-                                </Text>
-                              ) : (
-                                <Box />
-                              )}
-                              <Button
-                                size="xs"
-                                variant="ghost"
-                                leftIcon={<MdContentCopy size={12} />}
-                                onClick={() =>
-                                  handleCopySuggestion(suggestion, i)
-                                }
-                              >
-                                Copy
-                              </Button>
-                            </HStack>
                             <Box
                               fontSize="sm"
                               color="gray.800"
@@ -1450,6 +1418,36 @@ function EmailAutomationComponent() {
                               }}
                             >
                               {suggestion}
+                            </Box>
+                            <Box
+                              position="absolute"
+                              top={2}
+                              right={2}
+                              display="flex"
+                              flexDirection="column"
+                              alignItems="flex-end"
+                              gap={0.5}
+                            >
+                              {isSelected && (
+                                <Text
+                                  fontSize="xs"
+                                  color="purple.500"
+                                  _dark={{ color: 'purple.300' }}
+                                  fontWeight="600"
+                                  lineHeight="1"
+                                >
+                                  Copied
+                                </Text>
+                              )}
+                              <IconButton
+                                aria-label="Copy suggestion"
+                                icon={<MdContentCopy size={13} />}
+                                size="xs"
+                                variant="ghost"
+                                onClick={() =>
+                                  handleCopySuggestion(suggestion, i)
+                                }
+                              />
                             </Box>
                           </Box>
                         );

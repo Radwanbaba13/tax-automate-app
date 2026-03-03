@@ -321,14 +321,14 @@ function Sidebar({ isOpen, onToggle }: SidebarProps) {
 
       <IconButton
         aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-        icon={isOpen ? <FiChevronLeft size={13} /> : <FiChevronRight size={13} />}
+        icon={isOpen ? <FiChevronLeft size={18} /> : <FiChevronRight size={18} />}
         onClick={onToggle}
         position="absolute"
-        right="-12px"
-        top="29px"
-        w="24px"
-        h="24px"
-        minW="24px"
+        right="-16px"
+        top="26px"
+        w="32px"
+        h="32px"
+        minW="32px"
         borderRadius="full"
         bg={toggleBg}
         color={toggleColor}
