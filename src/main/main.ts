@@ -130,8 +130,12 @@ ipcMain.handle('check-for-updates', async () => {
     };
   }
   try {
-    await autoUpdater.checkForUpdates();
-    return { available: true };
+    // checkForUpdates() triggers update-available / update-not-available events.
+    // Return { checking: true } so the renderer knows to wait for those events.
+    autoUpdater.checkForUpdates().catch((err) => {
+      log.warn('checkForUpdates failed:', err?.message || err);
+    });
+    return { checking: true };
   } catch (error: any) {
     log.error('Error checking for updates:', error);
     return { available: false, error: error?.message || String(error) };

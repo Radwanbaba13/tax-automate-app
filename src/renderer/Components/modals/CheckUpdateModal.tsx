@@ -50,7 +50,7 @@ function CheckUpdateModal({ isOpen, onClose }: CheckUpdateModalProps) {
             return;
           }
 
-          // Set timeout in case events don't fire
+          // Safety timeout: if no event fires within 30s, assume up-to-date
           setTimeout(() => {
             setStatus((currentStatus) => {
               if (currentStatus === 'checking') {
@@ -58,7 +58,7 @@ function CheckUpdateModal({ isOpen, onClose }: CheckUpdateModalProps) {
               }
               return currentStatus;
             });
-          }, 5000);
+          }, 30000);
         } catch (error) {
           setStatus('error');
         }

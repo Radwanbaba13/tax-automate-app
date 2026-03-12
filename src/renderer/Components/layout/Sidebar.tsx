@@ -100,6 +100,7 @@ function Sidebar({ isOpen, onToggle }: SidebarProps) {
     try {
       const result = await window.electron.checkForUpdates();
 
+      // Dev mode -- no updates possible
       if (result && !result.available && result.message) {
         setUpdateStatus('up-to-date');
         setIsCheckingUpdate(false);
@@ -112,6 +113,8 @@ function Sidebar({ isOpen, onToggle }: SidebarProps) {
         return;
       }
 
+      // result.checking === true means events will fire.
+      // Safety timeout: if no event fires within 30s, assume up-to-date.
       setTimeout(() => {
         setIsCheckingUpdate((checking) => {
           if (checking) {
@@ -120,7 +123,7 @@ function Sidebar({ isOpen, onToggle }: SidebarProps) {
           }
           return checking;
         });
-      }, 10000);
+      }, 30000);
     } catch (error) {
       setUpdateStatus('error');
       setIsCheckingUpdate(false);
@@ -147,12 +150,15 @@ function Sidebar({ isOpen, onToggle }: SidebarProps) {
       setIsCheckingUpdate(false);
     });
 
+    // Auto-check for updates on mount
+    handleCheckForUpdates();
+
     return () => {
       unsubAvailable?.();
       unsubNotAvailable?.();
       unsubError?.();
     };
-  }, []);
+  }, [handleCheckForUpdates]);
 
   const mainNavItems = [
     { icon: IoDocuments, label: 'Summary', to: '/summary' },
