@@ -159,23 +159,39 @@ def create_documents(file_data, directory_path, configuration):
         'result': 'Documents created successfully',
     }
 
-def process_files(client_files, directory_path, configuration):
+def process_files(client_files, directory_path, configuration, doc_text_config=None):
     for client_file in client_files:
         response = create_documents(client_file, directory_path, configuration)
         client_file['year'] = response['year']
-    process_summaries(client_files, directory_path) 
+    process_summaries(client_files, directory_path, doc_text_config=doc_text_config)
     return
+
+def _load_arg(arg):
+    """Load a JSON arg, reading from a temp file if it starts with @file:"""
+    if arg.startswith('@file:'):
+        file_path = arg[6:]
+        with open(file_path, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return json.loads(arg)
+
 
 if __name__ == "__main__":
     if len(sys.argv) >= 3:
-        client_files = json.loads(sys.argv[1])
+        client_files = _load_arg(sys.argv[1])
         directory_path = sys.argv[2]
         try:
-            configuration = json.loads(sys.argv[3])
-        except json.JSONDecodeError as e:
+            configuration = _load_arg(sys.argv[3])
+        except (json.JSONDecodeError, FileNotFoundError) as e:
             print(json.dumps({'error': f"Error parsing configuration JSON: {e}"}))
 
-        process_files(client_files, directory_path, configuration)
+        doc_text_config = None
+        if len(sys.argv) >= 5:
+            try:
+                doc_text_config = _load_arg(sys.argv[4])
+            except (json.JSONDecodeError, FileNotFoundError):
+                pass
+
+        process_files(client_files, directory_path, configuration, doc_text_config)
         print(json.dumps({'result': 'Documents created successfully.'}))
     else:
         print(json.dumps({'error': 'Insufficient arguments provided.'}))

@@ -77,7 +77,7 @@ function ClientDetails({
           key={`client-${clientIndex}`}
           bg="white"
           border="1px solid #edf2f7"
-          _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
+          _dark={{ bg: '#242424', borderColor: '#363636' }}
           borderRadius="12px"
           boxShadow="0 1px 1px rgba(0,0,0,0.05)"
           p={4}

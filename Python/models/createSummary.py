@@ -129,7 +129,7 @@ def prepare_summary(summary_file_path, language):
     except Exception as e:
         return {'error': str(e)}
 
-def process_summaries(client_files, directory_path):
+def process_summaries(client_files, directory_path, doc_text_config=None):
     # Initialize lists to hold summaries for couples and individuals
     coupled_summaries = []
     individual_summaries = []
@@ -250,7 +250,7 @@ def process_summaries(client_files, directory_path):
         file_prefix = "Sommaire" if couple['clients'][0]['language'] == 'FR' else "Summary"
         output_file_name = f"{file_prefix} {couple_name} {year}.docx"
         output_file_path = os.path.join(directory_path, output_file_name)
-        createCoupleWordDoc(couple['clients'], output_file_path)  # Always use single-year function
+        createCoupleWordDoc(couple['clients'], output_file_path, doc_text_config=doc_text_config)  # Always use single-year function
 
     # Group summaries by individual name
     individual_summaries_by_name = defaultdict(list)
@@ -268,10 +268,10 @@ def process_summaries(client_files, directory_path):
             year_str = ", ".join(map(str, years[:-1])) + f" & {years[-1]}" if len(years) > 1 else str(years[0])
             file_prefix = "Sommaire" if summaries[0]['language'] == 'FR' else "Summary"
             output_file_path = os.path.join(directory_path, f"{file_prefix} {full_name} {year_str}.docx")
-            createIndividualWordDocMultiYear(summaries, output_file_path)
+            createIndividualWordDocMultiYear(summaries, output_file_path, doc_text_config=doc_text_config)
         else:  # Single-year case
             individual = summaries[0]
             year = individual['year']
             file_prefix = "Sommaire" if individual['language'] == 'FR' else "Summary"
             output_file_path = os.path.join(directory_path, f"{file_prefix} {full_name} {year}.docx")
-            createIndividualWordDoc(individual, output_file_path)
+            createIndividualWordDoc(individual, output_file_path, doc_text_config=doc_text_config)

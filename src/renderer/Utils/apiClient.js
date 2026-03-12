@@ -129,6 +129,18 @@ const users = {
 };
 
 /**
+ * Document Text Config API
+ */
+const docTextConfig = {
+  async get() {
+    return window.electron.database.getDocTextConfig();
+  },
+  async update(config) {
+    return window.electron.database.updateDocTextConfig(config);
+  },
+};
+
+/**
  * Main API object (similar to Supabase interface)
  */
 export const api = {
@@ -137,4 +149,5 @@ export const api = {
   priceList,
   invoiceNumber,
   users,
+  docTextConfig,
 };

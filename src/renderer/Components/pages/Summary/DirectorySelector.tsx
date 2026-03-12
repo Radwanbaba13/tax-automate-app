@@ -30,10 +30,10 @@ function DirectorySelector({
         _hover={{
           borderColor: '#cf3350',
           bg: '#fff8f9',
-          _dark: { bg: '#202020' },
+          _dark: { bg: '#2e2e2e' },
         }}
         transition="all 0.15s"
-        _dark={{ borderColor: '#3a3a3a' }}
+        _dark={{ borderColor: '#464646' }}
       >
         <FaFolderOpen size={15} color="#cf3350" style={{ flexShrink: 0 }} />
         <Text

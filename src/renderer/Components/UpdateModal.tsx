@@ -50,19 +50,19 @@ function UpdateModal() {
     unsubAvailableRef.current = unsub;
 
     // Listen for download progress
-    window.electron.onUpdateDownloadProgress((progress: ProgressInfo) => {
+    const unsubProgress = window.electron.onUpdateDownloadProgress((progress: ProgressInfo) => {
       setDownloadProgress(Math.round(progress.percent));
     });
 
     // Listen for update downloaded
-    window.electron.onUpdateDownloaded((info: UpdateInfo) => {
+    const unsubDownloaded = window.electron.onUpdateDownloaded((info: UpdateInfo) => {
       setUpdateDownloaded(true);
       setIsDownloading(false);
       setUpdateInfo(info);
     });
 
     // Listen for update errors
-    window.electron.onUpdateError(() => {
+    const unsubError = window.electron.onUpdateError(() => {
       showToast({
         title: 'Update Error',
         description:
@@ -75,9 +75,17 @@ function UpdateModal() {
     });
 
     // Listen for update not available
-    window.electron.onUpdateNotAvailable(() => {
+    const unsubNotAvailable = window.electron.onUpdateNotAvailable(() => {
       // Silently handle - no update available
     });
+
+    return () => {
+      unsub?.();
+      unsubProgress?.();
+      unsubDownloaded?.();
+      unsubError?.();
+      unsubNotAvailable?.();
+    };
   }, []);
 
   const handleDownloadUpdate = async () => {

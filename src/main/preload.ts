@@ -14,8 +14,11 @@ contextBridge.exposeInMainWorld('electron', {
   checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
   downloadUpdate: () => ipcRenderer.invoke('download-update'),
   installUpdate: () => ipcRenderer.invoke('install-update'),
-  onUpdateChecking: (callback) =>
-    ipcRenderer.on('update-checking', () => callback()),
+  onUpdateChecking: (callback) => {
+    const listener = () => callback();
+    ipcRenderer.on('update-checking', listener);
+    return () => ipcRenderer.removeListener('update-checking', listener);
+  },
   onUpdateAvailable: (callback) => {
     const listener = (_event, info) => callback(info);
     ipcRenderer.on('update-available', listener);
@@ -31,12 +34,16 @@ contextBridge.exposeInMainWorld('electron', {
     ipcRenderer.on('update-error', listener);
     return () => ipcRenderer.removeListener('update-error', listener);
   },
-  onUpdateDownloadProgress: (callback) =>
-    ipcRenderer.on('update-download-progress', (event, progress) =>
-      callback(progress),
-    ),
-  onUpdateDownloaded: (callback) =>
-    ipcRenderer.on('update-downloaded', (event, info) => callback(info)),
+  onUpdateDownloadProgress: (callback) => {
+    const listener = (_event, progress) => callback(progress);
+    ipcRenderer.on('update-download-progress', listener);
+    return () => ipcRenderer.removeListener('update-download-progress', listener);
+  },
+  onUpdateDownloaded: (callback) => {
+    const listener = (_event, info) => callback(info);
+    ipcRenderer.on('update-downloaded', listener);
+    return () => ipcRenderer.removeListener('update-downloaded', listener);
+  },
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
 
   compareWithOpenAI: (dtMaxFiles, clientSlipsFiles, prompt) =>
@@ -57,6 +64,10 @@ contextBridge.exposeInMainWorld('electron', {
     getConfigurations: () => ipcRenderer.invoke('db:getConfigurations'),
     updateConfigurations: (config) =>
       ipcRenderer.invoke('db:updateConfigurations', config),
+
+    getDocTextConfig: () => ipcRenderer.invoke('db:getDocTextConfig'),
+    updateDocTextConfig: (config) =>
+      ipcRenderer.invoke('db:updateDocTextConfig', config),
 
     getAllTaxRates: () => ipcRenderer.invoke('db:getAllTaxRates'),
     getTaxRateByProvince: (province) =>

@@ -60,15 +60,20 @@ function UpdateModal({ isOpen, onClose }: UpdateModalProps) {
     }
 
     // Listen for download progress
-    window.electron.onUpdateDownloadProgress((progress: any) => {
+    const unsubProgress = window.electron.onUpdateDownloadProgress((progress: any) => {
       setDownloadProgress(progress.percent);
     });
 
     // Listen for download complete
-    window.electron.onUpdateDownloaded(() => {
+    const unsubDownloaded = window.electron.onUpdateDownloaded(() => {
       setStage('downloaded');
       setIsDownloading(false);
     });
+
+    return () => {
+      unsubProgress?.();
+      unsubDownloaded?.();
+    };
   }, []);
 
   // Reset stage when modal is opened/closed

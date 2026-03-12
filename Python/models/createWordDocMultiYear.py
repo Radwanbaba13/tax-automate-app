@@ -5,11 +5,13 @@ from docx.oxml import OxmlElement
 from docx.oxml.ns import qn
 import locale
 
-def createIndividualWordDocMultiYear(individual, output_file_path):
+from models.docTextHelper import resolve_doc_type_key, get_cfg, get_text, get_style, apply_style, apply_alignment, styled_run
+
+def createIndividualWordDocMultiYear(individual, output_file_path, doc_text_config=None):
     if individual[0]['language'] == 'EN':
-        createIndividualWordDocEN(individual, output_file_path)
+        createIndividualWordDocEN(individual, output_file_path, doc_text_config)
     if individual[0]['language'] == 'FR':
-        createIndividualWordDocFR(individual, output_file_path)
+        createIndividualWordDocFR(individual, output_file_path, doc_text_config)
 
 
 locale.setlocale(locale.LC_ALL, 'fr_CA.UTF-8')
@@ -24,6 +26,9 @@ def set_default_font(doc, font_name, font_size):
     font = styles.font
     font.name = font_name
     font.size = Pt(font_size)
+    # Remove default paragraph spacing so sections don't have large gaps
+    styles.paragraph_format.space_before = Pt(0)
+    styles.paragraph_format.space_after = Pt(0)
 
 # Function that adds a hyperlink to a paragraph.
 def add_hyperlink(paragraph, text, url):
@@ -52,9 +57,11 @@ def add_hyperlink(paragraph, text, url):
     paragraph._p.append(hyperlink)
 
 # Function to create a new document and set global styles
-def createIndividualWordDocEN(individual, output_file_path):
+def createIndividualWordDocEN(individual, output_file_path, doc_text_config=None):
     doc = Document()
     set_default_font(doc, "Calibri", 10)
+
+    cfg = get_cfg(doc_text_config, resolve_doc_type_key('EN', is_couple=False, is_multiyear=True))
 
     ind_title = individual[0]['title']
 
@@ -67,43 +74,43 @@ def createIndividualWordDocEN(individual, output_file_path):
 
 
     # Add section_1 with formatted years
-    section_1(doc, summaries[years[0]], ind_title, years, isMailQC)
+    section_1(doc, summaries[years[0]], ind_title, years, isMailQC, cfg=cfg)
 
     for year in years:
 
         return_summary = summaries[year]
-        
+
         para = doc.add_paragraph()
         run = para.add_run(f"{year}")
         run.underline = True
 
-        tax_return(doc, return_summary, year, years[-1])
+        tax_return(doc, return_summary, year, years[-1], cfg=cfg)
 
         if "gst_amounts" in return_summary and return_summary["gst_amounts"]:
-            gst_credit(doc, return_summary, isNewcomer, year, years[-1], years[0])
+            gst_credit(doc, return_summary, isNewcomer, year, years[-1], years[0], cfg=cfg)
 
         if "ecgeb_amounts" in return_summary and return_summary["ecgeb_amounts"]:
-            ecgeb_credit(doc, return_summary, isNewcomer, year, years[-1], years[0])
+            ecgeb_credit(doc, return_summary, isNewcomer, year, years[-1], years[0], cfg=cfg)
 
         if "solidarity_amounts" in return_summary and return_summary["solidarity_amounts"]:
-            solidarity_credit(doc, return_summary, year, years[-1])
+            solidarity_credit(doc, return_summary, year, years[-1], cfg=cfg)
 
         if "ccb_amounts" in return_summary and return_summary["ccb_amounts"]:
-            child_benefit(doc, return_summary, year, years[-1])
+            child_benefit(doc, return_summary, year, years[-1], cfg=cfg)
 
         if "family_allowance_amounts" in return_summary and return_summary["family_allowance_amounts"]:
-            quebec_family_allowance(doc, return_summary, year, years[-1])
+            quebec_family_allowance(doc, return_summary, year, years[-1], cfg=cfg)
 
         # Only add carryforward amounts for the last year
         if year == years[-1] and "carryforward_amounts" in return_summary and return_summary["carryforward_amounts"]:
-            carryforward_amounts(doc, return_summary)
+            carryforward_amounts(doc, return_summary, cfg=cfg)
 
-    conclusion(doc, isMailQC)
+    conclusion(doc, isMailQC, cfg=cfg)
     doc.save(output_file_path)
 
 
 # Section 1: Title and Header
-def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, secondary_summary=None, secondary_ind_title=None):
+def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, secondary_summary=None, secondary_ind_title=None, cfg=None):
     # Format years dynamically (e.g., "2021 & 2022" or "2021, 2022, ..., & 2024")
     if len(years) == 2:
         formatted_years = f"{years[0]} & {years[1]}"
@@ -113,12 +120,15 @@ def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, se
         formatted_years = str(years[0])
 
     # Title: Centered, Dark Gray, 14pt, Calibri
-    title_text = f'Summary of your {formatted_years} Tax Declarations'
+    default_title = f'Summary of your {formatted_years} Tax Declarations'
+    title_text = get_text(cfg, 'docTitle', default_title, yearRange=formatted_years)
     title = doc.add_paragraph(title_text)
-    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title_style = get_style(cfg, 'docTitle') or {'fontSize': 14, 'color': '#414141'}
+    apply_alignment(title, title_style)
+    if not get_style(cfg, 'docTitle'):
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = title.runs[0]
-    run.font.size = Pt(14)
-    run.font.color.rgb = RGBColor(65, 65, 65)
+    apply_style(run, title_style)
 
     # Recipient Name for Primary Individual
     para = doc.add_paragraph()
@@ -135,210 +145,245 @@ def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, se
 
     # Introduction paragraph
     para = doc.add_paragraph()
-    para.add_run(f'We have attached all the documents related to your {year} tax {"declarations" if couple else "declaration"}.\n')
-    para.add_run('The password for the file named "COPY" is your 9-digit Social Insurance Number.\n').bold = True
-    para.add_run(f'This {"set of documents" if couple else "document"} is a full copy of your tax return. ').bold = False
-    para.add_run('You do not need to print it or sign it; ').bold = True
-    para.add_run('please keep it for your records and review it carefully to ensure everything is accurate and complete.').bold = False
+    default_attach = f'We have attached all the documents related to your {formatted_years} tax {"declarations" if couple else "declaration"}.'
+    styled_run(para, cfg, 'introAttachment', default_attach + '\n', {'bold': False}, yearRange=formatted_years)
+    styled_run(para, cfg, 'introPassword', 'The password for the file named "COPY" is your 9-digit Social Insurance Number.\n', {'bold': True})
+    default_copy_desc = f'This {"set of documents" if couple else "document"} is a full copy of your tax return. '
+    styled_run(para, cfg, 'introCopyDescription', default_copy_desc, {'bold': False})
+    styled_run(para, cfg, 'introCopyNoPrint', 'You do not need to print it or sign it; ', {'bold': True})
+    styled_run(para, cfg, 'introCopyKeep', 'please keep it for your records and review it carefully to ensure everything is accurate and complete.', {'bold': False})
 
     # "Very Important" section
-    very_important_run = para.add_run('\n\n** Very Important:\n')
-    very_important_run.bold = True
-    very_important_run.underline = True
-    very_important_run.font.color.rgb = RGBColor(205, 52, 78)
+    vi_text = get_text(cfg, 'veryImportantHeading', '** Very Important:')
+    very_important_run = para.add_run(f'\n\n{vi_text}\n')
+    apply_style(very_important_run, get_style(cfg, 'veryImportantHeading') or {'bold': True, 'underline': True, 'color': '#cd3350'})
 
     if province == "Québec":
         if isMailQC:
             # Special message if isMailQC is True
-            federal_title_run = para.add_run('Regarding your Federal tax return:\n')
-            federal_title_run.bold = True
-            federal_title_run.underline = True
-            para.add_run('Please be advised that your Federal tax return ')
-            federal_advisory_run = para.add_run('has not been submitted ')
-            federal_advisory_run.bold = True
-            federal_advisory_run.underline = True
-            para.add_run('to the government yet.\n').bold = True
-            
+            fed_title = get_text(cfg, 'qcMailFedTitle', 'Regarding your Federal tax return:')
+            federal_title_run = para.add_run(f'{fed_title}\n')
+            apply_style(federal_title_run, get_style(cfg, 'qcMailFedTitle') or {'bold': True, 'underline': True})
 
-            auth_form_count = len(years) * (2 if couple else 1)  
-            para.add_run(f'Attached are {auth_form_count} Authorization Forms. Please e-sign them (or print & sign) and e-mail them back to us as soon as possible so we can EFILE your return.\n')
-            para.add_run('Please sign Part F.\n\n')
+            fed_not_submitted = get_text(cfg, 'qcMailFedNotSubmitted', 'Please be advised that your Federal tax return has not been submitted to the government yet.')
+            r = para.add_run(f'{fed_not_submitted}\n')
+            apply_style(r, get_style(cfg, 'qcMailFedNotSubmitted') or {'bold': True})
+
+            auth_form_count = len(years) * (2 if couple else 1)
+            auth_text = get_text(cfg, 'qcMailFedAuthForm',
+                f'Attached are {auth_form_count} Authorization Forms. Please e-sign them (or print & sign) and e-mail them back to us as soon as possible so we can EFILE your return.')
+            para.add_run(f'{auth_text}\n')
+
+            sign_text = get_text(cfg, 'qcMailSignPartF', 'Please sign Part F.')
+            para.add_run(f'{sign_text}\n\n')
 
             # Québec tax return
-            quebec_title_run = para.add_run('Regarding your Québec tax return:\n')
-            quebec_title_run.bold = True
-            quebec_title_run.underline = True
+            qc_title = get_text(cfg, 'qcMailQCTitle', 'Regarding your Québec tax return:')
+            quebec_title_run = para.add_run(f'{qc_title}\n')
+            apply_style(quebec_title_run, get_style(cfg, 'qcMailQCTitle') or {'bold': True, 'underline': True})
 
-            para.add_run('Please note that your Québec tax return cannot be transmitted via Efile.\n')
-            qc_docs = [f'“QC {year} - {primary_first_name} {primary_last_name}.pdf”' for year in years]
+            cannot_efile = get_text(cfg, 'qcMailQCCannotEfile', 'Please note that your Québec tax return cannot be transmitted via Efile.')
+            para.add_run(f'{cannot_efile}\n')
+
+            qc_docs = [f'"QC {year} - {primary_first_name} {primary_last_name}.pdf"' for year in years]
             if couple and secondary_summary:
-                qc_docs += [f'“QC {year} - {secondary_first_name} {secondary_last_name}.pdf”' for year in years]
-            para.add_run(f'For that reason, you need to print {", ".join(qc_docs)}, sign at the bottom of page ##, and mail them to the following address:\n')
+                qc_docs += [f'"QC {year} - {secondary_first_name} {secondary_last_name}.pdf"' for year in years]
+            print_text = get_text(cfg, 'qcMailQCPrint',
+                f'For that reason, you need to print {", ".join(qc_docs)}, sign at the bottom of page ##, and mail them to the following address:')
+            para.add_run(f'{print_text}\n')
 
-            address = para.add_run('Revenu Québec\nC. P. 2500, succursale Place-Desjardins\nMontréal (Québec) H5B 1A3\n\n')
-            address.italic = True
+            addr_text = get_text(cfg, 'qcAddress', 'Revenu Québec\nC. P. 2500, succursale Place-Desjardins\nMontréal (Québec) H5B 1A3')
+            address = para.add_run(f'{addr_text}\n\n')
+            apply_style(address, get_style(cfg, 'qcAddress') or {'italic': True})
 
-            para.add_run('*If you would like us to mail the declaration on your behalf, please email us the signed declaration (e-signature that looks like your signature), and we will print and mail it by registered mail (with a tracking number) to QC Revenue. Please note that there will be an additional service fee of $25 plus Canada Post fees.\n')
-        
+            on_behalf = get_text(cfg, 'qcMailOnBehalf',
+                '*If you would like us to mail the declaration on your behalf, please email us the signed declaration (e-signature that looks like your signature), and we will print and mail it by registered mail (with a tracking number) to QC Revenue. Please note that there will be an additional service fee of $25 plus Canada Post fees.')
+            para.add_run(f'{on_behalf}\n')
+
         else:
-            para.add_run('Please be advised that your tax returns ').bold = True
-            bold_underline_run = para.add_run('have not been submitted ')
-            bold_underline_run.bold = True
-            bold_underline_run.underline = True
-            para.add_run('to the government yet. \n').bold = True
+            not_submitted = get_text(cfg, 'qcEfileNotSubmitted', 'Please be advised that your tax returns have not been submitted to the government yet.')
+            r = para.add_run(f'{not_submitted}\n')
+            apply_style(r, get_style(cfg, 'qcEfileNotSubmitted') or {'bold': True})
 
-            auth_form_count = len(years) * (4 if couple else 2) 
-            para.add_run(f'Attached are {auth_form_count} Authorization Forms. Please e-sign them (or print & sign) and e-mail them back to us as soon as possible so we can EFILE your returns.\n')
+            auth_form_count = len(years) * (4 if couple else 2)
+            auth_text = get_text(cfg, 'qcEfileAuthForms',
+                f'Attached are {auth_form_count} Authorization Forms. Please e-sign them (or print & sign) and e-mail them back to us as soon as possible so we can EFILE your returns.')
+            para.add_run(f'{auth_text}\n')
 
             # Federal & Québec signature instructions
-            para.add_run('For the Federal Form, please sign ').italic = True
-            bold_part_f = para.add_run('Part F.')
-            bold_part_f.bold = True
-            bold_part_f.italic = True
-            para.add_run('\nFor the Quebec Form, please sign at the end of ').italic = True
-            bold_section_4 = para.add_run('section 4.')
-            bold_section_4.bold = True
-            bold_section_4.italic = True
+            sign_fed = get_text(cfg, 'qcEfileSignFed', 'For the Federal Form, please sign Part F.')
+            r = para.add_run(f'{sign_fed}\n')
+            apply_style(r, get_style(cfg, 'qcEfileSignFed') or {'italic': True})
+
+            sign_qc = get_text(cfg, 'qcEfileSignQC', 'For the Quebec Form, please sign at the end of section 4.')
+            r = para.add_run(sign_qc)
+            apply_style(r, get_style(cfg, 'qcEfileSignQC') or {'italic': True})
     else:
         # Non-Québec clients (no Québec-related details)
         auth_form_count = len(years) * (2 if couple else 1)
-        para.add_run('Please be advised that your tax returns ').bold = True
-        bold_underline_run = para.add_run('have not been submitted ')
-        bold_underline_run.bold = True
-        bold_underline_run.underline = True
-        para.add_run('to the government yet. \n').bold = True
-        para.add_run(f'Attached are {auth_form_count} Authorization Forms. Please e-sign it (or print & sign) and e-mail it back to us as soon as possible so we can EFILE your return.\n')
-        para.add_run('Please sign').italic = True
-        bold_part_f = para.add_run(' Part F.\n')
-        bold_part_f.bold = True
-        bold_part_f.italic = True
+        not_submitted = get_text(cfg, 'nonQcNotSubmitted', 'Please be advised that your tax returns have not been submitted to the government yet.')
+        r = para.add_run(f'{not_submitted}\n')
+        apply_style(r, get_style(cfg, 'nonQcNotSubmitted') or {'bold': True})
+
+        auth_text = get_text(cfg, 'nonQcAuthForm',
+            f'Attached are {auth_form_count} Authorization Forms. Please e-sign it (or print & sign) and e-mail it back to us as soon as possible so we can EFILE your return.')
+        para.add_run(f'{auth_text}\n')
+
+        sign_text = get_text(cfg, 'nonQcSignPartF', 'Please sign Part F.')
+        r = para.add_run(f'{sign_text}\n')
+        apply_style(r, get_style(cfg, 'nonQcSignPartF') or {'italic': True})
 
 
 
-def tax_return(doc, return_summary, year, last_year, secondary_summary=None, primary_title=None, secondary_title=None, isCouple=False):
+def tax_return(doc, return_summary, year, last_year, secondary_summary=None, primary_title=None, secondary_title=None, isCouple=False, cfg=None):
     province = return_summary["tax_summary"]["province"]
 
     para = doc.add_paragraph()
-    bold_red_results = para.add_run('RESULTS\n')
-    bold_red_results.bold = True
-    bold_red_results.font.color.rgb = RGBColor(205, 52, 78)
+    results_text = get_text(cfg, 'resultsHeading', 'RESULTS')
+    bold_red_results = para.add_run(f'{results_text}\n')
+    apply_style(bold_red_results, get_style(cfg, 'resultsHeading') or {'bold': True, 'color': '#cd3350'})
 
     # Process primary individual's tax details
     if isCouple:
         para.add_run(f"\n{primary_title}. {return_summary['tax_summary']['last_name']}\n")
 
     # Federal Tax Return for primary individual
-    para.add_run('Federal Tax return\n').bold = True
+    fed_label = get_text(cfg, 'federalReturnLabel', 'Federal Tax return')
+    r = para.add_run(f'{fed_label}\n')
+    apply_style(r, get_style(cfg, 'federalReturnLabel') or {'bold': True})
     federal_refund = return_summary["tax_summary"]["federal_refund"]
     federal_owing = return_summary["tax_summary"]["federal_owing"]
 
     if federal_refund > 2:
-        para.add_run(f"You are entitled to a refund of ").bold = False
+        refund_prefix = get_text(cfg, 'refundPrefix', 'You are entitled to a refund of')
+        para.add_run(f"{refund_prefix} ").bold = False
         refund_run = para.add_run(f"${federal_refund:,.2f} \n")
         refund_run.bold = True
         refund_run.font.color.rgb = RGBColor(0, 128, 0)
     elif federal_owing > 2:
-        para.add_run(f"You owe the amount of ").bold = False
+        owing_prefix = get_text(cfg, 'owingPrefix', 'You owe the amount of')
+        para.add_run(f"{owing_prefix} ").bold = False
         owing_run = para.add_run(f"${federal_owing:,.2f} \n")
         owing_run.bold = True
         owing_run.font.color.rgb = RGBColor(255, 0, 0)
     else:
-        para.add_run("You have no Refund or Balance due.\n")
+        no_bal = get_text(cfg, 'noBalance', 'You have no Refund or Balance due.')
+        para.add_run(f"{no_bal}\n")
 
     if province == "Quebec":
-        # Quebec Tax Return for primary individual  
-        para.add_run('Quebec Tax return\n').bold = True
+        # Quebec Tax Return for primary individual
+        qc_label = get_text(cfg, 'quebecReturnLabel', 'Quebec Tax return')
+        r = para.add_run(f'{qc_label}\n')
+        apply_style(r, get_style(cfg, 'quebecReturnLabel') or {'bold': True})
         quebec_refund = return_summary["tax_summary"]["quebec_refund"]
         quebec_owing = return_summary["tax_summary"]["quebec_owing"]
 
         if quebec_refund > 2:
-            para.add_run(f"You are entitled to a refund of ").bold = False
+            refund_prefix = get_text(cfg, 'refundPrefix', 'You are entitled to a refund of')
+            para.add_run(f"{refund_prefix} ").bold = False
             refund_run = para.add_run(f"${quebec_refund:,.2f}\n")
             refund_run.bold = True
             refund_run.font.color.rgb = RGBColor(0, 128, 0)
         elif quebec_owing > 2:
-            para.add_run(f"You owe the amount of ").bold = False
+            owing_prefix = get_text(cfg, 'owingPrefix', 'You owe the amount of')
+            para.add_run(f"{owing_prefix} ").bold = False
             owing_run = para.add_run(f"${quebec_owing:,.2f}\n")
             owing_run.bold = True
             owing_run.font.color.rgb = RGBColor(255, 0, 0)
         else:
-            para.add_run("You have no Refund or Balance due.\n")
+            no_bal = get_text(cfg, 'noBalance', 'You have no Refund or Balance due.')
+            para.add_run(f"{no_bal}\n")
 
     # Add payment section for primary individual only if this is the last year
     if year == last_year:
-        add_payment_section(doc, federal_owing, quebec_owing if province == "Quebec" else 0, year, last_year)
+        add_payment_section(doc, federal_owing, quebec_owing if province == "Quebec" else 0, year, last_year, cfg=cfg)
 
     if isCouple and "carryforward_amounts" in return_summary and return_summary["carryforward_amounts"]:
-        carryforward_amounts(doc, return_summary)
+        carryforward_amounts(doc, return_summary, cfg=cfg)
 
     # Add secondary individual if isCouple is True and secondary_summary is provided
     if isCouple and secondary_summary:
         para.add_run(f"\n{secondary_title}. {secondary_summary['tax_summary']['last_name']}\n")
 
         # Federal Tax Return for secondary individual
-        para.add_run('Federal Tax return\n').bold = True
+        fed_label = get_text(cfg, 'federalReturnLabel', 'Federal Tax return')
+        r = para.add_run(f'{fed_label}\n')
+        apply_style(r, get_style(cfg, 'federalReturnLabel') or {'bold': True})
         federal_refund = secondary_summary["tax_summary"]["federal_refund"]
         federal_owing = secondary_summary["tax_summary"]["federal_owing"]
 
         if federal_refund > 2:
-            para.add_run(f"You are entitled to a refund of ").bold = False
+            refund_prefix = get_text(cfg, 'refundPrefix', 'You are entitled to a refund of')
+            para.add_run(f"{refund_prefix} ").bold = False
             refund_run = para.add_run(f"${federal_refund:,.2f}\n")
             refund_run.bold = True
             refund_run.font.color.rgb = RGBColor(0, 128, 0)
         elif federal_owing > 2:
-            para.add_run(f"You owe the amount of ").bold = False
+            owing_prefix = get_text(cfg, 'owingPrefix', 'You owe the amount of')
+            para.add_run(f"{owing_prefix} ").bold = False
             owing_run = para.add_run(f"${federal_owing:,.2f}\n")
             owing_run.bold = True
             owing_run.font.color.rgb = RGBColor(255, 0, 0)
         else:
-            para.add_run("You have no Refund or Balance due.\n")
+            no_bal = get_text(cfg, 'noBalance', 'You have no Refund or Balance due.')
+            para.add_run(f"{no_bal}\n")
 
         # Quebec Tax Return for secondary individual
         if province == "Quebec":
-            para.add_run('Quebec Tax return\n').bold = True
+            qc_label = get_text(cfg, 'quebecReturnLabel', 'Quebec Tax return')
+            r = para.add_run(f'{qc_label}\n')
+            apply_style(r, get_style(cfg, 'quebecReturnLabel') or {'bold': True})
             quebec_refund = secondary_summary["tax_summary"]["quebec_refund"]
             quebec_owing = secondary_summary["tax_summary"]["quebec_owing"]
 
             if quebec_refund > 2:
-                para.add_run(f"You are entitled to a refund of ").bold = False
+                refund_prefix = get_text(cfg, 'refundPrefix', 'You are entitled to a refund of')
+                para.add_run(f"{refund_prefix} ").bold = False
                 refund_run = para.add_run(f"${quebec_refund:,.2f}")
                 refund_run.bold = True
                 refund_run.font.color.rgb = RGBColor(0, 128, 0)
             elif quebec_owing > 2:
-                para.add_run(f"You owe the amount of ").bold = False
+                owing_prefix = get_text(cfg, 'owingPrefix', 'You owe the amount of')
+                para.add_run(f"{owing_prefix} ").bold = False
                 owing_run = para.add_run(f"${quebec_owing:,.2f}")
                 owing_run.bold = True
                 owing_run.font.color.rgb = RGBColor(255, 0, 0)
             else:
-                para.add_run("You have no Refund or Balance due.\n")
+                no_bal = get_text(cfg, 'noBalance', 'You have no Refund or Balance due.')
+                para.add_run(f"{no_bal}\n")
 
         # Add payment section for secondary individual only if this is the last year
-        add_payment_section(doc, federal_owing, quebec_owing if province == "Quebec" else 0, year, last_year)
+        add_payment_section(doc, federal_owing, quebec_owing if province == "Quebec" else 0, year, last_year, cfg=cfg)
 
         if "carryforward_amounts" in secondary_summary and secondary_summary["carryforward_amounts"]:
-            carryforward_amounts(doc, secondary_summary)
+            carryforward_amounts(doc, secondary_summary, cfg=cfg)
 
 
 
 # Function to add the payment section
-def add_payment_section(doc, federal_owing, quebec_owing, year, last_year):
+def add_payment_section(doc, federal_owing, quebec_owing, year, last_year, cfg=None):
 
 
     if federal_owing > 2 or quebec_owing > 2:
         para = doc.add_paragraph()
-        para.add_run('You owe an amount on your ').italic = True
 
         if federal_owing > 2 and quebec_owing > 2:
-            para.add_run('Federal and Quebec returns; ').italic = True
+            owing_text = get_text(cfg, 'paymentOwingFedAndQC', 'You owe an amount on your Federal and Quebec returns;')
         elif federal_owing > 2:
-            para.add_run('Federal return; ').italic = True
-        elif quebec_owing > 2:
-            para.add_run('Quebec return; ').italic = True
+            owing_text = get_text(cfg, 'paymentOwingFed', 'You owe an amount on your Federal return;')
+        else:
+            owing_text = get_text(cfg, 'paymentOwingQC', 'You owe an amount on your Quebec return;')
+        r = para.add_run(f'{owing_text} ')
+        apply_style(r, get_style(cfg, 'paymentOwingFed') or {'italic': True})
 
         if last_year == year:
-            para.add_run(f'please make sure to pay the balance due by April 30, {int(year) + 1}, to avoid paying any interest. ').italic = True
-       
-        para.add_run('Please wait a few days after we E-file to pay your outstanding balance. For more details on how to pay the amount due, please click on: ').italic = True
+            deadline = get_text(cfg, 'paymentDeadline', f'please make sure to pay the balance due by April 30, {int(year) + 1}, to avoid paying any interest.', dueYear=str(int(year) + 1))
+            r = para.add_run(f'{deadline} ')
+            apply_style(r, get_style(cfg, 'paymentDeadline') or {'italic': True})
+
+        howto = get_text(cfg, 'paymentHowTo', 'Please wait a few days after we E-file to pay your outstanding balance. For more details on how to pay the amount due, please click on:')
+        r = para.add_run(f'{howto} ')
+        apply_style(r, get_style(cfg, 'paymentHowTo') or {'italic': True})
 
         # Add links for payment based on owing status
         if federal_owing > 2:
@@ -351,12 +396,12 @@ def add_payment_section(doc, federal_owing, quebec_owing, year, last_year):
 
 
 # Section: Solidarity Credit
-def solidarity_credit(doc, return_summary, year, last_year):
+def solidarity_credit(doc, return_summary, year, last_year, cfg=None):
     para = doc.add_paragraph()
     # Add title directly with bold and underline
-    title_run = para.add_run('Solidarity Credits:\n')
-    title_run.bold = True
-    title_run.underline = True
+    sol_title = get_text(cfg, 'solidarityTitle', 'Solidarity Credits:')
+    title_run = para.add_run(f'{sol_title}\n')
+    apply_style(title_run, get_style(cfg, 'solidarityTitle') or {'bold': True, 'underline': True})
 
     year_plus1 = int(year) + 1
     year_plus2 = int(year) + 2
@@ -425,7 +470,7 @@ def solidarity_credit(doc, return_summary, year, last_year):
                         start_month = month
                     # Handle the last range
                     if month == "June":
-                        end_year = year_plus2 
+                        end_year = year_plus2
                         amount_ranges.append((start_month, month, current_amount, end_year))
 
                 for start, end, amount, end_year in amount_ranges:
@@ -433,11 +478,11 @@ def solidarity_credit(doc, return_summary, year, last_year):
 
 
 # Section: GST Credit
-def gst_credit(doc, return_summary, isNewcomer, year, last_year, first_year):
+def gst_credit(doc, return_summary, isNewcomer, year, last_year, first_year, cfg=None):
     para = doc.add_paragraph()
-    title_run = para.add_run('GST')
-    title_run.bold = True
-    title_run.underline = True
+    gst_title_text = get_text(cfg, 'gstTitle', 'GST/HST Credits:')
+    title_run = para.add_run(gst_title_text)
+    apply_style(title_run, get_style(cfg, 'gstTitle') or {'bold': True, 'underline': True})
 
     if isNewcomer and year == first_year:
         title_run = para.add_run('* ')
@@ -447,7 +492,7 @@ def gst_credit(doc, return_summary, isNewcomer, year, last_year, first_year):
     title_run.bold = True
     title_run.underline = True
 
-    gst_credit_amount = return_summary["gst_amounts"]["gst_credit_amount"]    
+    gst_credit_amount = return_summary["gst_amounts"]["gst_credit_amount"]
     july_amount = return_summary["gst_amounts"].get("july_amount", 0)
     october_amount = return_summary["gst_amounts"].get("october_amount", 0)
     january_amount = return_summary["gst_amounts"].get("january_amount", 0)
@@ -480,13 +525,13 @@ def gst_credit(doc, return_summary, isNewcomer, year, last_year, first_year):
             'Even though it was mentioned on the declaration, you still need to respond to the letter and provide the amount. If you do not reply, they will not pay the GST amount.\n'
         ).italic = True
 
-    
+
 # Section: ECGEB Credit
-def ecgeb_credit(doc, return_summary, isNewcomer, year, last_year, first_year):
+def ecgeb_credit(doc, return_summary, isNewcomer, year, last_year, first_year, cfg=None):
     para = doc.add_paragraph()
-    title_run = para.add_run('ECGEB')
-    title_run.bold = True
-    title_run.underline = True
+    ecgeb_title_text = get_text(cfg, 'ecgebTitle', 'Canada Groceries & Essentials Benefit:')
+    title_run = para.add_run(ecgeb_title_text)
+    apply_style(title_run, get_style(cfg, 'ecgebTitle') or {'bold': True, 'underline': True})
 
     if isNewcomer and year == first_year:
         title_run = para.add_run('* ')
@@ -531,10 +576,11 @@ def ecgeb_credit(doc, return_summary, isNewcomer, year, last_year, first_year):
 
 
 # Section: Summary of Carryforward Amounts
-def carryforward_amounts(doc, return_summary):
+def carryforward_amounts(doc, return_summary, cfg=None):
     para = doc.add_paragraph()
-    title_run = para.add_run('Your accumulated tuition fees carried forward to future years:\n')
-    title_run.bold = True
+    tuition_title = get_text(cfg, 'tuitionTitle', 'Your accumulated tuition fees carried forward to future years:')
+    title_run = para.add_run(f'{tuition_title}\n')
+    apply_style(title_run, get_style(cfg, 'tuitionTitle') or {'bold': True})
 
     federal_tuition_amount = return_summary["carryforward_amounts"]["federal_tuition_amount"]
     quebec_tuition_8_percent = return_summary["carryforward_amounts"]["quebec_tuition_8_percent"]
@@ -553,26 +599,28 @@ def carryforward_amounts(doc, return_summary):
 
     # Format numbers with commas as thousand separators when adding them to the document
     if federal_tuition_amount > 0:
-        para.add_run('Federal (eligible to 15%):  $')
+        fed_label = get_text(cfg, 'tuitionFedLabel', 'Federal (eligible to 15%):  $')
+        para.add_run(fed_label)
         para.add_run(f"{federal_tuition_amount:,}")
     if quebec_tuition_8_percent > 0:
-        para.add_run('\nQC (eligible to 8%): $')
+        qc_label = get_text(cfg, 'tuitionQCLabel', 'QC (eligible to 8%): $')
+        para.add_run(f'\n{qc_label}')
         para.add_run(f"{quebec_tuition_8_percent:,}")
 
-    para.add_run(
-        '\n\nThose accumulated tuition fees are tax credits that you will be using in future tax declarations when you work '
-        'and pay tax on your income.'
-    ).italic = True
+    tuition_exp = get_text(cfg, 'tuitionExplanation',
+        'Those accumulated tuition fees are tax credits that you will be using in future tax declarations when you work and pay tax on your income.')
+    r = para.add_run(f'\n\n{tuition_exp}')
+    apply_style(r, get_style(cfg, 'tuitionExplanation') or {'italic': True})
 
 
 
 # Section: Child Benefit Amount
-def child_benefit(doc, return_summary, year, last_year):
+def child_benefit(doc, return_summary, year, last_year, cfg=None):
     para = doc.add_paragraph()
     # Add title directly with bold and underline
-    title_run = para.add_run('Child Benefit Amounts:\n')
-    title_run.bold = True
-    title_run.underline = True
+    ccb_title = get_text(cfg, 'ccbTitle', 'Canada Child Benefit (CCB):')
+    title_run = para.add_run(f'{ccb_title}\n')
+    apply_style(title_run, get_style(cfg, 'ccbTitle') or {'bold': True, 'underline': True})
 
     year_plus1 = int(year) + 1
     year_plus2 = int(year) + 2
@@ -647,7 +695,7 @@ def child_benefit(doc, return_summary, year, last_year):
                     para.add_run(f'${amount:,.2f}/month from {start} to {end}')
 
 # Section: Quebec Family Allowance
-def quebec_family_allowance(doc, return_summary, year, last_year):
+def quebec_family_allowance(doc, return_summary, year, last_year, cfg=None):
     para = doc.add_paragraph()
 
     total_allowance_amount = return_summary["family_allowance_amounts"]["fa_amount"]
@@ -657,7 +705,8 @@ def quebec_family_allowance(doc, return_summary, year, last_year):
     total_run.bold = True
     total_run.font.color.rgb = RGBColor(0, 128, 0)
     para.add_run(f' for the ')
-    para.add_run(f'Quebec Family Allowance').bold = True
+    fa_title = get_text(cfg, 'familyAllowanceTitle', 'Quebec Family Allowance:')
+    para.add_run(fa_title).bold = True
     if year == last_year:
         para.add_run(f' as follows:\n')
     else:
@@ -682,34 +731,38 @@ def quebec_family_allowance(doc, return_summary, year, last_year):
             para.add_run(f'April {year_plus2}: ${april_amount:,.2f}\n')
 
 # Section: Conclusion
-def conclusion(doc, isMailQC=False):
+def conclusion(doc, isMailQC=False, cfg=None):
     para = doc.add_paragraph()
 
     # Add the red text above the conclusion
     # Use singular "form" for Efile fed mail QC (Individual), plural "forms" otherwise
     form_text = "form" if isMailQC else "forms"
-    red_run = para.add_run(f'\nWe will be waiting for the signed authorization {form_text} to proceed.\n')
-    red_run.font.color.rgb = RGBColor(205, 52, 78)
+    waiting_default = f'We will be waiting for the signed authorization {form_text} to proceed.'
+    waiting_text = get_text(cfg, 'conclusionWaiting', waiting_default)
+    red_run = para.add_run(f'\n{waiting_text}\n')
+    apply_style(red_run, get_style(cfg, 'conclusionWaiting') or {'color': '#cd3350'})
 
     # Add normal text for "Thank you."
-    para.add_run('\nThank you.\n')
+    thank_text = get_text(cfg, 'thankYou', 'Thank you.')
+    para.add_run(f'\n{thank_text}\n')
 
     # Add the main conclusion text with specified formatting
-    conclusion_run = para.add_run(
-        '\nWe at Sankari Inc. are pleased to respond to your tax inquiries and/or file your tax returns based on the '
+    disclaimer_default = (
+        'We at Sankari Inc. are pleased to respond to your tax inquiries and/or file your tax returns based on the '
         'information that you provide. Inaccurate or incomplete information provided by you may lead to inadequate or '
         'incorrect advice for which Sankari Inc. team cannot be held responsible. You, the client, are responsible for '
         'giving correct information and documentation to Sankari Inc.'
     )
-    # Set the font size to 8pt, color to black with 50% lighter, and italicize
-    conclusion_run.font.size = Pt(8)
-    conclusion_run.font.color.rgb = RGBColor(127, 127, 127)
-    conclusion_run.italic = True
+    disclaimer_text = get_text(cfg, 'disclaimer', disclaimer_default)
+    conclusion_run = para.add_run(f'\n{disclaimer_text}')
+    apply_style(conclusion_run, get_style(cfg, 'disclaimer') or {'fontSize': 8, 'color': '#7f7f7f', 'italic': True})
 
 
-def createIndividualWordDocFR(individual, output_file_path):
+def createIndividualWordDocFR(individual, output_file_path, doc_text_config=None):
     doc = Document()
     set_default_font(doc, "Calibri", 10)
+
+    cfg = get_cfg(doc_text_config, resolve_doc_type_key('FR', is_couple=False, is_multiyear=True))
 
     ind_title = individual[0]['title']
     if ind_title == 'Mr':
@@ -724,7 +777,7 @@ def createIndividualWordDocFR(individual, output_file_path):
     years = sorted(summaries.keys(), key=int)
 
     # Add section_1FR with formatted years
-    section_1FR(doc, summaries[years[0]], ind_title, years, isMailQC)
+    section_1FR(doc, summaries[years[0]], ind_title, years, isMailQC, cfg=cfg)
 
     for year in years:
         return_summary = summaries[year]
@@ -733,31 +786,31 @@ def createIndividualWordDocFR(individual, output_file_path):
         run = para.add_run(f"{year}")
         run.underline = True
 
-        tax_returnFR(doc, return_summary, year, years[-1])
+        tax_returnFR(doc, return_summary, year, years[-1], cfg=cfg)
 
         if "gst_amounts" in return_summary and return_summary["gst_amounts"]:
-            gst_creditFR(doc, return_summary, isNewcomer, year, years[-1], years[0])
+            gst_creditFR(doc, return_summary, isNewcomer, year, years[-1], years[0], cfg=cfg)
 
         if "ecgeb_amounts" in return_summary and return_summary["ecgeb_amounts"]:
-            ecgeb_creditFR(doc, return_summary, isNewcomer, year, years[-1], years[0])
+            ecgeb_creditFR(doc, return_summary, isNewcomer, year, years[-1], years[0], cfg=cfg)
 
         if "solidarity_amounts" in return_summary and return_summary["solidarity_amounts"]:
-            solidarity_creditFR(doc, return_summary, year, years[-1])
+            solidarity_creditFR(doc, return_summary, year, years[-1], cfg=cfg)
 
         if "ccb_amounts" in return_summary and return_summary["ccb_amounts"]:
-            child_benefitFR(doc, return_summary, year, years[-1])
+            child_benefitFR(doc, return_summary, year, years[-1], cfg=cfg)
 
         if "family_allowance_amounts" in return_summary and return_summary["family_allowance_amounts"]:
-            quebec_family_allowanceFR(doc, return_summary, year, years[-1])
+            quebec_family_allowanceFR(doc, return_summary, year, years[-1], cfg=cfg)
 
         if year == years[-1] and "carryforward_amounts" in return_summary and return_summary["carryforward_amounts"]:
-            carryforward_amountsFR(doc, return_summary)
+            carryforward_amountsFR(doc, return_summary, cfg=cfg)
 
-    conclusionFR(doc)
+    conclusionFR(doc, cfg=cfg)
     doc.save(output_file_path)
 
 
-def section_1FR(doc, return_summary, ind_title, years, isMailQC, couple=False, secondary_summary=None, secondary_ind_title=None):
+def section_1FR(doc, return_summary, ind_title, years, isMailQC, couple=False, secondary_summary=None, secondary_ind_title=None, cfg=None):
     # Format years dynamically
     if len(years) == 2:
         formatted_years = f"{years[0]} & {years[1]}"
@@ -767,12 +820,15 @@ def section_1FR(doc, return_summary, ind_title, years, isMailQC, couple=False, s
         formatted_years = str(years[0])
 
     # Title: Centered, Dark Gray, 14pt, Calibri
-    title_text = f"Sommaire de {'vos' if couple else 'votre'} déclarations d’impôts {formatted_years}"
+    default_title = f"Sommaire de {'vos' if couple else 'votre'} d\u00e9clarations d\u2019imp\u00f4ts {formatted_years}"
+    title_text = get_text(cfg, 'docTitle', default_title, yearRange=formatted_years)
     title = doc.add_paragraph(title_text)
-    title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    title_style = get_style(cfg, 'docTitle') or {'fontSize': 14, 'color': '#414141'}
+    apply_alignment(title, title_style)
+    if not get_style(cfg, 'docTitle'):
+        title.alignment = WD_ALIGN_PARAGRAPH.CENTER
     run = title.runs[0]
-    run.font.size = Pt(14)
-    run.font.color.rgb = RGBColor(65, 65, 65)
+    apply_style(run, title_style)
 
     # Recipient Name
     para = doc.add_paragraph()
@@ -789,127 +845,145 @@ def section_1FR(doc, return_summary, ind_title, years, isMailQC, couple=False, s
 
     # Introduction paragraph
     para = doc.add_paragraph()
-    para.add_run(f'Nous avons joint à ce courriel tous les documents de {'vos déclarations' if couple else 'votre déclaration'} d’impôts {year}. ').bold = False
-    para.add_run('Le mot de passe du document nommé "COPIE" est composé des neuf chiffres de votre numéro d’assurance sociale.\n').bold = True
+    default_attach = f'Nous avons joint \u00e0 ce courriel tous les documents de {"\u0076os d\u00e9clarations" if couple else "votre d\u00e9claration"} d\u2019imp\u00f4ts {formatted_years}. '
+    styled_run(para, cfg, 'introAttachment', default_attach + '\n', {'bold': False}, yearRange=formatted_years)
+    styled_run(para, cfg, 'introPassword', 'Le mot de passe du document nomm\u00e9 \u201cCOPIE\u201d est compos\u00e9 des neuf chiffres de votre num\u00e9ro d\u2019assurance sociale.\n', {'bold': True})
     if couple:
-        para.add_run('Ce jeu de documents constitue une copie complète de vos déclarations de revenus. ').bold = False
-        para.add_run('Vous n\'avez pas besoin de les imprimer ou de les signer; ').bold = True
-        para.add_run('vous avez juste besoin de les retenir pour votre dossier. Veuillez revoir les déclarations de revenu attentivement afin de vous assurer qu’elles sont exactes et complètes.\n').bold = False
-
-    else:    
-        para.add_run('Ce document constitue une copie complète de votre déclaration de revenus. ').bold = False
-        para.add_run('Vous n\'avez pas besoin de l’imprimer ou de le signer; ').bold = True
-        para.add_run('vous avez juste besoin de le retenir pour votre dossier. Veuillez revoir la déclaration de revenu attentivement afin de vous assurer qu’elle est exacte et complète.').bold = False
+        default_copy_desc = 'Ce jeu de documents constitue une copie compl\u00e8te de vos d\u00e9clarations de revenus. '
+        default_copy_noprint = 'Vous n\'avez pas besoin de les imprimer ou de les signer; '
+        default_copy_keep = 'vous avez juste besoin de les retenir pour votre dossier. Veuillez revoir les d\u00e9clarations de revenu attentivement afin de vous assurer qu\u2019elles sont exactes et compl\u00e8tes.\n'
+    else:
+        default_copy_desc = 'Ce document constitue une copie compl\u00e8te de votre d\u00e9claration de revenus. '
+        default_copy_noprint = 'Vous n\'avez pas besoin de l\u2019imprimer ou de le signer; '
+        default_copy_keep = 'vous avez juste besoin de le retenir pour votre dossier. Veuillez revoir la d\u00e9claration de revenu attentivement afin de vous assurer qu\u2019elle est exacte et compl\u00e8te.'
+    styled_run(para, cfg, 'introCopyDescription', default_copy_desc, {'bold': False})
+    styled_run(para, cfg, 'introCopyNoPrint', default_copy_noprint, {'bold': True})
+    styled_run(para, cfg, 'introCopyKeep', default_copy_keep, {'bold': False})
 
     # "Very Important" section
-    very_important_run = para.add_run('\n\n** TRÈS IMPORTANT :\n')
-    very_important_run.bold = True
-    very_important_run.underline = True
-    very_important_run.font.color.rgb = RGBColor(205, 52, 78)
+    vi_text = get_text(cfg, 'veryImportantHeading', '** TR\u00c8S IMPORTANT :')
+    very_important_run = para.add_run(f'\n\n{vi_text}\n')
+    apply_style(very_important_run, get_style(cfg, 'veryImportantHeading') or {'bold': True, 'underline': True, 'color': '#cd3350'})
 
-    if province == "Québec":
+    if province == "Qu\u00e9bec":
         if isMailQC:
             # Special message if isMailQC is True
-            federal_title_run = para.add_run('Déclaration Fédérale :\n')
-            federal_title_run.bold = True
-            federal_title_run.underline = True
-            para.add_run('Veuillez noter que votre déclaration fédérale ').bold = True
-            federal_advisory_run = para.add_run('n’a pas encore été soumise ')
-            federal_advisory_run.bold = True
-            federal_advisory_run.underline = True
-            para.add_run('au gouvernement.\n').bold = True
+            fed_title = get_text(cfg, 'qcMailFedTitle', 'D\u00e9claration F\u00e9d\u00e9rale :')
+            federal_title_run = para.add_run(f'{fed_title}\n')
+            apply_style(federal_title_run, get_style(cfg, 'qcMailFedTitle') or {'bold': True, 'underline': True})
+
+            fed_not_submitted = get_text(cfg, 'qcMailFedNotSubmitted', 'Veuillez noter que votre d\u00e9claration f\u00e9d\u00e9rale n\u2019a pas encore \u00e9t\u00e9 soumise au gouvernement.')
+            r = para.add_run(f'{fed_not_submitted}\n')
+            apply_style(r, get_style(cfg, 'qcMailFedNotSubmitted') or {'bold': True})
 
             auth_form_count = len(years) * (2 if couple else 1)
-            para.add_run(f'Vous trouverez ci-joint {auth_form_count} formulaire(s) d’autorisation. Veuillez les signer électroniquement (ou les imprimer et signer) et nous les envoyer par courriel dès que possible afin que nous puissions transmettre votre déclaration par EFILE.\n')
-            para.add_run('S’il vous plaît signer la partie F.\n\n')
-            
-            qc_docs = [f'“QC {year} - {first_name} {last_name}.pdf”' for year in years]
+            auth_text = get_text(cfg, 'qcMailFedAuthForm',
+                f'Vous trouverez ci-joint {auth_form_count} formulaire(s) d\u2019autorisation. Veuillez les signer \u00e9lectroniquement (ou les imprimer et signer) et nous les envoyer par courriel d\u00e8s que possible afin que nous puissions transmettre votre d\u00e9claration par EFILE.')
+            para.add_run(f'{auth_text}\n')
+
+            sign_text = get_text(cfg, 'qcMailSignPartF', 'S\u2019il vous pla\u00eet signer la partie F.')
+            para.add_run(f'{sign_text}\n\n')
+
+            qc_docs = [f'"QC {year} - {first_name} {last_name}.pdf"' for year in years]
 
             # Québec tax return
-            quebec_title_run = para.add_run('Déclaration Provinciale :\n')
-            quebec_title_run.bold = True
-            quebec_title_run.underline = True
+            qc_title = get_text(cfg, 'qcMailQCTitle', 'D\u00e9claration Provinciale :')
+            quebec_title_run = para.add_run(f'{qc_title}\n')
+            apply_style(quebec_title_run, get_style(cfg, 'qcMailQCTitle') or {'bold': True, 'underline': True})
 
-            para.add_run('Veuillez noter que votre déclaration provinciale ne peut pas être transmise via Efile.\n')
+            cannot_efile = get_text(cfg, 'qcMailQCCannotEfile', 'Veuillez noter que votre d\u00e9claration provinciale ne peut pas \u00eatre transmise via Efile.')
+            para.add_run(f'{cannot_efile}\n')
+
             if couple and secondary_summary:
-                qc_docs += [f'“QC {year} - {secondary_first_name} {secondary_last_name}.pdf”' for year in years]
-            para.add_run(f'Vous devez également imprimer {", ".join(qc_docs)}, signer en bas de la page ##, et l’envoyer par la poste à l’adresse suivante :\n')
+                qc_docs += [f'"QC {year} - {secondary_first_name} {secondary_last_name}.pdf"' for year in years]
+            print_text = get_text(cfg, 'qcMailQCPrint',
+                f'Vous devez \u00e9galement imprimer {", ".join(qc_docs)}, signer en bas de la page ##, et l\u2019envoyer par la poste \u00e0 l\u2019adresse suivante :')
+            para.add_run(f'{print_text}\n')
 
-            address = para.add_run('Revenu Québec\nC. P. 2500, succursale Place-Desjardins\nMontréal (Québec) H5B 1A3\n\n')
-            address.italic = True
+            addr_text = get_text(cfg, 'qcAddress', 'Revenu Qu\u00e9bec\nC. P. 2500, succursale Place-Desjardins\nMontr\u00e9al (Qu\u00e9bec) H5B 1A3')
+            address = para.add_run(f'{addr_text}\n\n')
+            apply_style(address, get_style(cfg, 'qcAddress') or {'italic': True})
 
-            para.add_run('*Si vous souhaitez que nous envoyions la déclaration pour vous, veuillez nous envoyer la déclaration signée (signature électronique ressemblant à votre signature), et nous l’imprimerons et l’enverrons par courrier recommandé avec un numéro de suivi à Revenu Québec. Des frais de service de 25 $ plus les frais de Postes Canada s’appliquent.\n')
+            on_behalf = get_text(cfg, 'qcMailOnBehalf',
+                '*Si vous souhaitez que nous envoyions la d\u00e9claration pour vous, veuillez nous envoyer la d\u00e9claration sign\u00e9e (signature \u00e9lectronique ressemblant \u00e0 votre signature), et nous l\u2019imprimerons et l\u2019enverrons par courrier recommand\u00e9 avec un num\u00e9ro de suivi \u00e0 Revenu Qu\u00e9bec. Des frais de service de 25 $ plus les frais de Postes Canada s\u2019appliquent.')
+            para.add_run(f'{on_behalf}\n')
 
         else:
-            para.add_run('Veuillez noter que votre déclaration d’impôt ').bold = True
-            bold_underline_run = para.add_run('n’a pas encore été soumise ')
-            bold_underline_run.bold = True
-            bold_underline_run.underline = True
-            para.add_run('au gouvernement.\n').bold = True
+            not_submitted = get_text(cfg, 'qcEfileNotSubmitted', 'Veuillez noter que votre d\u00e9claration d\u2019imp\u00f4t n\u2019a pas encore \u00e9t\u00e9 soumise au gouvernement.')
+            r = para.add_run(f'{not_submitted}\n')
+            apply_style(r, get_style(cfg, 'qcEfileNotSubmitted') or {'bold': True})
 
             auth_form_count = len(years) * (4 if couple else 2)
-            para.add_run(f'Vous trouverez ci-joint {auth_form_count} formulaire(s) d’autorisation. Veuillez les signer électroniquement (ou les imprimer et signer) et nous les envoyer par courriel dès que possible afin que nous puissions transmettre votre déclaration par EFILE.\n')
+            auth_text = get_text(cfg, 'qcEfileAuthForms',
+                f'Vous trouverez ci-joint {auth_form_count} formulaire(s) d\u2019autorisation. Veuillez les signer \u00e9lectroniquement (ou les imprimer et signer) et nous les envoyer par courriel d\u00e8s que possible afin que nous puissions transmettre votre d\u00e9claration par EFILE.')
+            para.add_run(f'{auth_text}\n')
 
-            para.add_run('Pour le formulaire fédéral, veuillez signer ').italic = True
-            bold_part_f = para.add_run('la partie F.')
-            bold_part_f.bold = True
-            bold_part_f.italic = True
-            para.add_run('\nPour le formulaire du Québec, veuillez signer à la fin de ').italic = True
-            bold_section_4 = para.add_run('la section 4.')
-            bold_section_4.bold = True
-            bold_section_4.italic = True
+            sign_fed = get_text(cfg, 'qcEfileSignFed', 'Pour le formulaire f\u00e9d\u00e9ral, veuillez signer la partie F.')
+            r = para.add_run(f'{sign_fed}\n')
+            apply_style(r, get_style(cfg, 'qcEfileSignFed') or {'italic': True})
+
+            sign_qc = get_text(cfg, 'qcEfileSignQC', 'Pour le formulaire du Qu\u00e9bec, veuillez signer \u00e0 la fin de la section 4.')
+            r = para.add_run(sign_qc)
+            apply_style(r, get_style(cfg, 'qcEfileSignQC') or {'italic': True})
     else:
         auth_form_count = len(years) * (2 if couple else 1)
         # Original message if isMailQC is False
-        para.add_run('Noter que votre déclaration d’impôt ').bold = True
-        bold_underline_run = para.add_run('n’a pas encore été soumise ')
-        bold_underline_run.bold = True
-        bold_underline_run.underline = True
-        para.add_run('au gouvernement via EFile.\n').bold = True
-        para.add_run(f'Vous trouverez ci-joint {auth_form_count} formulaires d’autorisation. Veuillez les signer électroniquement (ou imprimer/signer) et nous les envoyer par courriel le plus tôt possible afin que nous puissions transmettre votre déclaration par EFILE.\n')
-        para.add_run('Veuillez signer ').italic = True
-        bold_part_f = para.add_run('la partie F.')
-        bold_part_f.bold = True
-        bold_part_f.italic = True
+        not_submitted = get_text(cfg, 'nonQcNotSubmitted', 'Noter que votre d\u00e9claration d\u2019imp\u00f4t n\u2019a pas encore \u00e9t\u00e9 soumise au gouvernement via EFile.')
+        r = para.add_run(f'{not_submitted}\n')
+        apply_style(r, get_style(cfg, 'nonQcNotSubmitted') or {'bold': True})
 
-def tax_returnFR(doc, return_summary, year, last_year, secondary_summary=None, primary_title=None, secondary_title=None, isCouple=False):
+        auth_text = get_text(cfg, 'nonQcAuthForm',
+            f'Vous trouverez ci-joint {auth_form_count} formulaires d\u2019autorisation. Veuillez les signer \u00e9lectroniquement (ou imprimer/signer) et nous les envoyer par courriel le plus t\u00f4t possible afin que nous puissions transmettre votre d\u00e9claration par EFILE.')
+        para.add_run(f'{auth_text}\n')
+
+        sign_text = get_text(cfg, 'nonQcSignPartF', 'Veuillez signer la partie F.')
+        r = para.add_run(f'{sign_text}\n')
+        apply_style(r, get_style(cfg, 'nonQcSignPartF') or {'italic': True})
+
+def tax_returnFR(doc, return_summary, year, last_year, secondary_summary=None, primary_title=None, secondary_title=None, isCouple=False, cfg=None):
     province = return_summary["tax_summary"]["province"]
 
     para = doc.add_paragraph()
 
     # Title "RÉSULTATS" in bold red
-    bold_red_results = para.add_run('RÉSULTATS\n')
-    bold_red_results.bold = True
-    bold_red_results.font.color.rgb = RGBColor(205, 52, 78)
+    results_text = get_text(cfg, 'resultsHeading', 'R\u00c9SULTATS')
+    bold_red_results = para.add_run(f'{results_text}\n')
+    apply_style(bold_red_results, get_style(cfg, 'resultsHeading') or {'bold': True, 'color': '#cd3350'})
 
     # Helper function to format numbers in the French style
     def format_french_number(amount):
         return f"{amount:,.2f}".replace(",", " ").replace(".", ",")
-    
+
         # Function to handle payment section if amounts are owed
     def add_payment_section(para, federal_owing, quebec_owing, year, last_year):
         if federal_owing > 0 or quebec_owing > 0:
             para = doc.add_paragraph()
-            para.add_run('Vous devez un montant à votre ').italic = True
 
             if federal_owing > 0 and quebec_owing > 0:
-                para.add_run('déclaration fédérale et provinciale; ').italic = True
+                owing_text = get_text(cfg, 'paymentOwingFedAndQC', 'Vous devez un montant \u00e0 votre d\u00e9claration f\u00e9d\u00e9rale et provinciale;')
             elif federal_owing > 0:
-                para.add_run('déclaration fédérale; ').italic = True
-            elif quebec_owing > 0:
-                para.add_run('déclaration provinciale; ').italic = True
+                owing_text = get_text(cfg, 'paymentOwingFed', 'Vous devez un montant \u00e0 votre d\u00e9claration f\u00e9d\u00e9rale;')
+            else:
+                owing_text = get_text(cfg, 'paymentOwingQC', 'Vous devez un montant \u00e0 votre d\u00e9claration provinciale;')
+            r = para.add_run(f'{owing_text} ')
+            apply_style(r, get_style(cfg, 'paymentOwingFed') or {'italic': True})
+
             if last_year == year:
-                para.add_run(f'assurez-vous de payer le solde dû avant le 30 avril {int(year) + 1} pour éviter de payer des intérêts. ')
-            para.add_run('Veuillez attendre quelques jours après la transmission Efile pour payer votre solde dû. ')
-            para.add_run('Pour plus de détails sur la façon de payer le montant dû, veuillez cliquer sur : ')
+                deadline = get_text(cfg, 'paymentDeadline', f'assurez-vous de payer le solde d\u00fb avant le 30 avril {int(year) + 1} pour \u00e9viter de payer des int\u00e9r\u00eats.', dueYear=str(int(year) + 1))
+                r = para.add_run(f'{deadline} ')
+                apply_style(r, get_style(cfg, 'paymentDeadline') or {'italic': True})
+
+            howto = get_text(cfg, 'paymentHowTo', 'Veuillez attendre quelques jours apr\u00e8s la transmission Efile pour payer votre solde d\u00fb. Pour plus de d\u00e9tails sur la fa\u00e7on de payer le montant d\u00fb, veuillez cliquer sur :')
+            r = para.add_run(f'{howto} ')
+            apply_style(r, get_style(cfg, 'paymentHowTo') or {'italic': True})
 
             # Add hyperlinks for payment details
             if federal_owing > 0:
-                add_hyperlink(para, 'Fédéral', 'https://www.canada.ca/fr/agence-revenu/services/paiements/paiements-arc.html')
+                add_hyperlink(para, 'F\u00e9d\u00e9ral', 'https://www.canada.ca/fr/agence-revenu/services/paiements/paiements-arc.html')
             if federal_owing > 0 and quebec_owing > 0:
                 para.add_run(' et ')
             if quebec_owing > 0:
-                add_hyperlink(para, 'Québec', 'https://www.revenuquebec.ca/fr/citoyens/declaration-de-revenus/payer-ou-etre-rembourse/solde-dimpot-a-payer/')
+                add_hyperlink(para, 'Qu\u00e9bec', 'https://www.revenuquebec.ca/fr/citoyens/declaration-de-revenus/payer-ou-etre-rembourse/solde-dimpot-a-payer/')
 
 
     # Process primary individual's tax details
@@ -917,105 +991,125 @@ def tax_returnFR(doc, return_summary, year, last_year, secondary_summary=None, p
         para.add_run(f"\n{primary_title} {return_summary['tax_summary']['last_name']}\n")
 
     # Federal Tax Return for primary individual
-    para.add_run('Déclaration Fédérale\n').bold = True
+    fed_label = get_text(cfg, 'federalReturnLabel', 'D\u00e9claration F\u00e9d\u00e9rale')
+    r = para.add_run(f'{fed_label}\n')
+    apply_style(r, get_style(cfg, 'federalReturnLabel') or {'bold': True})
     federal_refund = return_summary["tax_summary"]["federal_refund"]
     federal_owing = return_summary["tax_summary"]["federal_owing"]
 
     if federal_refund > 0:
-        para.add_run("Vous avez droit à un remboursement de ").bold = False
+        refund_prefix = get_text(cfg, 'refundPrefix', 'Vous avez droit \u00e0 un remboursement de')
+        para.add_run(f"{refund_prefix} ").bold = False
         refund_run = para.add_run(f"{format_french_number(federal_refund)} $ \n")
         refund_run.bold = True
         refund_run.font.color.rgb = RGBColor(0, 128, 0)
     elif federal_owing > 0:
-        para.add_run("Vous devez un montant de ").bold = False
+        owing_prefix = get_text(cfg, 'owingPrefix', 'Vous devez un montant de')
+        para.add_run(f"{owing_prefix} ").bold = False
         owing_run = para.add_run(f"{format_french_number(federal_owing)} $ \n")
         owing_run.bold = True
         owing_run.font.color.rgb = RGBColor(255, 0, 0)
     else:
-        para.add_run("Vous n'avez ni remboursement ni solde dû.\n")
+        no_bal = get_text(cfg, 'noBalance', 'Vous n\u2019avez ni remboursement ni solde d\u00fb.')
+        para.add_run(f"{no_bal}\n")
 
-    if province == "Québec":
+    if province == "Qu\u00e9bec":
         # Quebec Tax Return for primary individual
-        para.add_run('Déclaration Provinciale\n').bold = True
+        qc_label = get_text(cfg, 'quebecReturnLabel', 'D\u00e9claration Provinciale')
+        r = para.add_run(f'{qc_label}\n')
+        apply_style(r, get_style(cfg, 'quebecReturnLabel') or {'bold': True})
         quebec_refund = return_summary["tax_summary"]["quebec_refund"]
         quebec_owing = return_summary["tax_summary"]["quebec_owing"]
 
         if quebec_refund > 0:
-            para.add_run("Vous avez droit à un remboursement de ").bold = False
+            refund_prefix = get_text(cfg, 'refundPrefix', 'Vous avez droit \u00e0 un remboursement de')
+            para.add_run(f"{refund_prefix} ").bold = False
             refund_run = para.add_run(f"{format_french_number(quebec_refund)} $ \n")
             refund_run.bold = True
             refund_run.font.color.rgb = RGBColor(0, 128, 0)
         elif quebec_owing > 0:
-            para.add_run("Vous devez un montant de ").bold = False
+            owing_prefix = get_text(cfg, 'owingPrefix', 'Vous devez un montant de')
+            para.add_run(f"{owing_prefix} ").bold = False
             owing_run = para.add_run(f"{format_french_number(quebec_owing)} $ \n")
             owing_run.bold = True
             owing_run.font.color.rgb = RGBColor(255, 0, 0)
         else:
-            para.add_run("Vous n'avez ni remboursement ni solde dû.\n")
+            no_bal = get_text(cfg, 'noBalance', 'Vous n\u2019avez ni remboursement ni solde d\u00fb.')
+            para.add_run(f"{no_bal}\n")
 
     # Add payment section for primary individual if this is the last year
     if year == last_year:
-        add_payment_section(doc, federal_owing, quebec_owing if province == "Québec" else 0, year, last_year)
+        add_payment_section(doc, federal_owing, quebec_owing if province == "Qu\u00e9bec" else 0, year, last_year)
 
     if isCouple and "carryforward_amounts" in return_summary and return_summary["carryforward_amounts"]:
-        carryforward_amounts(doc, return_summary)
+        carryforward_amounts(doc, return_summary, cfg=cfg)
 
     # Process secondary individual if applicable
     if isCouple and secondary_summary:
         para.add_run(f"\n{secondary_title} {secondary_summary['tax_summary']['last_name']}\n")
 
         # Federal Tax Return for secondary individual
-        para.add_run('Déclaration Fédérale\n').bold = True
+        fed_label = get_text(cfg, 'federalReturnLabel', 'D\u00e9claration F\u00e9d\u00e9rale')
+        r = para.add_run(f'{fed_label}\n')
+        apply_style(r, get_style(cfg, 'federalReturnLabel') or {'bold': True})
         federal_refund = secondary_summary["tax_summary"]["federal_refund"]
         federal_owing = secondary_summary["tax_summary"]["federal_owing"]
 
         if federal_refund > 0:
-            para.add_run("Vous avez droit à un remboursement de ").bold = False
+            refund_prefix = get_text(cfg, 'refundPrefix', 'Vous avez droit \u00e0 un remboursement de')
+            para.add_run(f"{refund_prefix} ").bold = False
             refund_run = para.add_run(f"{format_french_number(federal_refund)} $ \n")
             refund_run.bold = True
             refund_run.font.color.rgb = RGBColor(0, 128, 0)
         elif federal_owing > 0:
-            para.add_run("Vous devez un montant de ").bold = False
+            owing_prefix = get_text(cfg, 'owingPrefix', 'Vous devez un montant de')
+            para.add_run(f"{owing_prefix} ").bold = False
             owing_run = para.add_run(f"{format_french_number(federal_owing)} $ \n")
             owing_run.bold = True
             owing_run.font.color.rgb = RGBColor(255, 0, 0)
         else:
-            para.add_run("Vous n'avez ni remboursement ni solde dû.\n")
+            no_bal = get_text(cfg, 'noBalance', 'Vous n\u2019avez ni remboursement ni solde d\u00fb.')
+            para.add_run(f"{no_bal}\n")
 
-    if province == "Québec":
+    if province == "Qu\u00e9bec":
         # Quebec Tax Return for secondary individual
-        para.add_run('Déclaration Provinciale\n').bold = True
+        qc_label = get_text(cfg, 'quebecReturnLabel', 'D\u00e9claration Provinciale')
+        r = para.add_run(f'{qc_label}\n')
+        apply_style(r, get_style(cfg, 'quebecReturnLabel') or {'bold': True})
         quebec_refund = secondary_summary["tax_summary"]["quebec_refund"]
         quebec_owing = secondary_summary["tax_summary"]["quebec_owing"]
 
         if quebec_refund > 0:
-            para.add_run("Vous avez droit à un remboursement de ").bold = False
+            refund_prefix = get_text(cfg, 'refundPrefix', 'Vous avez droit \u00e0 un remboursement de')
+            para.add_run(f"{refund_prefix} ").bold = False
             refund_run = para.add_run(f"{format_french_number(quebec_refund)} $ \n")
             refund_run.bold = True
             refund_run.font.color.rgb = RGBColor(0, 128, 0)
         elif quebec_owing > 0:
-            para.add_run("Vous devez un montant de ").bold = False
+            owing_prefix = get_text(cfg, 'owingPrefix', 'Vous devez un montant de')
+            para.add_run(f"{owing_prefix} ").bold = False
             owing_run = para.add_run(f"{format_french_number(quebec_owing)} $ \n")
             owing_run.bold = True
             owing_run.font.color.rgb = RGBColor(255, 0, 0)
         else:
-            para.add_run("Vous n'avez ni remboursement ni solde dû.\n")
+            no_bal = get_text(cfg, 'noBalance', 'Vous n\u2019avez ni remboursement ni solde d\u00fb.')
+            para.add_run(f"{no_bal}\n")
 
         # Add payment section for secondary individual if this is the last year
-        add_payment_section(doc, federal_owing, quebec_owing if province == "Québec" else 0, year, last_year)
+        add_payment_section(doc, federal_owing, quebec_owing if province == "Qu\u00e9bec" else 0, year, last_year)
 
         if "carryforward_amounts" in secondary_summary and secondary_summary["carryforward_amounts"]:
-            carryforward_amounts(doc, secondary_summary)
+            carryforward_amounts(doc, secondary_summary, cfg=cfg)
 
 
 # Section: Crédit de solidarité
-def solidarity_creditFR(doc, return_summary, year, last_year):
+def solidarity_creditFR(doc, return_summary, year, last_year, cfg=None):
     para = doc.add_paragraph()
 
     # Add title with bold and underline
-    title_run = para.add_run('Crédit de solidarité:\n')
-    title_run.bold = True
-    title_run.underline = True
+    sol_title = get_text(cfg, 'solidarityTitle', 'Cr\u00e9dit de solidarit\u00e9 :')
+    title_run = para.add_run(f'{sol_title}\n')
+    apply_style(title_run, get_style(cfg, 'solidarityTitle') or {'bold': True, 'underline': True})
 
     year_plus1 = int(year) + 1
     year_plus2 = int(year) + 2
@@ -1029,23 +1123,23 @@ def solidarity_creditFR(doc, return_summary, year, last_year):
     total_run.bold = True
     total_run.font.color.rgb = RGBColor(0, 128, 0)
     para.add_run(f' pour le ')
-    para.add_run(f'Crédit de solidarité').bold = True
+    para.add_run(f'Cr\u00e9dit de solidarit\u00e9').bold = True
 
     if year == last_year:
-        para.add_run(f' de la façon suivante :\n')
+        para.add_run(f' de la fa\u00e7on suivante :\n')
     else:
         para.add_run(f'.\n')
 
     # Extract amounts for each month
     amounts = {
         "Juillet": return_summary["solidarity_amounts"]["july_amount"],
-        "Août": return_summary["solidarity_amounts"]["august_amount"],
+        "Ao\u00fbt": return_summary["solidarity_amounts"]["august_amount"],
         "Septembre": return_summary["solidarity_amounts"]["september_amount"],
         "Octobre": return_summary["solidarity_amounts"]["october_amount"],
         "Novembre": return_summary["solidarity_amounts"]["november_amount"],
-        "Décembre": return_summary["solidarity_amounts"]["december_amount"],
+        "D\u00e9cembre": return_summary["solidarity_amounts"]["december_amount"],
         "Janvier": return_summary["solidarity_amounts"]["january_amount"],
-        "Février": return_summary["solidarity_amounts"]["february_amount"],
+        "F\u00e9vrier": return_summary["solidarity_amounts"]["february_amount"],
         "Mars": return_summary["solidarity_amounts"]["march_amount"],
         "Avril": return_summary["solidarity_amounts"]["april_amount"],
         "Mai": return_summary["solidarity_amounts"]["may_amount"],
@@ -1058,26 +1152,26 @@ def solidarity_creditFR(doc, return_summary, year, last_year):
     if year == last_year:
         if len(filtered_months) <= 4:
             for month, amount in filtered_months.items():
-                year = year_plus1 if month in ["Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"] else year_plus2
+                year = year_plus1 if month in ["Juillet", "Ao\u00fbt", "Septembre", "Octobre", "Novembre", "D\u00e9cembre"] else year_plus2
                 para.add_run(f'{month} {year} : {format_currency(amount)}\n')
         else:
             unique_amounts = set(filtered_months.values())
 
             if len(unique_amounts) == 1:
                 amount = next(iter(unique_amounts))
-                para.add_run(f'{format_currency(amount)} /mois de Juillet {year_plus1} à Juin {year_plus2}\n')
+                para.add_run(f'{format_currency(amount)} /mois de Juillet {year_plus1} \u00e0 Juin {year_plus2}\n')
             else:
                 amount_ranges = []
                 current_amount = None
                 start_month = None
 
                 for month, amount in filtered_months.items():
-                    year = year_plus1 if month in ["Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"] else year_plus2
+                    year = year_plus1 if month in ["Juillet", "Ao\u00fbt", "Septembre", "Octobre", "Novembre", "D\u00e9cembre"] else year_plus2
                     if current_amount is None:
                         current_amount = amount
                         start_month = month
                     elif abs(current_amount - amount) > 0.3:
-                        end_year = year_plus1 if start_month in ["Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"] else year_plus2
+                        end_year = year_plus1 if start_month in ["Juillet", "Ao\u00fbt", "Septembre", "Octobre", "Novembre", "D\u00e9cembre"] else year_plus2
                         amount_ranges.append((start_month, month, current_amount, end_year))
                         current_amount = amount
                         start_month = month
@@ -1086,15 +1180,15 @@ def solidarity_creditFR(doc, return_summary, year, last_year):
                         amount_ranges.append((start_month, month, current_amount, end_year))
 
                 for start, end, amount, end_year in amount_ranges:
-                    para.add_run(f'{format_currency(amount)} /mois de {start} {year_plus1} à {end} {end_year}\n')
+                    para.add_run(f'{format_currency(amount)} /mois de {start} {year_plus1} \u00e0 {end} {end_year}\n')
 
 
 # Section: Crédits ACEBE
-def ecgeb_creditFR(doc, return_summary, isNewcomer, year, last_year, first_year):
+def ecgeb_creditFR(doc, return_summary, isNewcomer, year, last_year, first_year, cfg=None):
     para = doc.add_paragraph()
-    title_run = para.add_run('Crédits ACEBE')
-    title_run.bold = True
-    title_run.underline = True
+    ecgeb_title_text = get_text(cfg, 'ecgebTitle', "Allocation canadienne pour l\u2019\u00e9picerie :")
+    title_run = para.add_run(ecgeb_title_text)
+    apply_style(title_run, get_style(cfg, 'ecgebTitle') or {'bold': True, 'underline': True})
 
     if isNewcomer and year == first_year:
         title_run = para.add_run('* ')
@@ -1115,10 +1209,10 @@ def ecgeb_creditFR(doc, return_summary, isNewcomer, year, last_year, first_year)
     total_run.bold = True
     total_run.font.color.rgb = RGBColor(0, 128, 0)
     para.add_run(f' pour la ')
-    para.add_run(f'Allocation canadienne pour l\'épicerie et les besoins essentiels (ACEBE)').bold = True
+    para.add_run("Allocation canadienne pour l'\u00e9picerie et les besoins essentiels (ACEBE)").bold = True
 
     if year == last_year:
-        para.add_run(f' de la façon suivante :\n')
+        para.add_run(f' de la fa\u00e7on suivante :\n')
     else:
         para.add_run(f'.\n')
 
@@ -1134,17 +1228,17 @@ def ecgeb_creditFR(doc, return_summary, isNewcomer, year, last_year, first_year)
 
     if isNewcomer and year == first_year:
         para.add_run(
-            '\n*Notez que vous allez recevoir une lettre de l\'Agence du Revenu du Canada vous demandant de fournir vos revenus avant votre arrivée au Canada (du 1er janvier jusqu\'à la date d\'arrivée). '
-            'Même si cela a été mentionné sur la déclaration, vous devez quand même répondre à la lettre. Si vous ne répondez pas, ils ne paieront pas le montant de la ACEBE.\n'
+            "\n*Notez que vous allez recevoir une lettre de l'Agence du Revenu du Canada vous demandant de fournir vos revenus avant votre arriv\u00e9e au Canada (du 1er janvier jusqu\u2019\u00e0 la date d'arriv\u00e9e). "
+            "M\u00eame si cela a \u00e9t\u00e9 mentionn\u00e9 sur la d\u00e9claration, vous devez quand m\u00eame r\u00e9pondre \u00e0 la lettre. Si vous ne r\u00e9pondez pas, ils ne paieront pas le montant de la ACEBE.\n"
         ).italic = True
 
 
 # Section: Crédit TPS
-def gst_creditFR(doc, return_summary, isNewcomer, year, last_year, first_year):
+def gst_creditFR(doc, return_summary, isNewcomer, year, last_year, first_year, cfg=None):
     para = doc.add_paragraph()
-    title_run = para.add_run('Crédits TPS')
-    title_run.bold = True
-    title_run.underline = True
+    gst_title_text = get_text(cfg, 'gstTitle', 'Cr\u00e9dits TPS/TVH :')
+    title_run = para.add_run(gst_title_text)
+    apply_style(title_run, get_style(cfg, 'gstTitle') or {'bold': True, 'underline': True})
 
     if isNewcomer and year == first_year:
         title_run = para.add_run('* ')
@@ -1164,11 +1258,11 @@ def gst_creditFR(doc, return_summary, isNewcomer, year, last_year, first_year):
     total_run = para.add_run(format_currency(gst_credit_amount))
     total_run.bold = True
     total_run.font.color.rgb = RGBColor(0, 128, 0)
-    para.add_run(f' pour les crédits ')
+    para.add_run(f' pour les cr\u00e9dits ')
     para.add_run(f'TPS').bold = True
 
     if year == last_year:
-        para.add_run(f' de la façon suivante :\n')
+        para.add_run(f' de la fa\u00e7on suivante :\n')
     else:
         para.add_run(f'.\n')
 
@@ -1184,15 +1278,16 @@ def gst_creditFR(doc, return_summary, isNewcomer, year, last_year, first_year):
 
     if isNewcomer and year == first_year:
         para.add_run(
-            '\n*Notez que vous allez recevoir une lettre de l\'Agence du Revenu du Canada vous demandant de fournir vos revenus avant votre arrivée au Canada (du 1er janvier jusqu\'à la date d\'arrivée). '
-            'Même si cela a été mentionné sur la déclaration, vous devez quand même répondre à la lettre. Si vous ne répondez pas, ils ne paieront pas le montant de la TPS.\n'
+            "\n*Notez que vous allez recevoir une lettre de l'Agence du Revenu du Canada vous demandant de fournir vos revenus avant votre arriv\u00e9e au Canada (du 1er janvier jusqu\u2019\u00e0 la date d'arriv\u00e9e). "
+            "M\u00eame si cela a \u00e9t\u00e9 mentionn\u00e9 sur la d\u00e9claration, vous devez quand m\u00eame r\u00e9pondre \u00e0 la lettre. Si vous ne r\u00e9pondez pas, ils ne paieront pas le montant de la TPS.\n"
         ).italic = True
 
 
-def carryforward_amountsFR(doc, return_summary):
+def carryforward_amountsFR(doc, return_summary, cfg=None):
     para = doc.add_paragraph()
-    title_run = para.add_run('Vos Frais de scolarité reportés aux années futures sont :\n')
-    title_run.bold = True
+    tuition_title = get_text(cfg, 'tuitionTitle', 'Vos Frais de scolarit\u00e9 report\u00e9s aux ann\u00e9es futures sont :')
+    title_run = para.add_run(f'{tuition_title}\n')
+    apply_style(title_run, get_style(cfg, 'tuitionTitle') or {'bold': True})
 
     federal_tuition_amount = return_summary["carryforward_amounts"]["federal_tuition_amount"]
     quebec_tuition_8_percent = return_summary["carryforward_amounts"]["quebec_tuition_8_percent"]
@@ -1216,27 +1311,30 @@ def carryforward_amountsFR(doc, return_summary):
 
     # Add formatted amounts to the paragraph
     if federal_tuition_amount > 0:
-        para.add_run('Fédéral (admissible à 15%) : ')
+        fed_label = get_text(cfg, 'tuitionFedLabel', 'F\u00e9d\u00e9ral (admissible \u00e0 15%) : ')
+        para.add_run(fed_label)
         para.add_run(f"{formatted_federal_amount} $")
     if quebec_tuition_8_percent > 0:
-        para.add_run('\nQC (admissible à 8%) : ')
+        qc_label = get_text(cfg, 'tuitionQCLabel', 'QC (admissible \u00e0 8%) : ')
+        para.add_run(f'\n{qc_label}')
         para.add_run(f"{formatted_quebec_amount} $")
 
     # Add additional explanatory text
-    para.add_run(
-        '\n\nCes frais de scolarité accumulés sont des crédits d\'impôt que vous allez utiliser dans vos futures déclarations, lorsque vous générez un revenu et payez des impôts.'
-    ).italic = True
+    tuition_exp = get_text(cfg, 'tuitionExplanation',
+        'Ces frais de scolarit\u00e9 accumul\u00e9s sont des cr\u00e9dits d\'imp\u00f4t que vous allez utiliser dans vos futures d\u00e9clarations, lorsque vous g\u00e9n\u00e9rez un revenu et payez des imp\u00f4ts.')
+    r = para.add_run(f'\n\n{tuition_exp}')
+    apply_style(r, get_style(cfg, 'tuitionExplanation') or {'italic': True})
 
 
 
 
 # Section: Prestations pour Enfants
-def child_benefitFR(doc, return_summary, year, last_year):
+def child_benefitFR(doc, return_summary, year, last_year, cfg=None):
     para = doc.add_paragraph()
     # Add title directly with bold and underline
-    title_run = para.add_run('Prestations pour Enfants:\n')
-    title_run.bold = True
-    title_run.underline = True
+    ccb_title = get_text(cfg, 'ccbTitle', 'Allocation canadienne pour enfants (ACE) :')
+    title_run = para.add_run(f'{ccb_title}\n')
+    apply_style(title_run, get_style(cfg, 'ccbTitle') or {'bold': True, 'underline': True})
 
     year_plus1 = int(year) + 1
     year_plus2 = int(year) + 2
@@ -1245,13 +1343,13 @@ def child_benefitFR(doc, return_summary, year, last_year):
     total_ccb = return_summary["ccb_amounts"]["ccb_amount"]
     amounts = {
         f"Juillet {year_plus1}": return_summary["ccb_amounts"]["july_amount"],
-        f"Août {year_plus1}": return_summary["ccb_amounts"]["august_amount"],
+        f"Ao\u00fbt {year_plus1}": return_summary["ccb_amounts"]["august_amount"],
         f"Septembre {year_plus1}": return_summary["ccb_amounts"]["september_amount"],
         f"Octobre {year_plus1}": return_summary["ccb_amounts"]["october_amount"],
         f"Novembre {year_plus1}": return_summary["ccb_amounts"]["november_amount"],
-        f"Décembre {year_plus1}": return_summary["ccb_amounts"]["december_amount"],
+        f"D\u00e9cembre {year_plus1}": return_summary["ccb_amounts"]["december_amount"],
         f"Janvier {year_plus2}": return_summary["ccb_amounts"]["january_amount"],
-        f"Février {year_plus2}": return_summary["ccb_amounts"]["february_amount"],
+        f"F\u00e9vrier {year_plus2}": return_summary["ccb_amounts"]["february_amount"],
         f"Mars {year_plus2}": return_summary["ccb_amounts"]["march_amount"],
         f"Avril {year_plus2}": return_summary["ccb_amounts"]["april_amount"],
         f"Mai {year_plus2}": return_summary["ccb_amounts"]["may_amount"],
@@ -1264,9 +1362,9 @@ def child_benefitFR(doc, return_summary, year, last_year):
     total_run.bold = True
     total_run.font.color.rgb = RGBColor(0, 128, 0)
     para.add_run(f' pour ')
-    para.add_run(f'l’Allocation canadienne pour enfants ').bold = True
+    para.add_run(f'l\u2019Allocation canadienne pour enfants ').bold = True
     if year == last_year:
-        para.add_run(f' de la façon suivante :\n')
+        para.add_run(f' de la fa\u00e7on suivante :\n')
     else:
         para.add_run(f'.\n')
 
@@ -1284,7 +1382,7 @@ def child_benefitFR(doc, return_summary, year, last_year):
             if len(unique_amounts) == 1:
                 # If all amounts are the same
                 amount = next(iter(unique_amounts))  # Get the single value
-                para.add_run(f'{format_currency(amount)} /mois de Juillet {year_plus1} à Juin {year_plus2}')
+                para.add_run(f'{format_currency(amount)} /mois de Juillet {year_plus1} \u00e0 Juin {year_plus2}')
             else:
                 # Group amounts by ranges
                 amount_ranges = []
@@ -1308,11 +1406,11 @@ def child_benefitFR(doc, return_summary, year, last_year):
                     amount_ranges.append((start_month, month, current_amount, year))
 
                 for start, end, amount, year in amount_ranges:
-                    para.add_run(f'{format_currency(amount)} /mois de {start} à {end}')
+                    para.add_run(f'{format_currency(amount)} /mois de {start} \u00e0 {end}')
 
 
 # Section: Allocation Famille (Québec)
-def quebec_family_allowanceFR(doc, return_summary, year, last_year):
+def quebec_family_allowanceFR(doc, return_summary, year, last_year, cfg=None):
     para = doc.add_paragraph()
 
     total_allowance_amount = return_summary["family_allowance_amounts"]["fa_amount"]
@@ -1322,9 +1420,10 @@ def quebec_family_allowanceFR(doc, return_summary, year, last_year):
     total_run.bold = True
     total_run.font.color.rgb = RGBColor(0, 128, 0)
     para.add_run(f' pour ')
-    para.add_run(f'l’Allocation Famille').bold = True
+    fa_title = get_text(cfg, 'familyAllowanceTitle', 'Allocation Famille :')
+    para.add_run(fa_title).bold = True
     if year == last_year:
-        para.add_run(f' de la façon suivante :\n')
+        para.add_run(f' de la fa\u00e7on suivante :\n')
     else:
         para.add_run(f'.\n')
 
@@ -1347,28 +1446,29 @@ def quebec_family_allowanceFR(doc, return_summary, year, last_year):
             para.add_run(f'Avril {year_plus2} : {format_currency(april_amount)}\n')
 
 
-def conclusionFR(doc, isCouple=False):
+def conclusionFR(doc, isCouple=False, cfg=None):
     para = doc.add_paragraph()
 
     # Add the red text above the conclusion
     if isCouple:
-        red_run = para.add_run('\nNous attendons les formulaires d’autorisations signés pour soumettre vos déclarations.\n')
+        waiting_default = 'Nous attendons les formulaires d\u2019autorisations sign\u00e9s pour soumettre vos d\u00e9clarations.'
     else:
-        red_run = para.add_run('\nNous attendons les formulaire d’autorisations signé pour soumettre votre déclaration.\n')
-    red_run.font.color.rgb = RGBColor(205, 52, 78)
+        waiting_default = 'Nous attendons les formulaire d\u2019autorisations sign\u00e9 pour soumettre votre d\u00e9claration.'
+    waiting_text = get_text(cfg, 'conclusionWaiting', waiting_default)
+    red_run = para.add_run(f'\n{waiting_text}\n')
+    apply_style(red_run, get_style(cfg, 'conclusionWaiting') or {'color': '#cd3350'})
 
     # Add normal text for "Thank you."
-    para.add_run('\nMerci\n')
+    thank_text = get_text(cfg, 'thankYou', 'Merci')
+    para.add_run(f'\n{thank_text}\n')
 
     # Add the main conclusion text with specified formatting
-    conclusion_run = para.add_run(
-        '\nNous, à Sankari Inc., sommes heureux de répondre à vos demandes de renseignements fiscaux et / ou de produire vos déclarations de revenus en '
-        'fonction des renseignements que vous nous fournissez. Les informations inexactes ou incomplètes fournies par vous peuvent conduire à des '
-        'conseils inadéquats ou incorrects pour lesquels l\'équipe de Sankari Inc. ne peut être tenue pour responsable. Vous, le client est responsable de '
-        'fournir l\'information et la documentation correcte à l\'équipe de Sankari Inc.'
+    disclaimer_default = (
+        "Nous, \u00e0 Sankari Inc., sommes heureux de r\u00e9pondre \u00e0 vos demandes de renseignements fiscaux et / ou de produire vos d\u00e9clarations de revenus en "
+        "fonction des renseignements que vous nous fournissez. Les informations inexactes ou incompl\u00e8tes fournies par vous peuvent conduire \u00e0 des "
+        "conseils inad\u00e9quats ou incorrects pour lesquels l\u2019\u00e9quipe de Sankari Inc. ne peut \u00eatre tenue pour responsable. Vous, le client est responsable de "
+        "fournir l'information et la documentation correcte \u00e0 l'\u00e9quipe de Sankari Inc."
     )
-    # Set the font size to 8pt, color to black with 50% lighter, and italicize
-    conclusion_run.font.size = Pt(8)
-    conclusion_run.font.color.rgb = RGBColor(127, 127, 127)
-    conclusion_run.italic = True
-
+    disclaimer_text = get_text(cfg, 'disclaimer', disclaimer_default)
+    conclusion_run = para.add_run(f'\n{disclaimer_text}')
+    apply_style(conclusion_run, get_style(cfg, 'disclaimer') or {'fontSize': 8, 'color': '#7f7f7f', 'italic': True})

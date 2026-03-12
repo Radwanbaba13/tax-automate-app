@@ -70,9 +70,9 @@ function NavigationCard({
   color,
 }: NavigationCardProps) {
   const navigate = useNavigate();
-  const cardBg = useColorModeValue('white', '#181818');
-  const cardBorder = useColorModeValue('gray.200', '#2a2a2a');
-  const cardHoverBg = useColorModeValue('gray.50', '#222222');
+  const cardBg = useColorModeValue('white', '#242424');
+  const cardBorder = useColorModeValue('gray.200', '#363636');
+  const cardHoverBg = useColorModeValue('gray.50', '#2e2e2e');
   const titleColor = useColorModeValue('gray.800', 'gray.50');
   const descColor = useColorModeValue('gray.600', 'gray.400');
 
@@ -120,9 +120,9 @@ function HomePage() {
   const [version, setVersion] = React.useState('');
   const { colorMode, toggleColorMode } = useColorMode();
 
-  const pageBg = useColorModeValue('gray.50', '#101010');
-  const headerBg = useColorModeValue('white', '#181818');
-  const headerBorder = useColorModeValue('gray.200', '#2a2a2a');
+  const pageBg = useColorModeValue('gray.50', '#1a1a1a');
+  const headerBg = useColorModeValue('white', '#242424');
+  const headerBorder = useColorModeValue('gray.200', '#363636');
   const titleColor = useColorModeValue('gray.800', 'gray.50');
   const subtitleColor = useColorModeValue('gray.600', 'gray.400');
   const versionColor = useColorModeValue('gray.500', 'gray.500');

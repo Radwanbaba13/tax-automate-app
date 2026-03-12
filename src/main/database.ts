@@ -1,5 +1,6 @@
 import mysql from 'mysql2/promise';
 import { randomUUID } from 'crypto';
+import { DEFAULT_DOC_TEXT_CONFIG } from './docTextDefaults';
 
 let pool: mysql.Pool | null = null;
 
@@ -47,6 +48,160 @@ export async function updateConfigurations(config: {
       JSON.stringify(config.qc_auth_section),
       JSON.stringify(config.summary_section),
     ],
+  );
+  return config;
+}
+
+/**
+ * Ensure the doc_text_blocks table exists and is seeded with defaults.
+ */
+export async function ensureDocTextBlocks() {
+  try {
+    await getPool().execute(`
+      CREATE TABLE IF NOT EXISTS doc_text_blocks (
+        doc_type   VARCHAR(20)  NOT NULL,
+        block_key  VARCHAR(50)  NOT NULL,
+        text       TEXT         NOT NULL,
+        font_size  INT          DEFAULT NULL,
+        color      VARCHAR(7)   DEFAULT NULL,
+        bold       TINYINT(1)   DEFAULT 0,
+        italic     TINYINT(1)   DEFAULT 0,
+        underline  TINYINT(1)   DEFAULT 0,
+        alignment  VARCHAR(10)  DEFAULT NULL,
+        PRIMARY KEY (doc_type, block_key)
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+    `);
+
+    // Only seed when table is empty (first-time setup)
+    const [countRows] = await getPool().execute(
+      'SELECT COUNT(*) as cnt FROM doc_text_blocks',
+    );
+    const count = (countRows as any)[0]?.cnt ?? 0;
+
+    if (count === 0) {
+      console.log('Seeding doc_text_blocks from defaults...');
+      const values: any[] = [];
+      const placeholders: string[] = [];
+      for (const [docType, blocks] of Object.entries(DEFAULT_DOC_TEXT_CONFIG)) {
+        for (const [blockKey, block] of Object.entries(blocks as Record<string, any>)) {
+          placeholders.push('(?, ?, ?, ?, ?, ?, ?, ?, ?)');
+          values.push(
+            docType, blockKey, block.text,
+            block.style.fontSize ?? null, block.style.color ?? null,
+            block.style.bold ? 1 : 0, block.style.italic ? 1 : 0,
+            block.style.underline ? 1 : 0, block.style.alignment ?? null,
+          );
+        }
+      }
+      await getPool().execute(
+        `INSERT INTO doc_text_blocks (doc_type, block_key, text, font_size, color, bold, italic, underline, alignment) VALUES ${placeholders.join(',')}`,
+        values,
+      );
+      console.log('doc_text_blocks seeded');
+    }
+  } catch (err) {
+    console.error('Error ensuring doc_text_blocks:', err);
+  }
+}
+
+/**
+ * Get all doc text blocks, grouped by doc_type.
+ * Returns: { individual_en: { docTitle: { text, style }, ... }, ... }
+ */
+export async function getDocTextConfig() {
+  const [rows] = await getPool().execute(
+    'SELECT doc_type, block_key, text, font_size, color, bold, italic, underline, alignment FROM doc_text_blocks ORDER BY doc_type, block_key',
+  );
+  const config: Record<string, Record<string, any>> = {};
+  for (const row of rows as any[]) {
+    if (!config[row.doc_type]) config[row.doc_type] = {};
+    config[row.doc_type][row.block_key] = {
+      text: row.text,
+      style: {
+        fontSize: row.font_size ?? undefined,
+        color: row.color ?? undefined,
+        bold: !!row.bold,
+        italic: !!row.italic,
+        underline: !!row.underline,
+        alignment: row.alignment ?? undefined,
+      },
+    };
+  }
+  // Fill in any missing doc types or individual blocks from defaults
+  for (const [key, defaults] of Object.entries(DEFAULT_DOC_TEXT_CONFIG)) {
+    if (!config[key]) {
+      config[key] = defaults as any;
+    } else {
+      for (const [blockKey, block] of Object.entries(defaults as Record<string, any>)) {
+        if (!config[key][blockKey]) {
+          config[key][blockKey] = block;
+        }
+      }
+    }
+  }
+  return config;
+}
+
+/**
+ * Update a single doc text block.
+ */
+export async function updateDocTextBlock(
+  docType: string,
+  blockKey: string,
+  text: string,
+  style: {
+    fontSize?: number | null;
+    color?: string | null;
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    alignment?: string | null;
+  },
+) {
+  await getPool().execute(
+    `INSERT INTO doc_text_blocks (doc_type, block_key, text, font_size, color, bold, italic, underline, alignment)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON DUPLICATE KEY UPDATE text = VALUES(text), font_size = VALUES(font_size), color = VALUES(color),
+       bold = VALUES(bold), italic = VALUES(italic), underline = VALUES(underline), alignment = VALUES(alignment)`,
+    [
+      docType,
+      blockKey,
+      text,
+      style.fontSize ?? null,
+      style.color ?? null,
+      style.bold ? 1 : 0,
+      style.italic ? 1 : 0,
+      style.underline ? 1 : 0,
+      style.alignment ?? null,
+    ],
+  );
+}
+
+/**
+ * Bulk update: replaces all blocks for all doc types.
+ * Accepts the same nested config shape as before for backward compatibility.
+ */
+export async function updateDocTextConfig(config: Record<string, Record<string, any>>) {
+  const values: any[] = [];
+  const placeholders: string[] = [];
+  for (const [docType, blocks] of Object.entries(config)) {
+    for (const [blockKey, block] of Object.entries(blocks)) {
+      const style = block.style || {};
+      placeholders.push('(?, ?, ?, ?, ?, ?, ?, ?, ?)');
+      values.push(
+        docType, blockKey, block.text,
+        style.fontSize ?? null, style.color ?? null,
+        style.bold ? 1 : 0, style.italic ? 1 : 0,
+        style.underline ? 1 : 0, style.alignment ?? null,
+      );
+    }
+  }
+  await getPool().execute(
+    `INSERT INTO doc_text_blocks (doc_type, block_key, text, font_size, color, bold, italic, underline, alignment)
+     VALUES ${placeholders.join(',')}
+     ON DUPLICATE KEY UPDATE text = VALUES(text), font_size = VALUES(font_size), color = VALUES(color),
+       bold = VALUES(bold), italic = VALUES(italic), underline = VALUES(underline), alignment = VALUES(alignment)`,
+    values,
   );
   return config;
 }

@@ -930,18 +930,18 @@ function EmailAutomationComponent() {
                                   bg:
                                     selectedTemplateId === template.id
                                       ? '#243447'
-                                      : '#202020',
+                                      : '#2e2e2e',
                                 },
                               }}
                               _dark={{
                                 borderColor:
                                   selectedTemplateId === template.id
                                     ? 'blue.300'
-                                    : '#2a2a2a',
+                                    : '#363636',
                                 bg:
                                   selectedTemplateId === template.id
                                     ? '#1f2933'
-                                    : '#181818',
+                                    : '#242424',
                               }}
                               onClick={() => handleTemplateClick(template)}
                               transition="all 0.2s"
@@ -1325,8 +1325,8 @@ function EmailAutomationComponent() {
                     resize="none"
                     fontSize="sm"
                     _dark={{
-                      bg: '#1e1e1e',
-                      borderColor: '#3a3a3a',
+                      bg: '#2a2a2a',
+                      borderColor: '#464646',
                       color: 'gray.100',
                       _placeholder: { color: 'gray.600' },
                     }}
@@ -1396,8 +1396,8 @@ function EmailAutomationComponent() {
                             _dark={{
                               borderColor: isSelected
                                 ? 'purple.400'
-                                : '#2a2a2a',
-                              bg: '#181818',
+                                : '#363636',
+                              bg: '#242424',
                             }}
                             transition="border-color 0.15s"
                           >
@@ -1497,7 +1497,7 @@ function EmailAutomationComponent() {
                         bg="gray.50"
                         borderRadius="8px"
                         _hover={{ bg: 'gray.100' }}
-                        _dark={{ bg: '#1e1e1e', _hover: { bg: '#252525' } }}
+                        _dark={{ bg: '#2a2a2a', _hover: { bg: '#323232' } }}
                       >
                         <HStack flex={1} spacing={2} mr={2}>
                           <Text
@@ -1547,7 +1547,7 @@ function EmailAutomationComponent() {
                               fontSize="xs"
                               color="gray.700"
                               lineHeight="1.5"
-                              _dark={{ bg: '#1e1e1e', color: 'gray.300' }}
+                              _dark={{ bg: '#2a2a2a', color: 'gray.300' }}
                             >
                               {source.customerText}
                             </Box>
@@ -1569,7 +1569,7 @@ function EmailAutomationComponent() {
                               fontSize="xs"
                               color="gray.700"
                               lineHeight="1.5"
-                              _dark={{ bg: '#1c1730', color: 'gray.300' }}
+                              _dark={{ bg: '#262040', color: 'gray.300' }}
                             >
                               {source.agentText}
                             </Box>

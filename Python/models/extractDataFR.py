@@ -299,31 +299,33 @@ import re
 def parse_fa_trimestriel(line, month_label):
     """
     Extract the trimestriel (quarterly) amount from a QC Family Allowance line.
-    The line ends with: ... [count cols] [trim_$] [trim_¢] [mens_$] [mens_¢]
-    So trimestriel is at tokens[-4:-2] and mensuel at tokens[-2:].
-    For trimestriel >= 1000, tokens[-5] is a thousands lead — validated using mensuel * 3.
+    Uses non-overlapping regex findall to handle FR amounts with space-separated
+    thousands (e.g. '1 006 33' = $1,006.33).
     """
     after_month = line.split(month_label)[-1].strip()
-    tokens = after_month.split()
 
-    if len(tokens) < 4:
+    # Find all FR-formatted amounts: dollar part (space-separated thousands) + cents.
+    # Non-overlapping matches naturally separate quarterly from monthly.
+    amount_re = re.compile(r'(\d{1,3}(?:\s\d{3})*)\s(\d{2})(?!\d)')
+    matches = amount_re.findall(after_month)
+
+    if len(matches) < 2:
         return 0.0
 
-    if not (re.match(r'^\d{1,3}$', tokens[-2]) and re.match(r'^\d{2}$', tokens[-1])):
-        return 0.0
-    mensuel = float(tokens[-2] + '.' + tokens[-1])
+    # Last two matches: quarterly (second-to-last) and monthly (last)
+    trim_match = matches[-2]
+    mens_match = matches[-1]
+    mensuel = float(mens_match[0].replace(' ', '') + '.' + mens_match[1])
+    candidate = float(trim_match[0].replace(' ', '') + '.' + trim_match[1])
 
-    if not (re.match(r'^\d{1,3}$', tokens[-4]) and re.match(r'^\d{2}$', tokens[-3])):
-        return 0.0
-    candidate = float(tokens[-4] + '.' + tokens[-3])
-
-    # If tokens[-4] is exactly 3 digits, tokens[-5] might be a thousands lead (e.g. "1 596 96")
-    # Use mensuel * 3 ≈ trimestriel to decide: pick whichever is closer to expected
-    if re.match(r'^\d{3}$', tokens[-4]) and len(tokens) >= 5 and re.match(r'^\d{1,3}$', tokens[-5]):
-        big_candidate = float(tokens[-5] + tokens[-4] + '.' + tokens[-3])
+    # Disambiguate — if dollar part has space, a count-column digit
+    # may have been absorbed as thousands lead
+    if ' ' in trim_match[0]:
+        parts = trim_match[0].split()
+        short_candidate = float(''.join(parts[1:]) + '.' + trim_match[1])
         expected = mensuel * 3
-        if abs(big_candidate - expected) < abs(candidate - expected):
-            return big_candidate
+        if abs(short_candidate - expected) < abs(candidate - expected):
+            return short_candidate
 
     return candidate
 

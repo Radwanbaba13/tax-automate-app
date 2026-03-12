@@ -28,6 +28,7 @@ function SummaryComponent() {
   const [directory, setDirectory] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [configuration, setConfiguration] = useState<SummaryConfiguration>();
+  const [docTextConfig, setDocTextConfig] = useState<Record<string, any> | null>(null);
   useEffect(() => {
     const fetchConfigurations = async () => {
       try {
@@ -35,6 +36,8 @@ function SummaryComponent() {
         setDirectory(storedDirectory);
 
         const { data: sectionData } = await api.configurations.get();
+        const { data: dtc } = await api.docTextConfig.get();
+        if (dtc) setDocTextConfig(dtc);
 
         if (sectionData) {
           const parseSection = (section: any) => {
@@ -200,11 +203,13 @@ function SummaryComponent() {
 
     const clientsJson = JSON.stringify(clientFiles);
     const configurationJson = JSON.stringify(configuration);
+    const docTextConfigJson = JSON.stringify(docTextConfig || {});
 
     window.electron.runPythonScript('createSummaryDocuments', [
       clientsJson,
       directory,
       configurationJson,
+      docTextConfigJson,
     ]);
   };
 
@@ -223,27 +228,30 @@ function SummaryComponent() {
   }, []);
 
   return (
-    <VStack spacing={6} align="stretch" w="100%">
-      <HStack w="100%" display="flex" alignItems="flex-start" spacing={6}>
-        <VStack spacing={6} flex={1}>
-          <DirectorySelector
-            directory={directory}
-            onSelectDirectory={openDirectoryDialog}
-          />
-          <PdfFileUpload
-            onFileSelect={openFileDialog}
-            onGenerate={runPythonScript}
-            isLoading={isLoading}
-          />
-        </VStack>
-        <ClientFilesList
-          clientFiles={clientFiles}
-          onUpdateFile={handleUpdateFile}
-          onRemoveFile={removeClientFile}
-          onCoupleWithChange={handleCoupleWithChange}
+    <HStack
+      w="100%"
+      h="calc(100vh - 100px - 64px)"
+      alignItems="stretch"
+      spacing={6}
+    >
+      <VStack spacing={6} flex={1} minH={0}>
+        <DirectorySelector
+          directory={directory}
+          onSelectDirectory={openDirectoryDialog}
         />
-      </HStack>
-    </VStack>
+        <PdfFileUpload
+          onFileSelect={openFileDialog}
+          onGenerate={runPythonScript}
+          isLoading={isLoading}
+        />
+      </VStack>
+      <ClientFilesList
+        clientFiles={clientFiles}
+        onUpdateFile={handleUpdateFile}
+        onRemoveFile={removeClientFile}
+        onCoupleWithChange={handleCoupleWithChange}
+      />
+    </HStack>
   );
 }
 

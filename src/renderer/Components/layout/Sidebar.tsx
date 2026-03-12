@@ -89,10 +89,10 @@ function Sidebar({ isOpen, onToggle }: SidebarProps) {
   >('idle');
   const [isUpdateModalOpen, setIsUpdateModalOpen] = React.useState(false);
 
-  const toggleBg = useColorModeValue('white', '#1e1e1e');
-  const toggleBorder = useColorModeValue('gray.200', '#2a2a2a');
+  const toggleBg = useColorModeValue('white', '#2a2a2a');
+  const toggleBorder = useColorModeValue('gray.200', '#363636');
   const toggleColor = useColorModeValue('gray.500', 'gray.400');
-  const toggleHover = useColorModeValue('gray.50', '#2a2a2a');
+  const toggleHover = useColorModeValue('gray.50', '#363636');
 
   const handleCheckForUpdates = React.useCallback(async () => {
     setIsCheckingUpdate(true);
@@ -132,23 +132,27 @@ function Sidebar({ isOpen, onToggle }: SidebarProps) {
       setVersion(v);
     });
 
-    window.electron.onUpdateAvailable(() => {
+    const unsubAvailable = window.electron.onUpdateAvailable(() => {
       setUpdateStatus('update-available');
       setIsCheckingUpdate(false);
     });
 
-    window.electron.onUpdateNotAvailable(() => {
+    const unsubNotAvailable = window.electron.onUpdateNotAvailable(() => {
       setUpdateStatus('up-to-date');
       setIsCheckingUpdate(false);
     });
 
-    window.electron.onUpdateError(() => {
+    const unsubError = window.electron.onUpdateError(() => {
       setUpdateStatus('error');
       setIsCheckingUpdate(false);
     });
 
-    handleCheckForUpdates();
-  }, [handleCheckForUpdates]);
+    return () => {
+      unsubAvailable?.();
+      unsubNotAvailable?.();
+      unsubError?.();
+    };
+  }, []);
 
   const mainNavItems = [
     { icon: IoDocuments, label: 'Summary', to: '/summary' },
@@ -170,9 +174,9 @@ function Sidebar({ isOpen, onToggle }: SidebarProps) {
       <Box
         w="100%"
         h="100%"
-        bg={useColorModeValue('white', '#151515')}
+        bg={useColorModeValue('white', '#1e1e1e')}
         borderRight="1px solid"
-        borderColor={useColorModeValue('gray.200', '#2a2a2a')}
+        borderColor={useColorModeValue('gray.200', '#363636')}
         display="flex"
         flexDirection="column"
         boxShadow="sm"

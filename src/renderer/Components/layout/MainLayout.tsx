@@ -47,13 +47,13 @@ function MainLayout({ children }: MainLayoutProps) {
         bottom={0}
         overflowY="auto"
         transition="left 0.25s ease"
-        bg={useColorModeValue('gray.50', '#101010')}
+        bg={useColorModeValue('gray.50', '#1a1a1a')}
       >
         {!isHomePage && (
           <Box
-            bg={useColorModeValue('white', '#181818')}
+            bg={useColorModeValue('white', '#242424')}
             borderBottom="1px solid"
-            borderColor={useColorModeValue('gray.200', '#2a2a2a')}
+            borderColor={useColorModeValue('gray.200', '#363636')}
             height="100px"
             px={8}
             py={5}

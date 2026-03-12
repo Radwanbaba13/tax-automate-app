@@ -268,7 +268,7 @@ function PriceSelection({
                         borderRadius="25px"
                         background="transparent"
                         _hover={{ background: '#dfdfdf' }}
-                        _dark={{ _hover: { background: '#2a2a2a' } }}
+                        _dark={{ _hover: { background: '#363636' } }}
                         icon={<MdClose color="#cf3350" size="20px" />}
                       />
                     </HStack>

@@ -1,6 +1,6 @@
 import React from 'react';
-import { Box, VStack, Text } from '@chakra-ui/react';
-import { MdPeopleAlt } from 'react-icons/md';
+import { Box, VStack, Text, Icon } from '@chakra-ui/react';
+import { MdPeopleAlt, MdUploadFile } from 'react-icons/md';
 import SectionCard from '../../common/SectionCard';
 import ClientFileCard from './ClientFileCard';
 
@@ -30,7 +30,7 @@ function ClientFilesList({
   return (
     <SectionCard
       flex={1}
-      minH="500px"
+      h="100%"
       icon={<MdPeopleAlt size={18} />}
       title="Client Files"
       subtitle={
@@ -38,9 +38,9 @@ function ClientFilesList({
           ? `${clientFiles.length} file${clientFiles.length !== 1 ? 's' : ''}`
           : undefined
       }
-      contentProps={{ p: 4 }}
+      contentProps={{ p: 4, overflowY: 'auto' }}
     >
-      <VStack spacing={4} align="stretch">
+      <VStack spacing={4} align="stretch" h="100%">
         {clientFiles && clientFiles.length > 0 ? (
           clientFiles.map((fileItem, index) => (
             <ClientFileCard
@@ -55,25 +55,32 @@ function ClientFilesList({
           ))
         ) : (
           <Box
-            textAlign="center"
-            bg="gray.50"
-            p={8}
-            borderRadius="md"
-            border="1px dashed"
-            borderColor="gray.300"
-            _dark={{ bg: '#151515', borderColor: '#3a3a3a' }}
+            flex={1}
+            display="flex"
+            flexDirection="column"
+            justifyContent="center"
+            alignItems="center"
           >
+            <Box
+              bg="gray.100"
+              _dark={{ bg: '#2a2a2a' }}
+              p={4}
+              borderRadius="full"
+              mb={4}
+            >
+              <Icon as={MdUploadFile} boxSize={8} color="gray.400" _dark={{ color: 'gray.500' }} />
+            </Box>
             <Text
-              fontSize="md"
+              fontSize="sm"
               fontWeight="600"
-              color="gray.600"
-              mb={2}
-              _dark={{ color: 'gray.100' }}
+              color="gray.500"
+              mb={1}
+              _dark={{ color: 'gray.300' }}
             >
               No files selected
             </Text>
-            <Text fontSize="sm" color="gray.500" _dark={{ color: 'gray.300' }}>
-              Please select PDF files to process by clicking the upload button
+            <Text fontSize="xs" color="gray.400" _dark={{ color: 'gray.500' }}>
+              Select PDF files using the upload area
             </Text>
           </Box>
         )}

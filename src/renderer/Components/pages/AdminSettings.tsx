@@ -1,17 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Button,
   Text,
   Input,
-  Modal,
-  ModalOverlay,
-  ModalContent,
-  ModalHeader,
-  ModalCloseButton,
-  ModalBody,
-  ModalFooter,
-  useDisclosure,
   InputGroup,
   InputRightElement,
   Heading,
@@ -22,17 +14,22 @@ import {
   TabPanels,
   Tab,
   TabPanel,
+  Flex,
+  Icon,
 } from '@chakra-ui/react';
 import { HiEye, HiEyeOff } from 'react-icons/hi';
+import { FiLock, FiShield } from 'react-icons/fi';
 import { showToast } from '../../Utils/toast';
 import { api } from '../../Utils/apiClient';
 import SummaryConfig from '../config/SummaryConfig';
 import PriceListConfig from '../config/PriceListConfig';
+import DocTextConfig from '../config/DocTextConfig';
 
 function AdminSettingsComponent() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [wrongPassword, setWrongPassword] = useState(false);
+  const [showLoginPassword, setShowLoginPassword] = useState(false);
 
   const [oldPassword, setOldPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -41,14 +38,6 @@ function AdminSettingsComponent() {
   const [showOldPassword, setShowOldPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
-
-  const { isOpen, onOpen, onClose } = useDisclosure();
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      onOpen();
-    }
-  }, [isAuthenticated, onOpen]);
 
   const handleAuth = async () => {
     const { data, error } = await api.users.verifyPassword(password);
@@ -60,7 +49,6 @@ function AdminSettingsComponent() {
       setIsAuthenticated(true);
       setPassword('');
       setWrongPassword(false);
-      onClose();
     }
   };
 
@@ -99,52 +87,113 @@ function AdminSettingsComponent() {
     }
   };
 
-  return (
-    <>
-      <Modal
-        isOpen={isOpen}
-        onClose={onClose}
-        closeOnOverlayClick={false}
-        closeOnEsc={false}
+  if (!isAuthenticated) {
+    return (
+      <Flex
+        w="100%"
+        h="100%"
+        align="center"
+        justify="center"
+        py={16}
       >
-        <ModalOverlay />
-        <ModalContent>
-          <ModalHeader>Admin Authentication Required</ModalHeader>
-          <ModalCloseButton />
-          <ModalBody>
-            {wrongPassword && (
-              <Box mb={4} p={3} borderRadius="md" bg="red.50">
-                <Text color="brand.500" fontWeight="600" fontSize="sm">
-                  Incorrect password. Please try again.
-                </Text>
-              </Box>
-            )}
+        <Box
+          bg="white"
+          _dark={{ bg: '#242424', borderColor: '#363636' }}
+          borderRadius="16px"
+          border="1px solid"
+          borderColor="gray.200"
+          boxShadow="0 4px 24px rgba(0,0,0,0.06)"
+          p={10}
+          w="100%"
+          maxW="420px"
+          textAlign="center"
+        >
+          <Flex
+            w="56px"
+            h="56px"
+            borderRadius="14px"
+            bg="#cf33501a"
+            align="center"
+            justify="center"
+            mx="auto"
+            mb={5}
+          >
+            <Icon as={FiShield} boxSize={6} color="#cf3350" />
+          </Flex>
+
+          <Heading size="md" mb={1} fontWeight="700">
+            Admin Settings
+          </Heading>
+          <Text fontSize="sm" color="gray.500" mb={6}>
+            Enter your password to access admin settings
+          </Text>
+
+          {wrongPassword && (
+            <Box mb={4} p={3} borderRadius="10px" bg="red.50" _dark={{ bg: 'rgba(207,51,80,0.1)' }}>
+              <Text color="#cf3350" fontWeight="600" fontSize="sm">
+                Incorrect password. Please try again.
+              </Text>
+            </Box>
+          )}
+
+          <InputGroup size="lg" mb={4}>
             <Input
-              type="password"
+              type={showLoginPassword ? 'text' : 'password'}
               placeholder="Enter admin password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleAuth();
-                }
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (wrongPassword) setWrongPassword(false);
               }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAuth();
+              }}
+              borderRadius="10px"
+              borderColor={wrongPassword ? '#cf3350' : 'gray.200'}
+              _focus={{
+                borderColor: '#cf3350',
+                boxShadow: '0 0 0 1px #cf3350',
+              }}
+              pl={4}
             />
-          </ModalBody>
-          <ModalFooter>
-            <Button colorScheme="brand" onClick={handleAuth}>
-              Authenticate
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+            <InputRightElement>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowLoginPassword(!showLoginPassword)}
+                _hover={{ bg: 'transparent' }}
+              >
+                {showLoginPassword ? (
+                  <HiEyeOff color="#757575" />
+                ) : (
+                  <HiEye color="#757575" />
+                )}
+              </Button>
+            </InputRightElement>
+          </InputGroup>
 
-      {isAuthenticated && (
+          <Button
+            colorScheme="brand"
+            w="100%"
+            size="lg"
+            borderRadius="10px"
+            onClick={handleAuth}
+            leftIcon={<FiLock />}
+          >
+            Unlock
+          </Button>
+        </Box>
+      </Flex>
+    );
+  }
+
+  return (
         <VStack spacing={6} align="stretch" w="100%">
           <Tabs colorScheme="brand">
             <TabList>
               <Tab>Summary Configuration</Tab>
               <Tab>Price List Configuration</Tab>
+              <Tab>Document Text</Tab>
               <Tab>Account Settings</Tab>
             </TabList>
 
@@ -152,7 +201,7 @@ function AdminSettingsComponent() {
               <TabPanel>
                 <Box
                   bg="white"
-                  _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
+                  _dark={{ bg: '#242424', borderColor: '#363636' }}
                   borderRadius="lg"
                   boxShadow="sm"
                   border="1px solid"
@@ -166,7 +215,7 @@ function AdminSettingsComponent() {
               <TabPanel>
                 <Box
                   bg="white"
-                  _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
+                  _dark={{ bg: '#242424', borderColor: '#363636' }}
                   borderRadius="lg"
                   boxShadow="sm"
                   border="1px solid"
@@ -180,7 +229,21 @@ function AdminSettingsComponent() {
               <TabPanel>
                 <Box
                   bg="white"
-                  _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
+                  _dark={{ bg: '#242424', borderColor: '#363636' }}
+                  borderRadius="lg"
+                  boxShadow="sm"
+                  border="1px solid"
+                  borderColor="gray.200"
+                  p={6}
+                >
+                  <DocTextConfig />
+                </Box>
+              </TabPanel>
+
+              <TabPanel>
+                <Box
+                  bg="white"
+                  _dark={{ bg: '#242424', borderColor: '#363636' }}
                   borderRadius="lg"
                   boxShadow="sm"
                   border="1px solid"
@@ -312,8 +375,6 @@ function AdminSettingsComponent() {
             </TabPanels>
           </Tabs>
         </VStack>
-      )}
-    </>
   );
 }
 

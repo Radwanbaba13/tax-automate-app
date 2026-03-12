@@ -27,7 +27,7 @@ function SectionCard({
       borderRadius="12px"
       border="1px solid #edf2f7"
       boxShadow="0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.04)"
-      _dark={{ bg: '#181818', borderColor: '#2a2a2a', boxShadow: 'none' }}
+      _dark={{ bg: '#242424', borderColor: '#363636', boxShadow: 'none' }}
       overflow="hidden"
       {...boxProps}
     >
@@ -40,7 +40,7 @@ function SectionCard({
         borderColor="gray.100"
         flexShrink={0}
         bg="white"
-        _dark={{ bg: '#181818', borderColor: '#2a2a2a' }}
+        _dark={{ bg: '#242424', borderColor: '#363636' }}
       >
         <HStack spacing={3}>
           {icon && (

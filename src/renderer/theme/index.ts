@@ -42,7 +42,7 @@ const styles = {
   global: (props: StyleFunctionProps) => ({
     body: {
       // Light mode unchanged, dark mode uses a neutral dark gray
-      bg: mode('gray.50', '#101010')(props),
+      bg: mode('gray.50', '#1a1a1a')(props),
       color: mode('gray.700', 'gray.100')(props),
     },
   }),
@@ -106,8 +106,8 @@ const components = {
         border: '1px solid',
         borderColor: 'gray.200',
         _dark: {
-          bg: '#181818',
-          borderColor: '#2a2a2a',
+          bg: '#242424',
+          borderColor: '#363636',
           boxShadow: 'none',
         },
       },
@@ -145,11 +145,11 @@ const components = {
             boxShadow: '0 0 0 1px #cf3350',
           },
           _dark: {
-            bg: '#1e1e1e',
-            borderColor: '#2a2a2a',
+            bg: '#2a2a2a',
+            borderColor: '#363636',
             color: 'gray.100',
             _hover: {
-              borderColor: '#3a3a3a',
+              borderColor: '#464646',
             },
             _focus: {
               borderColor: 'brand.500',

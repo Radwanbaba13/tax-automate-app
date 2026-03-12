@@ -22,11 +22,17 @@ if (!process.env.DELTEC_API_URL || !process.env.DELTEC_SANKARI_API_KEY) {
   log.error('CRITICAL: DELTEC_API_URL or DELTEC_SANKARI_API_KEY not found in environment');
 }
 
-db.initializePool().catch((err: Error) => {
-  log.error('❌ Database connection failed:', err.message);
-});
+db.initializePool()
+  .then(() => db.ensureDocTextBlocks())
+  .catch((err: Error) => {
+    log.error('❌ Database connection failed:', err.message);
+  });
+
+const UPDATE_CHECK_INTERVAL = 30 * 60 * 1000; // 30 minutes
 
 class AppUpdater {
+  private checkTimer: ReturnType<typeof setInterval> | null = null;
+
   constructor() {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
@@ -76,6 +82,18 @@ class AppUpdater {
       }
     });
 
+    // Check for updates on startup (with a short delay to let the window load)
+    // and then periodically while the app is running
+    if (app.isPackaged) {
+      setTimeout(() => this.silentCheck(), 10_000);
+      this.checkTimer = setInterval(() => this.silentCheck(), UPDATE_CHECK_INTERVAL);
+    }
+  }
+
+  private silentCheck() {
+    autoUpdater.checkForUpdates().catch((err) => {
+      log.warn('Background update check failed:', err?.message || err);
+    });
   }
 }
 
@@ -292,12 +310,31 @@ ipcMain.on('run-python', (event, scriptName, args) => {
     pythonPath = scriptPath;
   }
 
-  const execArgs = app.isPackaged ? args : [pythonPath, ...args];
+  // Write large JSON args to temp files to avoid ENAMETOOLONG on Windows
+  const fs = require('fs');
+  const os = require('os');
+  const tempFiles: string[] = [];
+  const processedArgs = args.map((arg: string) => {
+    if (typeof arg === 'string' && arg.length > 4000 && arg.startsWith('{')) {
+      const tmpFile = path.join(os.tmpdir(), `taxapp_${Date.now()}_${Math.random().toString(36).slice(2)}.json`);
+      fs.writeFileSync(tmpFile, arg, 'utf-8');
+      tempFiles.push(tmpFile);
+      return `@file:${tmpFile}`;
+    }
+    return arg;
+  });
+
+  const execArgs = app.isPackaged ? processedArgs : [pythonPath, ...processedArgs];
   const execCommand = app.isPackaged ? pythonPath : 'python';
 
-  log.info(`Executing Python: ${execCommand} with args:`, execArgs);
+  log.info(`Executing Python: ${execCommand} with args count:`, execArgs.length);
 
   execFile(execCommand, execArgs, (error, stdout, stderr) => {
+    // Clean up temp files
+    for (const f of tempFiles) {
+      try { fs.unlinkSync(f); } catch (_) { /* ignore */ }
+    }
+
     if (error) {
       log.error(
         `[Python Error] Script: ${scriptName} | ${new Date().toISOString()}\n${stderr}`,
@@ -329,6 +366,26 @@ ipcMain.handle('db:updateConfigurations', async (event, config) => {
     return { data, error: null };
   } catch (error: any) {
     log.error('Error updating configurations:', error);
+    return { data: null, error: { message: error.message } };
+  }
+});
+
+ipcMain.handle('db:getDocTextConfig', async () => {
+  try {
+    const data = await db.getDocTextConfig();
+    return { data, error: null };
+  } catch (error: any) {
+    log.error('Error getting doc text config:', error);
+    return { data: null, error: { message: error.message } };
+  }
+});
+
+ipcMain.handle('db:updateDocTextConfig', async (event, config) => {
+  try {
+    const data = await db.updateDocTextConfig(config);
+    return { data, error: null };
+  } catch (error: any) {
+    log.error('Error updating doc text config:', error);
     return { data: null, error: { message: error.message } };
   }
 });

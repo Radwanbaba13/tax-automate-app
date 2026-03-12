@@ -42,6 +42,25 @@ CREATE TABLE IF NOT EXISTS `configurations` (
 INSERT IGNORE INTO `configurations` (`id`, `fed_auth_section`, `qc_auth_section`, `summary_section`) VALUES
 ('1', '[]', '[]', '[]');
 
+-- =====================================================
+-- 3. DOCUMENT TEXT BLOCKS TABLE
+-- =====================================================
+-- Stores editable text + styles for Word summary documents.
+-- One row per (doc_type, block_key) pair.
+-- Seeded automatically by the application from docTextDefaults.ts on first launch.
+CREATE TABLE IF NOT EXISTS `doc_text_blocks` (
+  `doc_type`   VARCHAR(20)  NOT NULL,
+  `block_key`  VARCHAR(50)  NOT NULL,
+  `text`       TEXT         NOT NULL,
+  `font_size`  INT          DEFAULT NULL,
+  `color`      VARCHAR(7)   DEFAULT NULL,
+  `bold`       TINYINT(1)   DEFAULT 0,
+  `italic`     TINYINT(1)   DEFAULT 0,
+  `underline`  TINYINT(1)   DEFAULT 0,
+  `alignment`  VARCHAR(10)  DEFAULT NULL,
+  PRIMARY KEY (`doc_type`, `block_key`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Tax rates table
 CREATE TABLE IF NOT EXISTS `tax_rates` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
