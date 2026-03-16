@@ -206,6 +206,32 @@ export async function updateDocTextConfig(config: Record<string, Record<string, 
   return config;
 }
 
+/**
+ * Reseed doc_text_blocks: truncates table and re-inserts defaults.
+ */
+export async function reseedDocTextBlocks() {
+  await getPool().execute('TRUNCATE TABLE doc_text_blocks');
+  // Re-run seeding logic
+  const values: any[] = [];
+  const placeholders: string[] = [];
+  for (const [docType, blocks] of Object.entries(DEFAULT_DOC_TEXT_CONFIG)) {
+    for (const [blockKey, block] of Object.entries(blocks as Record<string, any>)) {
+      placeholders.push('(?, ?, ?, ?, ?, ?, ?, ?, ?)');
+      values.push(
+        docType, blockKey, block.text,
+        block.style.fontSize ?? null, block.style.color ?? null,
+        block.style.bold ? 1 : 0, block.style.italic ? 1 : 0,
+        block.style.underline ? 1 : 0, block.style.alignment ?? null,
+      );
+    }
+  }
+  await getPool().execute(
+    `INSERT INTO doc_text_blocks (doc_type, block_key, text, font_size, color, bold, italic, underline, alignment) VALUES ${placeholders.join(',')}`,
+    values,
+  );
+  console.log('doc_text_blocks reseeded');
+}
+
 export async function getAllTaxRates() {
   const [rows] = await getPool().execute(
     'SELECT province, fedRate, provRate FROM tax_rates ORDER BY province ASC',

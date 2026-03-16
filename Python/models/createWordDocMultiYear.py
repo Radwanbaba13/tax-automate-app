@@ -130,6 +130,9 @@ def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, se
     run = title.runs[0]
     apply_style(run, title_style)
 
+    # Blank line before name
+    doc.add_paragraph()
+
     # Recipient Name for Primary Individual
     para = doc.add_paragraph()
     primary_first_name = primary_summary["tax_summary"]["first_name"]
@@ -143,19 +146,28 @@ def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, se
         secondary_last_name = secondary_summary["tax_summary"]["last_name"]
         para.add_run(f" & {secondary_ind_title}. {secondary_last_name}")
 
+    # Blank line after name
+    doc.add_paragraph()
+
     # Introduction paragraph
     para = doc.add_paragraph()
     default_attach = f'We have attached all the documents related to your {formatted_years} tax {"declarations" if couple else "declaration"}.'
-    styled_run(para, cfg, 'introAttachment', default_attach + '\n', {'bold': False}, yearRange=formatted_years)
-    styled_run(para, cfg, 'introPassword', 'The password for the file named "COPY" is your 9-digit Social Insurance Number.\n', {'bold': True})
-    default_copy_desc = f'This {"set of documents" if couple else "document"} is a full copy of your tax return. '
+    styled_run(para, cfg, 'introAttachment', default_attach, {'bold': False}, yearRange=formatted_years)
+    para.add_run(' ')
+    styled_run(para, cfg, 'introPassword', 'The password for the file named "COPY" is your 9-digit Social Insurance Number.', {'bold': True})
+    para.add_run('\n')
+    default_copy_desc = f'This {"set of documents" if couple else "document"} is a full copy of your tax return.'
     styled_run(para, cfg, 'introCopyDescription', default_copy_desc, {'bold': False})
-    styled_run(para, cfg, 'introCopyNoPrint', 'You do not need to print it or sign it; ', {'bold': True})
+    para.add_run(' ')
+    styled_run(para, cfg, 'introCopyNoPrint', 'You do not need to print it or sign it;', {'bold': True})
+    para.add_run(' ')
     styled_run(para, cfg, 'introCopyKeep', 'please keep it for your records and review it carefully to ensure everything is accurate and complete.', {'bold': False})
 
-    # "Very Important" section
+    # "Very Important" — blank line before it
+    doc.add_paragraph()
+    para = doc.add_paragraph()
     vi_text = get_text(cfg, 'veryImportantHeading', '** Very Important:')
-    very_important_run = para.add_run(f'\n\n{vi_text}\n')
+    very_important_run = para.add_run(vi_text + '\n')
     apply_style(very_important_run, get_style(cfg, 'veryImportantHeading') or {'bold': True, 'underline': True, 'color': '#cd3350'})
 
     if province == "Québec":
@@ -165,17 +177,23 @@ def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, se
             federal_title_run = para.add_run(f'{fed_title}\n')
             apply_style(federal_title_run, get_style(cfg, 'qcMailFedTitle') or {'bold': True, 'underline': True})
 
-            fed_not_submitted = get_text(cfg, 'qcMailFedNotSubmitted', 'Please be advised that your Federal tax return has not been submitted to the government yet.')
-            r = para.add_run(f'{fed_not_submitted}\n')
-            apply_style(r, get_style(cfg, 'qcMailFedNotSubmitted') or {'bold': True})
+            ns_before = get_text(cfg, 'qcMailFedNotSubmittedBefore', 'Please be advised that your Federal tax return ')
+            r = para.add_run(ns_before)
+            apply_style(r, get_style(cfg, 'qcMailFedNotSubmittedBefore') or {'bold': True})
+            ns_underline = get_text(cfg, 'qcMailFedNotSubmittedUnderline', 'has not been submitted')
+            r = para.add_run(ns_underline)
+            apply_style(r, get_style(cfg, 'qcMailFedNotSubmittedUnderline') or {'bold': True, 'underline': True})
+            ns_after = get_text(cfg, 'qcMailFedNotSubmittedAfter', ' to the government yet.')
+            r = para.add_run(f'{ns_after}\n')
+            apply_style(r, get_style(cfg, 'qcMailFedNotSubmittedAfter') or {'bold': True})
 
             auth_form_count = len(years) * (2 if couple else 1)
             auth_text = get_text(cfg, 'qcMailFedAuthForm',
                 f'Attached are {auth_form_count} Authorization Forms. Please e-sign them (or print & sign) and e-mail them back to us as soon as possible so we can EFILE your return.')
             para.add_run(f'{auth_text}\n')
 
-            sign_text = get_text(cfg, 'qcMailSignPartF', 'Please sign Part F.')
-            para.add_run(f'{sign_text}\n\n')
+            styled_run(para, cfg, 'qcMailSignPartF', 'Please sign Part F.', {'italic': True, 'bold': True})
+            para.add_run('\n\n')
 
             # Québec tax return
             qc_title = get_text(cfg, 'qcMailQCTitle', 'Regarding your Québec tax return:')
@@ -192,6 +210,7 @@ def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, se
                 f'For that reason, you need to print {", ".join(qc_docs)}, sign at the bottom of page ##, and mail them to the following address:')
             para.add_run(f'{print_text}\n')
 
+            # Address in italics
             addr_text = get_text(cfg, 'qcAddress', 'Revenu Québec\nC. P. 2500, succursale Place-Desjardins\nMontréal (Québec) H5B 1A3')
             address = para.add_run(f'{addr_text}\n\n')
             apply_style(address, get_style(cfg, 'qcAddress') or {'italic': True})
@@ -201,9 +220,15 @@ def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, se
             para.add_run(f'{on_behalf}\n')
 
         else:
-            not_submitted = get_text(cfg, 'qcEfileNotSubmitted', 'Please be advised that your tax returns have not been submitted to the government yet.')
-            r = para.add_run(f'{not_submitted}\n')
-            apply_style(r, get_style(cfg, 'qcEfileNotSubmitted') or {'bold': True})
+            ns_before = get_text(cfg, 'qcEfileNotSubmittedBefore', f'Please be advised that your tax {"returns " if couple else "return "}')
+            r = para.add_run(ns_before)
+            apply_style(r, get_style(cfg, 'qcEfileNotSubmittedBefore') or {'bold': True})
+            ns_underline = get_text(cfg, 'qcEfileNotSubmittedUnderline', f'{"have" if couple else "has"} not been submitted')
+            r = para.add_run(ns_underline)
+            apply_style(r, get_style(cfg, 'qcEfileNotSubmittedUnderline') or {'bold': True, 'underline': True})
+            ns_after = get_text(cfg, 'qcEfileNotSubmittedAfter', ' to the government yet.')
+            r = para.add_run(f'{ns_after}\n')
+            apply_style(r, get_style(cfg, 'qcEfileNotSubmittedAfter') or {'bold': True})
 
             auth_form_count = len(years) * (4 if couple else 2)
             auth_text = get_text(cfg, 'qcEfileAuthForms',
@@ -211,33 +236,37 @@ def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, se
             para.add_run(f'{auth_text}\n')
 
             # Federal & Québec signature instructions
-            sign_fed = get_text(cfg, 'qcEfileSignFed', 'For the Federal Form, please sign Part F.')
-            r = para.add_run(f'{sign_fed}\n')
-            apply_style(r, get_style(cfg, 'qcEfileSignFed') or {'italic': True})
+            styled_run(para, cfg, 'qcEfileSignFed', 'For the Federal Form, please sign Part F.', {'italic': True, 'bold': True})
+            para.add_run('\n')
 
-            sign_qc = get_text(cfg, 'qcEfileSignQC', 'For the Quebec Form, please sign at the end of section 4.')
-            r = para.add_run(sign_qc)
-            apply_style(r, get_style(cfg, 'qcEfileSignQC') or {'italic': True})
+            styled_run(para, cfg, 'qcEfileSignQC', 'For the Quebec Form, please sign at the end of section 4.', {'italic': True, 'bold': True})
     else:
         # Non-Québec clients (no Québec-related details)
         auth_form_count = len(years) * (2 if couple else 1)
-        not_submitted = get_text(cfg, 'nonQcNotSubmitted', 'Please be advised that your tax returns have not been submitted to the government yet.')
-        r = para.add_run(f'{not_submitted}\n')
-        apply_style(r, get_style(cfg, 'nonQcNotSubmitted') or {'bold': True})
+        ns_before = get_text(cfg, 'nonQcNotSubmittedBefore', f'Please be advised that your tax {"returns " if couple else "return "}')
+        r = para.add_run(ns_before)
+        apply_style(r, get_style(cfg, 'nonQcNotSubmittedBefore') or {'bold': True})
+        ns_underline = get_text(cfg, 'nonQcNotSubmittedUnderline', f'{"have" if couple else "has"} not been submitted')
+        r = para.add_run(ns_underline)
+        apply_style(r, get_style(cfg, 'nonQcNotSubmittedUnderline') or {'bold': True, 'underline': True})
+        ns_after = get_text(cfg, 'nonQcNotSubmittedAfter', ' to the government yet.')
+        r = para.add_run(f'{ns_after}\n')
+        apply_style(r, get_style(cfg, 'nonQcNotSubmittedAfter') or {'bold': True})
 
         auth_text = get_text(cfg, 'nonQcAuthForm',
             f'Attached are {auth_form_count} Authorization Forms. Please e-sign it (or print & sign) and e-mail it back to us as soon as possible so we can EFILE your return.')
         para.add_run(f'{auth_text}\n')
 
-        sign_text = get_text(cfg, 'nonQcSignPartF', 'Please sign Part F.')
-        r = para.add_run(f'{sign_text}\n')
-        apply_style(r, get_style(cfg, 'nonQcSignPartF') or {'italic': True})
+        styled_run(para, cfg, 'nonQcSignPartF', 'Please sign Part F.', {'italic': True, 'bold': True})
+        para.add_run('\n')
 
 
 
 def tax_return(doc, return_summary, year, last_year, secondary_summary=None, primary_title=None, secondary_title=None, isCouple=False, cfg=None):
     province = return_summary["tax_summary"]["province"]
 
+    # Blank line above RESULTS
+    doc.add_paragraph()
     para = doc.add_paragraph()
     results_text = get_text(cfg, 'resultsHeading', 'RESULTS')
     bold_red_results = para.add_run(f'{results_text}\n')
@@ -485,12 +514,10 @@ def gst_credit(doc, return_summary, isNewcomer, year, last_year, first_year, cfg
     apply_style(title_run, get_style(cfg, 'gstTitle') or {'bold': True, 'underline': True})
 
     if isNewcomer and year == first_year:
-        title_run = para.add_run('* ')
+        title_run = para.add_run(' *')
         title_run.bold = True
         title_run.underline = True
-    title_run = para.add_run(' Credits:\n')
-    title_run.bold = True
-    title_run.underline = True
+    para.add_run('\n')
 
     gst_credit_amount = return_summary["gst_amounts"]["gst_credit_amount"]
     july_amount = return_summary["gst_amounts"].get("july_amount", 0)
@@ -534,12 +561,10 @@ def ecgeb_credit(doc, return_summary, isNewcomer, year, last_year, first_year, c
     apply_style(title_run, get_style(cfg, 'ecgebTitle') or {'bold': True, 'underline': True})
 
     if isNewcomer and year == first_year:
-        title_run = para.add_run('* ')
+        title_run = para.add_run(' *')
         title_run.bold = True
         title_run.underline = True
-    title_run = para.add_run(' Credits:\n')
-    title_run.bold = True
-    title_run.underline = True
+    para.add_run('\n')
 
     ecgeb_credit_amount = return_summary["ecgeb_amounts"]["ecgeb_credit_amount"]
     july_amount = return_summary["ecgeb_amounts"].get("july_amount", 0)
@@ -698,6 +723,10 @@ def child_benefit(doc, return_summary, year, last_year, cfg=None):
 def quebec_family_allowance(doc, return_summary, year, last_year, cfg=None):
     para = doc.add_paragraph()
 
+    fa_title = get_text(cfg, 'familyAllowanceTitle', 'Quebec Family Allowance:')
+    title_run = para.add_run(fa_title + '\n')
+    apply_style(title_run, get_style(cfg, 'familyAllowanceTitle') or {'bold': True, 'underline': True})
+
     total_allowance_amount = return_summary["family_allowance_amounts"]["fa_amount"]
 
     para.add_run(f'You will receive a total of ').bold = False
@@ -830,6 +859,9 @@ def section_1FR(doc, return_summary, ind_title, years, isMailQC, couple=False, s
     run = title.runs[0]
     apply_style(run, title_style)
 
+    # Blank line before name
+    doc.add_paragraph()
+
     # Recipient Name
     para = doc.add_paragraph()
     first_name = return_summary["tax_summary"]["first_name"]
@@ -843,26 +875,34 @@ def section_1FR(doc, return_summary, ind_title, years, isMailQC, couple=False, s
         secondary_last_name = secondary_summary["tax_summary"]["last_name"]
         para.add_run(f" & {secondary_ind_title} {secondary_last_name}")
 
+    # Blank line after name
+    doc.add_paragraph()
+
     # Introduction paragraph
     para = doc.add_paragraph()
-    default_attach = f'Nous avons joint \u00e0 ce courriel tous les documents de {"\u0076os d\u00e9clarations" if couple else "votre d\u00e9claration"} d\u2019imp\u00f4ts {formatted_years}. '
-    styled_run(para, cfg, 'introAttachment', default_attach + '\n', {'bold': False}, yearRange=formatted_years)
-    styled_run(para, cfg, 'introPassword', 'Le mot de passe du document nomm\u00e9 \u201cCOPIE\u201d est compos\u00e9 des neuf chiffres de votre num\u00e9ro d\u2019assurance sociale.\n', {'bold': True})
+    default_attach = f'Nous avons joint \u00e0 ce courriel tous les documents de {"\u0076os d\u00e9clarations" if couple else "votre d\u00e9claration"} d\u2019imp\u00f4ts {formatted_years}.'
+    styled_run(para, cfg, 'introAttachment', default_attach, {'bold': False}, yearRange=formatted_years)
+    para.add_run(' ')
+    styled_run(para, cfg, 'introPassword', 'Le mot de passe du document nomm\u00e9 \u201cCOPIE\u201d est compos\u00e9 des neuf chiffres de votre num\u00e9ro d\u2019assurance sociale.', {'bold': True})
+    para.add_run('\n')
     if couple:
-        default_copy_desc = 'Ce jeu de documents constitue une copie compl\u00e8te de vos d\u00e9clarations de revenus. '
-        default_copy_noprint = 'Vous n\'avez pas besoin de les imprimer ou de les signer; '
-        default_copy_keep = 'vous avez juste besoin de les retenir pour votre dossier. Veuillez revoir les d\u00e9clarations de revenu attentivement afin de vous assurer qu\u2019elles sont exactes et compl\u00e8tes.\n'
+        default_copy_desc = 'Ce jeu de documents constitue une copie compl\u00e8te de vos d\u00e9clarations de revenus.'
+        default_copy_noprint = 'Vous n\'avez pas besoin de les imprimer ou de les signer;'
+        default_copy_keep = 'vous avez juste besoin de les retenir pour votre dossier. Veuillez revoir les d\u00e9clarations de revenu attentivement afin de vous assurer qu\u2019elles sont exactes et compl\u00e8tes.'
     else:
-        default_copy_desc = 'Ce document constitue une copie compl\u00e8te de votre d\u00e9claration de revenus. '
-        default_copy_noprint = 'Vous n\'avez pas besoin de l\u2019imprimer ou de le signer; '
+        default_copy_desc = 'Ce document constitue une copie compl\u00e8te de votre d\u00e9claration de revenus.'
+        default_copy_noprint = 'Vous n\'avez pas besoin de l\u2019imprimer ou de le signer;'
         default_copy_keep = 'vous avez juste besoin de le retenir pour votre dossier. Veuillez revoir la d\u00e9claration de revenu attentivement afin de vous assurer qu\u2019elle est exacte et compl\u00e8te.'
     styled_run(para, cfg, 'introCopyDescription', default_copy_desc, {'bold': False})
+    para.add_run(' ')
     styled_run(para, cfg, 'introCopyNoPrint', default_copy_noprint, {'bold': True})
     styled_run(para, cfg, 'introCopyKeep', default_copy_keep, {'bold': False})
 
-    # "Very Important" section
+    # "Very Important" — blank line before it
+    doc.add_paragraph()
+    para = doc.add_paragraph()
     vi_text = get_text(cfg, 'veryImportantHeading', '** TR\u00c8S IMPORTANT :')
-    very_important_run = para.add_run(f'\n\n{vi_text}\n')
+    very_important_run = para.add_run(vi_text + '\n')
     apply_style(very_important_run, get_style(cfg, 'veryImportantHeading') or {'bold': True, 'underline': True, 'color': '#cd3350'})
 
     if province == "Qu\u00e9bec":
@@ -872,17 +912,23 @@ def section_1FR(doc, return_summary, ind_title, years, isMailQC, couple=False, s
             federal_title_run = para.add_run(f'{fed_title}\n')
             apply_style(federal_title_run, get_style(cfg, 'qcMailFedTitle') or {'bold': True, 'underline': True})
 
-            fed_not_submitted = get_text(cfg, 'qcMailFedNotSubmitted', 'Veuillez noter que votre d\u00e9claration f\u00e9d\u00e9rale n\u2019a pas encore \u00e9t\u00e9 soumise au gouvernement.')
-            r = para.add_run(f'{fed_not_submitted}\n')
-            apply_style(r, get_style(cfg, 'qcMailFedNotSubmitted') or {'bold': True})
+            ns_before = get_text(cfg, 'qcMailFedNotSubmittedBefore', 'Veuillez noter que votre d\u00e9claration f\u00e9d\u00e9rale ')
+            r = para.add_run(ns_before)
+            apply_style(r, get_style(cfg, 'qcMailFedNotSubmittedBefore') or {'bold': True})
+            ns_underline = get_text(cfg, 'qcMailFedNotSubmittedUnderline', 'n\u2019a pas encore \u00e9t\u00e9 soumise')
+            r = para.add_run(ns_underline)
+            apply_style(r, get_style(cfg, 'qcMailFedNotSubmittedUnderline') or {'bold': True, 'underline': True})
+            ns_after = get_text(cfg, 'qcMailFedNotSubmittedAfter', ' au gouvernement.')
+            r = para.add_run(f'{ns_after}\n')
+            apply_style(r, get_style(cfg, 'qcMailFedNotSubmittedAfter') or {'bold': True})
 
             auth_form_count = len(years) * (2 if couple else 1)
             auth_text = get_text(cfg, 'qcMailFedAuthForm',
                 f'Vous trouverez ci-joint {auth_form_count} formulaire(s) d\u2019autorisation. Veuillez les signer \u00e9lectroniquement (ou les imprimer et signer) et nous les envoyer par courriel d\u00e8s que possible afin que nous puissions transmettre votre d\u00e9claration par EFILE.')
             para.add_run(f'{auth_text}\n')
 
-            sign_text = get_text(cfg, 'qcMailSignPartF', 'S\u2019il vous pla\u00eet signer la partie F.')
-            para.add_run(f'{sign_text}\n\n')
+            styled_run(para, cfg, 'qcMailSignPartF', 'S\u2019il vous pla\u00eet signer la partie F.', {'italic': True, 'bold': True})
+            para.add_run('\n\n')
 
             qc_docs = [f'"QC {year} - {first_name} {last_name}.pdf"' for year in years]
 
@@ -901,7 +947,7 @@ def section_1FR(doc, return_summary, ind_title, years, isMailQC, couple=False, s
             para.add_run(f'{print_text}\n')
 
             addr_text = get_text(cfg, 'qcAddress', 'Revenu Qu\u00e9bec\nC. P. 2500, succursale Place-Desjardins\nMontr\u00e9al (Qu\u00e9bec) H5B 1A3')
-            address = para.add_run(f'{addr_text}\n\n')
+            address = para.add_run(f'{addr_text}\n')
             apply_style(address, get_style(cfg, 'qcAddress') or {'italic': True})
 
             on_behalf = get_text(cfg, 'qcMailOnBehalf',
@@ -909,40 +955,50 @@ def section_1FR(doc, return_summary, ind_title, years, isMailQC, couple=False, s
             para.add_run(f'{on_behalf}\n')
 
         else:
-            not_submitted = get_text(cfg, 'qcEfileNotSubmitted', 'Veuillez noter que votre d\u00e9claration d\u2019imp\u00f4t n\u2019a pas encore \u00e9t\u00e9 soumise au gouvernement.')
-            r = para.add_run(f'{not_submitted}\n')
-            apply_style(r, get_style(cfg, 'qcEfileNotSubmitted') or {'bold': True})
+            ns_before = get_text(cfg, 'qcEfileNotSubmittedBefore', f'{"Veuillez noter que vos d\u00e9clarations d\u2019imp\u00f4t " if couple else "Veuillez noter que votre d\u00e9claration d\u2019imp\u00f4t "}')
+            r = para.add_run(ns_before)
+            apply_style(r, get_style(cfg, 'qcEfileNotSubmittedBefore') or {'bold': True})
+            ns_underline = get_text(cfg, 'qcEfileNotSubmittedUnderline', f'{"n\u2019ont pas encore \u00e9t\u00e9 soumises" if couple else "n\u2019a pas encore \u00e9t\u00e9 soumise"}')
+            r = para.add_run(ns_underline)
+            apply_style(r, get_style(cfg, 'qcEfileNotSubmittedUnderline') or {'bold': True, 'underline': True})
+            ns_after = get_text(cfg, 'qcEfileNotSubmittedAfter', ' au gouvernement.')
+            r = para.add_run(f'{ns_after}\n')
+            apply_style(r, get_style(cfg, 'qcEfileNotSubmittedAfter') or {'bold': True})
 
             auth_form_count = len(years) * (4 if couple else 2)
             auth_text = get_text(cfg, 'qcEfileAuthForms',
                 f'Vous trouverez ci-joint {auth_form_count} formulaire(s) d\u2019autorisation. Veuillez les signer \u00e9lectroniquement (ou les imprimer et signer) et nous les envoyer par courriel d\u00e8s que possible afin que nous puissions transmettre votre d\u00e9claration par EFILE.')
             para.add_run(f'{auth_text}\n')
 
-            sign_fed = get_text(cfg, 'qcEfileSignFed', 'Pour le formulaire f\u00e9d\u00e9ral, veuillez signer la partie F.')
-            r = para.add_run(f'{sign_fed}\n')
-            apply_style(r, get_style(cfg, 'qcEfileSignFed') or {'italic': True})
+            styled_run(para, cfg, 'qcEfileSignFed', 'Pour le formulaire f\u00e9d\u00e9ral, veuillez signer la partie F.', {'italic': True, 'bold': True})
+            para.add_run('\n')
 
-            sign_qc = get_text(cfg, 'qcEfileSignQC', 'Pour le formulaire du Qu\u00e9bec, veuillez signer \u00e0 la fin de la section 4.')
-            r = para.add_run(sign_qc)
-            apply_style(r, get_style(cfg, 'qcEfileSignQC') or {'italic': True})
+            styled_run(para, cfg, 'qcEfileSignQC', 'Pour le formulaire du Qu\u00e9bec, veuillez signer \u00e0 la fin de la section 4.', {'italic': True, 'bold': True})
     else:
         auth_form_count = len(years) * (2 if couple else 1)
         # Original message if isMailQC is False
-        not_submitted = get_text(cfg, 'nonQcNotSubmitted', 'Noter que votre d\u00e9claration d\u2019imp\u00f4t n\u2019a pas encore \u00e9t\u00e9 soumise au gouvernement via EFile.')
-        r = para.add_run(f'{not_submitted}\n')
-        apply_style(r, get_style(cfg, 'nonQcNotSubmitted') or {'bold': True})
+        ns_before = get_text(cfg, 'nonQcNotSubmittedBefore', f'{"Noter que vos d\u00e9clarations d\u2019imp\u00f4t " if couple else "Noter que votre d\u00e9claration d\u2019imp\u00f4t "}')
+        r = para.add_run(ns_before)
+        apply_style(r, get_style(cfg, 'nonQcNotSubmittedBefore') or {'bold': True})
+        ns_underline = get_text(cfg, 'nonQcNotSubmittedUnderline', f'{"n\u2019ont pas encore \u00e9t\u00e9 soumises" if couple else "n\u2019a pas encore \u00e9t\u00e9 soumise"}')
+        r = para.add_run(ns_underline)
+        apply_style(r, get_style(cfg, 'nonQcNotSubmittedUnderline') or {'bold': True, 'underline': True})
+        ns_after = get_text(cfg, 'nonQcNotSubmittedAfter', ' au gouvernement via EFile.')
+        r = para.add_run(f'{ns_after}\n')
+        apply_style(r, get_style(cfg, 'nonQcNotSubmittedAfter') or {'bold': True})
 
         auth_text = get_text(cfg, 'nonQcAuthForm',
             f'Vous trouverez ci-joint {auth_form_count} formulaires d\u2019autorisation. Veuillez les signer \u00e9lectroniquement (ou imprimer/signer) et nous les envoyer par courriel le plus t\u00f4t possible afin que nous puissions transmettre votre d\u00e9claration par EFILE.')
         para.add_run(f'{auth_text}\n')
 
-        sign_text = get_text(cfg, 'nonQcSignPartF', 'Veuillez signer la partie F.')
-        r = para.add_run(f'{sign_text}\n')
-        apply_style(r, get_style(cfg, 'nonQcSignPartF') or {'italic': True})
+        styled_run(para, cfg, 'nonQcSignPartF', 'Veuillez signer la partie F.', {'italic': True, 'bold': True})
+        para.add_run('\n')
 
 def tax_returnFR(doc, return_summary, year, last_year, secondary_summary=None, primary_title=None, secondary_title=None, isCouple=False, cfg=None):
     province = return_summary["tax_summary"]["province"]
 
+    # Blank line above RESULTS
+    doc.add_paragraph()
     para = doc.add_paragraph()
 
     # Title "RÉSULTATS" in bold red
@@ -1194,7 +1250,7 @@ def ecgeb_creditFR(doc, return_summary, isNewcomer, year, last_year, first_year,
         title_run = para.add_run('* ')
         title_run.bold = True
         title_run.underline = True
-    title_run = para.add_run(' :\n')
+    title_run = para.add_run('\n')
     title_run.bold = True
     title_run.underline = True
 
@@ -1244,7 +1300,7 @@ def gst_creditFR(doc, return_summary, isNewcomer, year, last_year, first_year, c
         title_run = para.add_run('* ')
         title_run.bold = True
         title_run.underline = True
-    title_run = para.add_run(' :\n')
+    title_run = para.add_run('\n')
     title_run.bold = True
     title_run.underline = True
 
@@ -1412,6 +1468,10 @@ def child_benefitFR(doc, return_summary, year, last_year, cfg=None):
 # Section: Allocation Famille (Québec)
 def quebec_family_allowanceFR(doc, return_summary, year, last_year, cfg=None):
     para = doc.add_paragraph()
+
+    fa_title = get_text(cfg, 'familyAllowanceTitle', 'Allocation Famille :')
+    title_run = para.add_run(fa_title + '\n')
+    apply_style(title_run, get_style(cfg, 'familyAllowanceTitle') or {'bold': True, 'underline': True})
 
     total_allowance_amount = return_summary["family_allowance_amounts"]["fa_amount"]
 

@@ -12,8 +12,26 @@ Each block: { text: str, style: { fontSize, color, bold, italic, underline, alig
 Text may contain {variable} placeholders substituted at generation time.
 """
 
+import json
+
 from docx.shared import Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+
+
+def is_segmented(text):
+    """Return True if text is a segments JSON array (starts with '[')."""
+    return isinstance(text, str) and text.strip().startswith('[')
+
+
+def parse_segments(text):
+    """Parse a segments JSON string into a list of segment dicts."""
+    try:
+        segments = json.loads(text)
+        if isinstance(segments, list):
+            return segments
+    except (json.JSONDecodeError, TypeError):
+        pass
+    return None
 
 
 def resolve_doc_type_key(language, is_couple=False, is_multiyear=False):
@@ -33,10 +51,21 @@ def get_cfg(doc_text_config, doc_type_key):
     return doc_text_config.get(doc_type_key, {})
 
 
-def get_text(cfg, key, default, **kwargs):
-    """Get text from config block, substitute {variables}, fall back to default."""
+def _get_raw_text(cfg, key, default):
+    """Get raw text from config block (may be segments JSON). For internal use."""
     block = cfg.get(key, {}) if cfg else {}
-    text = block.get('text', default) if block else default
+    return block.get('text', default) if block else default
+
+
+def get_text(cfg, key, default, **kwargs):
+    """Get text from config block, substitute {variables}, fall back to default.
+    If text is segments JSON, flattens it to plain text so callers using
+    para.add_run(get_text(...)) never see raw JSON."""
+    text = _get_raw_text(cfg, key, default)
+    if is_segmented(text):
+        segments = parse_segments(text)
+        if segments:
+            text = ''.join(seg.get('t', '') for seg in segments)
     if kwargs:
         try:
             text = text.format(**kwargs)
@@ -97,6 +126,8 @@ def apply_alignment(paragraph, style):
 def styled_run(para, cfg, key, default_text, default_style=None, **kwargs):
     """
     Add a run to the paragraph using config text + style (falling back to defaults).
+    If the config text is a segments JSON array, creates one run per segment with
+    per-segment bold/italic/underline overrides on top of the base style.
 
     Args:
         para: python-docx paragraph
@@ -107,10 +138,43 @@ def styled_run(para, cfg, key, default_text, default_style=None, **kwargs):
         **kwargs: variables for {placeholder} substitution in text
 
     Returns:
-        The created run.
+        The last created run.
     """
-    text = get_text(cfg, key, default_text, **kwargs)
-    style = get_style(cfg, key) or default_style or {}
+    raw_text = _get_raw_text(cfg, key, default_text)
+    base_style = get_style(cfg, key) or default_style or {}
+
+    if is_segmented(raw_text):
+        segments = parse_segments(raw_text)
+        if segments:
+            last_run = None
+            for seg in segments:
+                seg_text = seg.get('t', '')
+                if kwargs:
+                    try:
+                        seg_text = seg_text.format(**kwargs)
+                    except (KeyError, IndexError):
+                        pass
+                run = para.add_run(seg_text)
+                seg_style = dict(base_style)
+                if 'b' in seg:
+                    seg_style['bold'] = seg['b']
+                if 'i' in seg:
+                    seg_style['italic'] = seg['i']
+                if 'u' in seg:
+                    seg_style['underline'] = seg['u']
+                if 'c' in seg:
+                    seg_style['color'] = seg['c']
+                apply_style(run, seg_style)
+                last_run = run
+            return last_run or para.add_run('')
+
+    # Plain text path
+    text = raw_text
+    if kwargs:
+        try:
+            text = text.format(**kwargs)
+        except (KeyError, IndexError):
+            pass
     run = para.add_run(text)
-    apply_style(run, style)
+    apply_style(run, base_style)
     return run

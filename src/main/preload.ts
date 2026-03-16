@@ -68,6 +68,8 @@ contextBridge.exposeInMainWorld('electron', {
     getDocTextConfig: () => ipcRenderer.invoke('db:getDocTextConfig'),
     updateDocTextConfig: (config) =>
       ipcRenderer.invoke('db:updateDocTextConfig', config),
+    reseedDocTextConfig: () =>
+      ipcRenderer.invoke('db:reseedDocTextConfig'),
 
     getAllTaxRates: () => ipcRenderer.invoke('db:getAllTaxRates'),
     getTaxRateByProvince: (province) =>

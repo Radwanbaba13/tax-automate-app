@@ -138,6 +138,9 @@ const docTextConfig = {
   async update(config) {
     return window.electron.database.updateDocTextConfig(config);
   },
+  async reseed() {
+    return window.electron.database.reseedDocTextConfig();
+  },
 };
 
 /**

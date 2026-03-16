@@ -307,8 +307,8 @@ ipcMain.on('run-python', (event, scriptName, args) => {
     );
   } else {
     const scriptPath = path.join(
-      __dirname,
-      '../../../Python',
+      app.getAppPath(),
+      'Python',
       `${scriptName}.py`,
     );
     pythonPath = scriptPath;
@@ -390,6 +390,17 @@ ipcMain.handle('db:updateDocTextConfig', async (event, config) => {
     return { data, error: null };
   } catch (error: any) {
     log.error('Error updating doc text config:', error);
+    return { data: null, error: { message: error.message } };
+  }
+});
+
+ipcMain.handle('db:reseedDocTextConfig', async () => {
+  try {
+    await db.reseedDocTextBlocks();
+    const data = await db.getDocTextConfig();
+    return { data, error: null };
+  } catch (error: any) {
+    log.error('Error reseeding doc text config:', error);
     return { data: null, error: { message: error.message } };
   }
 });

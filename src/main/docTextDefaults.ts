@@ -46,6 +46,7 @@ const S = {
   default: { bold: false, italic: false, underline: false } as DocBlockStyle,
   bold: { bold: true, italic: false, underline: false } as DocBlockStyle,
   italic: { bold: false, italic: true, underline: false } as DocBlockStyle,
+  italicBold: { bold: true, italic: true, underline: false } as DocBlockStyle,
   boldUnderline: { bold: true, italic: false, underline: true } as DocBlockStyle,
   title: { fontSize: 14, color: '#414141', bold: false, italic: false, underline: false, alignment: 'center' as const },
   veryImportant: { color: '#cd3350', bold: true, italic: false, underline: true } as DocBlockStyle,
@@ -74,10 +75,22 @@ function sharedBlocks(lang: 'en' | 'fr', isCouple: boolean): Record<string, DocT
       text: isEN ? 'Regarding your Federal tax return:' : 'Déclaration Fédérale :',
       style: S.boldUnderline,
     },
-    qcMailFedNotSubmitted: {
+    qcMailFedNotSubmittedBefore: {
       text: isEN
-        ? 'Please be advised that your Federal tax return has not been submitted to the government yet.'
-        : "Notez que votre déclaration d'impôt Fédérale n'a pas encore été soumise au gouvernement via EFile.",
+        ? 'Please be advised that your Federal tax return '
+        : "Notez que votre déclaration d'impôt Fédérale ",
+      style: S.bold,
+    },
+    qcMailFedNotSubmittedUnderline: {
+      text: isEN
+        ? 'has not been submitted'
+        : "n'a pas encore été soumise",
+      style: S.boldUnderline,
+    },
+    qcMailFedNotSubmittedAfter: {
+      text: isEN
+        ? ' to the government yet.'
+        : ' au gouvernement via EFile.',
       style: S.bold,
     },
     qcMailFedAuthForm: {
@@ -91,8 +104,10 @@ function sharedBlocks(lang: 'en' | 'fr', isCouple: boolean): Record<string, DocT
       style: S.default,
     },
     qcMailSignPartF: {
-      text: isEN ? 'Please sign Part F.' : "S'il vous plaît signer la partie F.",
-      style: S.default,
+      text: isEN
+        ? '[{"t":"Please sign "},{"t":"Part F.","b":true}]'
+        : '[{"t":"S\'il vous plaît signer "},{"t":"la partie F.","b":true}]',
+      style: S.italic,
     },
 
     // Quebec + isMailQC — Quebec part
@@ -128,14 +143,30 @@ function sharedBlocks(lang: 'en' | 'fr', isCouple: boolean): Record<string, DocT
     },
 
     // Quebec + EFILE (not isMailQC)
-    qcEfileNotSubmitted: {
+    qcEfileNotSubmittedBefore: {
       text: isEN
         ? c
-          ? 'Please be advised that your tax returns have not been submitted to the government yet.'
-          : 'Please be advised that your tax return has not been submitted to the government yet.'
+          ? 'Please be advised that your tax returns '
+          : 'Please be advised that your tax return '
         : c
-          ? "Notez que vos déclarations d'impôt n'ont pas encore été soumises au gouvernement via EFile."
-          : "Notez que votre déclaration d'impôt n'a pas encore été soumise au gouvernement via EFile.",
+          ? "Notez que vos déclarations d'impôt "
+          : "Notez que votre déclaration d'impôt ",
+      style: S.bold,
+    },
+    qcEfileNotSubmittedUnderline: {
+      text: isEN
+        ? c
+          ? 'have not been submitted'
+          : 'has not been submitted'
+        : c
+          ? "n'ont pas encore été soumises"
+          : "n'a pas encore été soumise",
+      style: S.boldUnderline,
+    },
+    qcEfileNotSubmittedAfter: {
+      text: isEN
+        ? ' to the government yet.'
+        : ' au gouvernement via EFile.',
       style: S.bold,
     },
     qcEfileAuthForms: {
@@ -150,26 +181,42 @@ function sharedBlocks(lang: 'en' | 'fr', isCouple: boolean): Record<string, DocT
     },
     qcEfileSignFed: {
       text: isEN
-        ? 'For the Federal Form, please sign Part F.'
-        : 'Pour le formulaire Fédéral, veuillez signer la partie F.',
+        ? '[{"t":"For the Federal Form, please sign "},{"t":"Part F.","b":true}]'
+        : '[{"t":"Pour le formulaire Fédéral, veuillez signer "},{"t":"la partie F.","b":true}]',
       style: S.italic,
     },
     qcEfileSignQC: {
       text: isEN
-        ? 'For the Quebec Form, please sign at the end of section 4.'
-        : 'Pour le formulaire du Québec, veuillez signer à la fin de la section 4.',
+        ? '[{"t":"For the Quebec Form, please sign at the end of "},{"t":"section 4.","b":true}]'
+        : '[{"t":"Pour le formulaire du Québec, veuillez signer à la fin de la "},{"t":"section 4.","b":true}]',
       style: S.italic,
     },
 
     // Non-Quebec
-    nonQcNotSubmitted: {
+    nonQcNotSubmittedBefore: {
       text: isEN
         ? c
-          ? 'Please be advised that your tax returns have not been submitted to the government yet.'
-          : 'Please be advised that your tax return has not been submitted to the government yet.'
+          ? 'Please be advised that your tax returns '
+          : 'Please be advised that your tax return '
         : c
-          ? "Noter que vos déclarations d'impôt n'ont pas encore été soumises au gouvernement via EFile."
-          : "Noter que votre déclaration d'impôt n'a pas encore été soumise au gouvernement via EFile.",
+          ? "Noter que vos déclarations d'impôt "
+          : "Noter que votre déclaration d'impôt ",
+      style: S.bold,
+    },
+    nonQcNotSubmittedUnderline: {
+      text: isEN
+        ? c
+          ? 'have not been submitted'
+          : 'has not been submitted'
+        : c
+          ? "n'ont pas encore été soumises"
+          : "n'a pas encore été soumise",
+      style: S.boldUnderline,
+    },
+    nonQcNotSubmittedAfter: {
+      text: isEN
+        ? ' to the government yet.'
+        : ' au gouvernement via EFile.',
       style: S.bold,
     },
     nonQcAuthForm: {
@@ -183,7 +230,9 @@ function sharedBlocks(lang: 'en' | 'fr', isCouple: boolean): Record<string, DocT
       style: S.default,
     },
     nonQcSignPartF: {
-      text: isEN ? 'Please sign Part F.' : 'Veuillez signer la partie F.',
+      text: isEN
+        ? '[{"t":"Please sign "},{"t":"Part F.","b":true}]'
+        : '[{"t":"Veuillez signer "},{"t":"la partie F.","b":true}]',
       style: S.italic,
     },
 

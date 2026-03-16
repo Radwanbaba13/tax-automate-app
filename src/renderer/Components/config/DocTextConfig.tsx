@@ -7,7 +7,6 @@ import {
   HStack,
   Select,
   Text,
-  Textarea,
   Tooltip,
   VStack,
 } from '@chakra-ui/react';
@@ -17,8 +16,159 @@ import {
   IoEye,
   IoEyeOff,
 } from 'react-icons/io5';
+import ReactQuill from 'react-quill';
+import 'react-quill/dist/quill.snow.css';
 import { api } from '../../Utils/apiClient';
 import { showToast } from '../../Utils/toast';
+
+// ---------------------------------------------------------------------------
+// Segments helpers — convert between segments JSON and Quill HTML
+// ---------------------------------------------------------------------------
+interface TextSegment {
+  t: string;
+  b?: boolean;
+  i?: boolean;
+  u?: boolean;
+  c?: string; // hex color override
+}
+
+function isSegmented(text: string): boolean {
+  return text.trim().startsWith('[');
+}
+
+function parseSegments(text: string): TextSegment[] | null {
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {
+    /* not JSON */
+  }
+  return null;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function segmentsToHtml(segments: TextSegment[]): string {
+  return segments
+    .map((seg) => {
+      let html = escapeHtml(seg.t);
+      if (seg.b) html = `<strong>${html}</strong>`;
+      if (seg.i) html = `<em>${html}</em>`;
+      if (seg.u) html = `<u>${html}</u>`;
+      if (seg.c) html = `<span style="color: ${seg.c};">${html}</span>`;
+      return html;
+    })
+    .join('');
+}
+
+function textToHtml(text: string): string {
+  if (isSegmented(text)) {
+    const segs = parseSegments(text);
+    if (segs) return `<p>${segmentsToHtml(segs)}</p>`;
+  }
+  return `<p>${escapeHtml(text)}</p>`;
+}
+
+function rgbToHex(rgb: string): string | null {
+  const m = rgb.match(/rgb\(\s*(\d+),\s*(\d+),\s*(\d+)\s*\)/);
+  if (!m) return null;
+  const toHex = (n: number) => n.toString(16).padStart(2, '0');
+  return `#${toHex(parseInt(m[1], 10))}${toHex(parseInt(m[2], 10))}${toHex(parseInt(m[3], 10))}`;
+}
+
+interface WalkState {
+  b: boolean;
+  i: boolean;
+  u: boolean;
+  c: string | null;
+}
+
+function walkNodes(node: Node, inherited: WalkState, out: TextSegment[]) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    const text = node.textContent || '';
+    if (text) {
+      const seg: TextSegment = { t: text };
+      if (inherited.b) seg.b = true;
+      if (inherited.i) seg.i = true;
+      if (inherited.u) seg.u = true;
+      if (inherited.c) seg.c = inherited.c;
+      out.push(seg);
+    }
+    return;
+  }
+  if (node.nodeType === Node.ELEMENT_NODE) {
+    const el = node as HTMLElement;
+    const tag = el.tagName.toLowerCase();
+    let color = inherited.c;
+    const inlineColor = el.style?.color;
+    if (inlineColor) {
+      color = inlineColor.startsWith('#')
+        ? inlineColor
+        : rgbToHex(inlineColor) || inherited.c;
+    }
+    const next: WalkState = {
+      b: inherited.b || tag === 'strong' || tag === 'b',
+      i: inherited.i || tag === 'em' || tag === 'i',
+      u: inherited.u || tag === 'u',
+      c: color,
+    };
+    Array.from(el.childNodes).forEach((child) => walkNodes(child, next, out));
+  }
+}
+
+function htmlToSegmentsOrText(html: string): string {
+  // Strip Quill wrapper: <p>...</p> -> inner HTML
+  let inner = html.replace(/^<p>/, '').replace(/<\/p>$/, '');
+  // Remove trailing <br> Quill adds
+  inner = inner.replace(/<br\s*\/?>$/, '');
+
+  if (!inner || inner === '<br>') return '';
+
+  // Parse inline formatting tags into segments
+  const segments: TextSegment[] = [];
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = inner;
+
+  Array.from(tempDiv.childNodes).forEach((child) =>
+    walkNodes(child, { b: false, i: false, u: false, c: null }, segments),
+  );
+
+  // Merge adjacent segments with same formatting
+  const merged = segments.reduce<TextSegment[]>((acc, seg) => {
+    const last = acc[acc.length - 1];
+    if (
+      last &&
+      !!last.b === !!seg.b &&
+      !!last.i === !!seg.i &&
+      !!last.u === !!seg.u &&
+      (last.c || null) === (seg.c || null)
+    ) {
+      last.t += seg.t;
+    } else {
+      acc.push({ ...seg });
+    }
+    return acc;
+  }, []);
+
+  // If no segments have formatting overrides, return plain text
+  const hasFormatting = merged.some((s) => s.b || s.i || s.u || s.c);
+  if (!hasFormatting) {
+    return merged.map((s) => s.t).join('');
+  }
+
+  return JSON.stringify(
+    merged.map((s) => {
+      const out: TextSegment = { t: s.t };
+      if (s.b) out.b = true;
+      if (s.i) out.i = true;
+      if (s.u) out.u = true;
+      if (s.c) out.c = s.c;
+      return out;
+    }),
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -76,7 +226,9 @@ const SECTIONS: { label: string; keys: string[] }[] = [
     label: 'QC + Mail (Federal)',
     keys: [
       'qcMailFedTitle',
-      'qcMailFedNotSubmitted',
+      'qcMailFedNotSubmittedBefore',
+      'qcMailFedNotSubmittedUnderline',
+      'qcMailFedNotSubmittedAfter',
       'qcMailFedAuthForm',
       'qcMailSignPartF',
     ],
@@ -94,7 +246,9 @@ const SECTIONS: { label: string; keys: string[] }[] = [
   {
     label: 'QC EFILE',
     keys: [
-      'qcEfileNotSubmitted',
+      'qcEfileNotSubmittedBefore',
+      'qcEfileNotSubmittedUnderline',
+      'qcEfileNotSubmittedAfter',
       'qcEfileAuthForms',
       'qcEfileSignFed',
       'qcEfileSignQC',
@@ -102,7 +256,13 @@ const SECTIONS: { label: string; keys: string[] }[] = [
   },
   {
     label: 'Non-Quebec',
-    keys: ['nonQcNotSubmitted', 'nonQcAuthForm', 'nonQcSignPartF'],
+    keys: [
+      'nonQcNotSubmittedBefore',
+      'nonQcNotSubmittedUnderline',
+      'nonQcNotSubmittedAfter',
+      'nonQcAuthForm',
+      'nonQcSignPartF',
+    ],
   },
   {
     label: 'Results',
@@ -163,7 +323,9 @@ const BLOCK_LABELS: Record<string, string> = {
   introCopyKeep: '"Keep for records"',
   veryImportantHeading: '"Very Important"',
   qcMailFedTitle: 'Federal sub-heading',
-  qcMailFedNotSubmitted: '"Not submitted yet"',
+  qcMailFedNotSubmittedBefore: '"Not submitted" (before underline)',
+  qcMailFedNotSubmittedUnderline: '"Not submitted" (underlined part)',
+  qcMailFedNotSubmittedAfter: '"Not submitted" (after underline)',
   qcMailFedAuthForm: 'Auth form(s) attached',
   qcMailSignPartF: '"Sign Part F"',
   qcMailQCTitle: 'Quebec sub-heading',
@@ -171,11 +333,15 @@ const BLOCK_LABELS: Record<string, string> = {
   qcMailQCPrint: 'Print & mail QC',
   qcAddress: 'RQ mailing address',
   qcMailOnBehalf: 'Mail-on-behalf offer',
-  qcEfileNotSubmitted: '"Not submitted yet"',
+  qcEfileNotSubmittedBefore: '"Not submitted" (before underline)',
+  qcEfileNotSubmittedUnderline: '"Not submitted" (underlined part)',
+  qcEfileNotSubmittedAfter: '"Not submitted" (after underline)',
   qcEfileAuthForms: 'Auth forms attached',
   qcEfileSignFed: '"Sign Federal Part F"',
   qcEfileSignQC: '"Sign QC section 4"',
-  nonQcNotSubmitted: '"Not submitted yet"',
+  nonQcNotSubmittedBefore: '"Not submitted" (before underline)',
+  nonQcNotSubmittedUnderline: '"Not submitted" (underlined part)',
+  nonQcNotSubmittedAfter: '"Not submitted" (after underline)',
   nonQcAuthForm: 'Auth form(s) attached',
   nonQcSignPartF: '"Sign Part F"',
   resultsHeading: '"RESULTS" heading',
@@ -250,6 +416,17 @@ function StyleBtn({
 // ---------------------------------------------------------------------------
 // Block editor row
 // ---------------------------------------------------------------------------
+const QUILL_MODULES = {
+  toolbar: [['bold', 'italic', 'underline'], [{ color: [] }]],
+  keyboard: {
+    bindings: {
+      enter: { key: 13, handler: () => false },
+      shiftEnter: { key: 13, shiftKey: true, handler: () => false },
+    },
+  },
+};
+const QUILL_FORMATS = ['bold', 'italic', 'underline', 'color'];
+
 function BlockRow({
   blockKey,
   block,
@@ -264,6 +441,33 @@ function BlockRow({
     onChange({ ...block, style: { ...style, ...patch } });
   };
   const colorValue = style.color || '#000000';
+
+  // Use local HTML state to avoid controlled-component re-render loops.
+  // Only sync FROM props when the change is external (not from Quill itself).
+  const [localHtml, setLocalHtml] = useState(() => textToHtml(block.text));
+  const blockRef = useRef(block);
+  const internalChangeRef = useRef(false);
+  blockRef.current = block;
+
+  useEffect(() => {
+    if (internalChangeRef.current) {
+      internalChangeRef.current = false;
+      return;
+    }
+    setLocalHtml(textToHtml(block.text));
+  }, [block.text]);
+
+  const handleQuillChange = useCallback(
+    (html: string) => {
+      setLocalHtml(html);
+      const newText = htmlToSegmentsOrText(html);
+      if (newText !== blockRef.current.text) {
+        internalChangeRef.current = true;
+        onChange({ ...blockRef.current, text: newText });
+      }
+    },
+    [onChange],
+  );
 
   return (
     <Box
@@ -363,22 +567,60 @@ function BlockRow({
             ))}
         </HStack>
       </Flex>
-      <Textarea
-        value={block.text}
-        onChange={(e) => onChange({ ...block, text: e.target.value })}
-        rows={1}
-        fontSize="14px"
-        borderColor="#e2e8f0"
-        borderRadius="8px"
-        resize="vertical"
-        _hover={{ borderColor: '#cf3350' }}
-        _focus={{ borderColor: '#cf3350', boxShadow: '0 0 0 1px #cf3350' }}
-        _dark={{
-          borderColor: '#464646',
-          bg: '#2a2a2a',
-          color: 'gray.100',
+      <Box
+        sx={{
+          '.ql-toolbar': {
+            borderTopLeftRadius: '8px',
+            borderTopRightRadius: '8px',
+            borderColor: '#e2e8f0',
+            bg: '#f7fafc',
+            py: '2px',
+            px: '4px',
+          },
+          '.ql-container': {
+            borderBottomLeftRadius: '8px',
+            borderBottomRightRadius: '8px',
+            borderColor: '#e2e8f0',
+            fontSize: '14px',
+            fontFamily: 'inherit',
+          },
+          '.ql-editor': {
+            py: '6px',
+            px: '12px',
+            minH: '36px',
+            maxH: '120px',
+            overflowY: 'auto',
+            fontFamily: 'inherit',
+            fontSize: '14px',
+          },
+          '.ql-editor p': { margin: 0 },
+          '&:hover .ql-toolbar, &:hover .ql-container': {
+            borderColor: '#cf3350',
+          },
         }}
-      />
+        _dark={{
+          '.ql-toolbar': {
+            borderColor: '#464646 !important',
+            bg: '#2a2a2a',
+          },
+          '.ql-container': {
+            borderColor: '#464646 !important',
+            bg: '#2a2a2a',
+            color: 'gray.100',
+          },
+          '.ql-editor': { color: 'gray.100' },
+          '.ql-stroke': { stroke: '#a0aec0 !important' },
+          '.ql-fill': { fill: '#a0aec0 !important' },
+        }}
+      >
+        <ReactQuill
+          theme="snow"
+          value={localHtml}
+          onChange={handleQuillChange}
+          modules={QUILL_MODULES}
+          formats={QUILL_FORMATS}
+        />
+      </Box>
     </Box>
   );
 }
@@ -558,6 +800,9 @@ function DocPreview({
           sectionKeys.map((key) => {
             const block = typeBlocks[key];
             const s = block.style || {};
+            const segs = isSegmented(block.text)
+              ? parseSegments(block.text)
+              : null;
 
             return (
               <Text
@@ -572,7 +817,23 @@ function DocPreview({
                 whiteSpace="pre-wrap"
                 lineHeight="1.6"
               >
-                {block.text}
+                {segs
+                  ? segs.map((seg, i) => (
+                      <span
+                        // eslint-disable-next-line react/no-array-index-key
+                        key={i}
+                        style={{
+                          fontWeight: (seg.b ?? s.bold) ? '700' : '400',
+                          fontStyle: (seg.i ?? s.italic) ? 'italic' : 'normal',
+                          textDecoration:
+                            (seg.u ?? s.underline) ? 'underline' : 'none',
+                          color: seg.c || undefined,
+                        }}
+                      >
+                        {seg.t}
+                      </span>
+                    ))
+                  : block.text}
               </Text>
             );
           })
