@@ -99,6 +99,18 @@ export async function ensureDocTextBlocks() {
       );
       console.log('doc_text_blocks seeded');
     }
+
+    // Migration: rename ccbTitle defaults to new "Child Benefit Amounts" / "Prestations pour Enfants"
+    const oldEN = 'Canada Child Benefit (CCB):';
+    const oldFR = 'Allocation canadienne pour enfants (ACE) :';
+    await getPool().execute(
+      `UPDATE doc_text_blocks SET text = ? WHERE block_key = 'ccbTitle' AND text = ?`,
+      ['Child Benefit Amounts:', oldEN],
+    );
+    await getPool().execute(
+      `UPDATE doc_text_blocks SET text = ? WHERE block_key = 'ccbTitle' AND text = ?`,
+      ['Prestations pour Enfants :', oldFR],
+    );
   } catch (err) {
     console.error('Error ensuring doc_text_blocks:', err);
   }

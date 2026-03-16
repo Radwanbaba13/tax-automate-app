@@ -181,7 +181,9 @@ def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, se
             r = para.add_run(ns_before)
             apply_style(r, get_style(cfg, 'qcMailFedNotSubmittedBefore') or {'bold': True})
             ns_underline = get_text(cfg, 'qcMailFedNotSubmittedUnderline', 'has not been submitted')
-            r = para.add_run(' ' + ns_underline + ' ')
+            para.add_run(' ')
+            r = para.add_run(ns_underline)
+            para.add_run(' ')
             apply_style(r, get_style(cfg, 'qcMailFedNotSubmittedUnderline') or {'bold': True, 'underline': True})
             ns_after = get_text(cfg, 'qcMailFedNotSubmittedAfter', ' to the government yet.')
             r = para.add_run(f'{ns_after}\n')
@@ -224,7 +226,9 @@ def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, se
             r = para.add_run(ns_before)
             apply_style(r, get_style(cfg, 'qcEfileNotSubmittedBefore') or {'bold': True})
             ns_underline = get_text(cfg, 'qcEfileNotSubmittedUnderline', f'{"have" if couple else "has"} not been submitted')
-            r = para.add_run(' ' + ns_underline + ' ')
+            para.add_run(' ')
+            r = para.add_run(ns_underline)
+            para.add_run(' ')
             apply_style(r, get_style(cfg, 'qcEfileNotSubmittedUnderline') or {'bold': True, 'underline': True})
             ns_after = get_text(cfg, 'qcEfileNotSubmittedAfter', ' to the government yet.')
             r = para.add_run(f'{ns_after}\n')
@@ -247,7 +251,9 @@ def section_1(doc, primary_summary, ind_title, years, isMailQC, couple=False, se
         r = para.add_run(ns_before)
         apply_style(r, get_style(cfg, 'nonQcNotSubmittedBefore') or {'bold': True})
         ns_underline = get_text(cfg, 'nonQcNotSubmittedUnderline', f'{"have" if couple else "has"} not been submitted')
-        r = para.add_run(' ' + ns_underline + ' ')
+        para.add_run(' ')
+        r = para.add_run(ns_underline)
+        para.add_run(' ')
         apply_style(r, get_style(cfg, 'nonQcNotSubmittedUnderline') or {'bold': True, 'underline': True})
         ns_after = get_text(cfg, 'nonQcNotSubmittedAfter', ' to the government yet.')
         r = para.add_run(f'{ns_after}\n')
@@ -643,7 +649,7 @@ def carryforward_amounts(doc, return_summary, cfg=None):
 def child_benefit(doc, return_summary, year, last_year, cfg=None):
     para = doc.add_paragraph()
     # Add title directly with bold and underline
-    ccb_title = get_text(cfg, 'ccbTitle', 'Canada Child Benefit (CCB):')
+    ccb_title = get_text(cfg, 'ccbTitle', 'Child Benefit Amounts:')
     title_run = para.add_run(f'{ccb_title}\n')
     apply_style(title_run, get_style(cfg, 'ccbTitle') or {'bold': True, 'underline': True})
 
@@ -723,10 +729,6 @@ def child_benefit(doc, return_summary, year, last_year, cfg=None):
 def quebec_family_allowance(doc, return_summary, year, last_year, cfg=None):
     para = doc.add_paragraph()
 
-    fa_title = get_text(cfg, 'familyAllowanceTitle', 'Quebec Family Allowance:')
-    title_run = para.add_run(fa_title + '\n')
-    apply_style(title_run, get_style(cfg, 'familyAllowanceTitle') or {'bold': True, 'underline': True})
-
     total_allowance_amount = return_summary["family_allowance_amounts"]["fa_amount"]
 
     para.add_run(f'You will receive a total of ').bold = False
@@ -734,8 +736,7 @@ def quebec_family_allowance(doc, return_summary, year, last_year, cfg=None):
     total_run.bold = True
     total_run.font.color.rgb = RGBColor(0, 128, 0)
     para.add_run(f' for the ')
-    fa_title = get_text(cfg, 'familyAllowanceTitle', 'Quebec Family Allowance:')
-    para.add_run(fa_title).bold = True
+    para.add_run(f'Quebec Family Allowance').bold = True
     if year == last_year:
         para.add_run(f' as follows:\n')
     else:
@@ -916,7 +917,9 @@ def section_1FR(doc, return_summary, ind_title, years, isMailQC, couple=False, s
             r = para.add_run(ns_before)
             apply_style(r, get_style(cfg, 'qcMailFedNotSubmittedBefore') or {'bold': True})
             ns_underline = get_text(cfg, 'qcMailFedNotSubmittedUnderline', 'n\u2019a pas encore \u00e9t\u00e9 soumise')
-            r = para.add_run(' ' + ns_underline + ' ')
+            para.add_run(' ')
+            r = para.add_run(ns_underline)
+            para.add_run(' ')
             apply_style(r, get_style(cfg, 'qcMailFedNotSubmittedUnderline') or {'bold': True, 'underline': True})
             ns_after = get_text(cfg, 'qcMailFedNotSubmittedAfter', ' au gouvernement.')
             r = para.add_run(f'{ns_after}\n')
@@ -959,7 +962,9 @@ def section_1FR(doc, return_summary, ind_title, years, isMailQC, couple=False, s
             r = para.add_run(ns_before)
             apply_style(r, get_style(cfg, 'qcEfileNotSubmittedBefore') or {'bold': True})
             ns_underline = get_text(cfg, 'qcEfileNotSubmittedUnderline', f'{"n\u2019ont pas encore \u00e9t\u00e9 soumises" if couple else "n\u2019a pas encore \u00e9t\u00e9 soumise"}')
-            r = para.add_run(' ' + ns_underline + ' ')
+            para.add_run(' ')
+            r = para.add_run(ns_underline)
+            para.add_run(' ')
             apply_style(r, get_style(cfg, 'qcEfileNotSubmittedUnderline') or {'bold': True, 'underline': True})
             ns_after = get_text(cfg, 'qcEfileNotSubmittedAfter', ' au gouvernement.')
             r = para.add_run(f'{ns_after}\n')
@@ -981,7 +986,9 @@ def section_1FR(doc, return_summary, ind_title, years, isMailQC, couple=False, s
         r = para.add_run(ns_before)
         apply_style(r, get_style(cfg, 'nonQcNotSubmittedBefore') or {'bold': True})
         ns_underline = get_text(cfg, 'nonQcNotSubmittedUnderline', f'{"n\u2019ont pas encore \u00e9t\u00e9 soumises" if couple else "n\u2019a pas encore \u00e9t\u00e9 soumise"}')
-        r = para.add_run(' ' + ns_underline + ' ')
+        para.add_run(' ')
+        r = para.add_run(ns_underline)
+        para.add_run(' ')
         apply_style(r, get_style(cfg, 'nonQcNotSubmittedUnderline') or {'bold': True, 'underline': True})
         ns_after = get_text(cfg, 'nonQcNotSubmittedAfter', ' au gouvernement via EFile.')
         r = para.add_run(f'{ns_after}\n')
@@ -1388,7 +1395,7 @@ def carryforward_amountsFR(doc, return_summary, cfg=None):
 def child_benefitFR(doc, return_summary, year, last_year, cfg=None):
     para = doc.add_paragraph()
     # Add title directly with bold and underline
-    ccb_title = get_text(cfg, 'ccbTitle', 'Allocation canadienne pour enfants (ACE) :')
+    ccb_title = get_text(cfg, 'ccbTitle', 'Prestations pour Enfants :')
     title_run = para.add_run(f'{ccb_title}\n')
     apply_style(title_run, get_style(cfg, 'ccbTitle') or {'bold': True, 'underline': True})
 
@@ -1469,10 +1476,6 @@ def child_benefitFR(doc, return_summary, year, last_year, cfg=None):
 def quebec_family_allowanceFR(doc, return_summary, year, last_year, cfg=None):
     para = doc.add_paragraph()
 
-    fa_title = get_text(cfg, 'familyAllowanceTitle', 'Allocation Famille :')
-    title_run = para.add_run(fa_title + '\n')
-    apply_style(title_run, get_style(cfg, 'familyAllowanceTitle') or {'bold': True, 'underline': True})
-
     total_allowance_amount = return_summary["family_allowance_amounts"]["fa_amount"]
 
     para.add_run(f'Vous allez recevoir un total de ').bold = False
@@ -1480,8 +1483,7 @@ def quebec_family_allowanceFR(doc, return_summary, year, last_year, cfg=None):
     total_run.bold = True
     total_run.font.color.rgb = RGBColor(0, 128, 0)
     para.add_run(f' pour ')
-    fa_title = get_text(cfg, 'familyAllowanceTitle', 'Allocation Famille :')
-    para.add_run(fa_title).bold = True
+    para.add_run(f'l\u2019Allocation Famille').bold = True
     if year == last_year:
         para.add_run(f' de la fa\u00e7on suivante :\n')
     else:

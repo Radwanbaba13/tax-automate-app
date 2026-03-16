@@ -338,7 +338,7 @@ function sharedBlocks(lang: 'en' | 'fr', isCouple: boolean): Record<string, DocT
       style: S.creditTitle,
     },
     ccbTitle: {
-      text: isEN ? 'Canada Child Benefit (CCB):' : 'Allocation canadienne pour enfants (ACE) :',
+      text: isEN ? 'Child Benefit Amounts:' : 'Prestations pour Enfants :',
       style: S.creditTitle,
     },
     familyAllowanceTitle: {
