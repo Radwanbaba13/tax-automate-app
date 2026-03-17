@@ -111,6 +111,37 @@ export async function ensureDocTextBlocks() {
       `UPDATE doc_text_blocks SET text = ? WHERE block_key = 'ccbTitle' AND text = ?`,
       ['Prestations pour Enfants :', oldFR],
     );
+
+    // Migration: add ECGEB body text keys for existing installs
+    const ecgebNewKeys = [
+      'ecgebReceivePrefix',
+      'ecgebConnector',
+      'ecgebBenefitName',
+      'ecgebAsFollows',
+      'ecgebNewcomerNote',
+    ];
+    for (const key of ecgebNewKeys) {
+      for (const [docType, blocks] of Object.entries(DEFAULT_DOC_TEXT_CONFIG)) {
+        const block = (blocks as Record<string, any>)[key];
+        if (!block) continue;
+        await getPool().execute(
+          `INSERT IGNORE INTO doc_text_blocks (doc_type, block_key, text, font_size, color, bold, italic, underline, alignment)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            docType, key, block.text,
+            block.style.fontSize ?? null, block.style.color ?? null,
+            block.style.bold ? 1 : 0, block.style.italic ? 1 : 0,
+            block.style.underline ? 1 : 0, block.style.alignment ?? null,
+          ],
+        );
+      }
+    }
+
+    // Migration: fix qcAddress newlines (ensure multi-line format)
+    await getPool().execute(
+      `UPDATE doc_text_blocks SET text = ? WHERE block_key = 'qcAddress' AND text NOT LIKE '%\n%'`,
+      ['Revenu Québec\nC. P. 2500, succursale Place-Desjardins\nMontréal (Québec) H5B 1A3'],
+    );
   } catch (err) {
     console.error('Error ensuring doc_text_blocks:', err);
   }

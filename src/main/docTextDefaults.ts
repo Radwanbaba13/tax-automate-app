@@ -325,6 +325,30 @@ function sharedBlocks(lang: 'en' | 'fr', isCouple: boolean): Record<string, DocT
       text: isEN ? 'Canada Groceries & Essentials Benefit:' : "Allocation canadienne pour l'épicerie :",
       style: S.creditTitle,
     },
+    ecgebReceivePrefix: {
+      text: isEN ? 'You will receive a total of ' : 'Vous allez recevoir un total de ',
+      style: S.default,
+    },
+    ecgebConnector: {
+      text: isEN ? ' for the ' : " pour l'",
+      style: S.default,
+    },
+    ecgebBenefitName: {
+      text: isEN
+        ? 'Canada Groceries and Essentials Benefit (ECGEB) '
+        : "Allocation canadienne pour l'épicerie et les besoins essentiels (ACEBE) ",
+      style: S.bold,
+    },
+    ecgebAsFollows: {
+      text: isEN ? 'as follows:' : 'de la façon suivante :',
+      style: S.default,
+    },
+    ecgebNewcomerNote: {
+      text: isEN
+        ? '*Note that you will receive a letter from Canada Revenue Agency asking you to provide your income before arrival to Canada (so from January 1st until the date of arrival). Even though it was mentioned on the declaration, you still need to respond to the letter and provide the amount. If you do not reply, they will not pay the ECGEB amount.'
+        : "*Notez que vous allez recevoir une lettre de l'Agence du Revenu du Canada vous demandant de fournir vos revenus avant votre arrivée au Canada (du 1er janvier jusqu'à la date d'arrivée). Même si cela a été mentionné sur la déclaration, vous devez quand même répondre à la lettre. Si vous ne répondez pas, ils ne paieront pas le montant de la ACEBE.",
+      style: S.italic,
+    },
     carbonRebateTitle: {
       text: isEN ? 'Canada Carbon Rebate:' : 'Remise canadienne sur le carbone :',
       style: S.creditTitle,

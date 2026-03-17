@@ -712,13 +712,17 @@ def ecgeb_credit(doc, return_summary, isNewcomer, year, cfg=None):
     january_amount = return_summary["ecgeb_amounts"].get("january_amount", 0)
     april_amount = return_summary["ecgeb_amounts"].get("april_amount", 0)
 
-    para.add_run(f'You will receive a total of ').bold = False
+    receive_prefix = get_text(cfg, 'ecgebReceivePrefix', 'You will receive a total of ')
+    para.add_run(receive_prefix).bold = False
     total_run = para.add_run(f"${ecgeb_credit_amount:,.2f}")
     total_run.bold = True
     total_run.font.color.rgb = RGBColor(0, 128, 0)
-    para.add_run(f' for the ')
-    para.add_run(f'Canada Groceries and Essentials Benefit (ECGEB) ').bold = True
-    para.add_run(f'as follows:\n')
+    connector = get_text(cfg, 'ecgebConnector', ' for the ')
+    para.add_run(connector)
+    benefit_name = get_text(cfg, 'ecgebBenefitName', 'Canada Groceries and Essentials Benefit (ECGEB) ')
+    para.add_run(benefit_name).bold = True
+    as_follows = get_text(cfg, 'ecgebAsFollows', 'as follows:')
+    para.add_run(f'{as_follows}\n')
 
     year_plus1 = int(year) + 1
     year_plus2 = int(year) + 2
@@ -733,7 +737,8 @@ def ecgeb_credit(doc, return_summary, isNewcomer, year, cfg=None):
         para.add_run(f'April {year_plus2}: ${april_amount:,.2f}\n')
 
     if isNewcomer:
-        para.add_run('\n*Note that you will receive a letter from Canada Revenue Agency asking you to provide your income before arrival to Canada (so from January 1st until the date of arrival). Even though it was mentioned on the declaration, you still need to respond to the letter and provide the amount. If you do not reply, they will not pay the ECGEB amount.\n').italic = True
+        newcomer_note = get_text(cfg, 'ecgebNewcomerNote', '*Note that you will receive a letter from Canada Revenue Agency asking you to provide your income before arrival to Canada (so from January 1st until the date of arrival). Even though it was mentioned on the declaration, you still need to respond to the letter and provide the amount. If you do not reply, they will not pay the ECGEB amount.')
+        para.add_run(f'\n{newcomer_note}\n').italic = True
 
 # Section: Carbon Rebate
 def carbon_rebate(doc, return_summary,  year, cfg=None):
@@ -1771,13 +1776,17 @@ def ecgeb_creditFR(doc, return_summary, isNewcomer, year, cfg=None):
 
     formatted_total = format_currency(ecgeb_credit_amount)
 
-    para.add_run(f'Vous allez recevoir un total de ').bold = False
+    receive_prefix = get_text(cfg, 'ecgebReceivePrefix', 'Vous allez recevoir un total de ')
+    para.add_run(receive_prefix).bold = False
     total_run = para.add_run(formatted_total)
     total_run.bold = True
     total_run.font.color.rgb = RGBColor(0, 128, 0)
-    para.add_run(f' pour la ')
-    para.add_run(f'Allocation canadienne pour l\'épicerie et les besoins essentiels (ACEBE) ').bold = True
-    para.add_run(f'de la façon suivante :\n')
+    connector = get_text(cfg, 'ecgebConnector', " pour l'")
+    para.add_run(connector)
+    benefit_name = get_text(cfg, 'ecgebBenefitName', "Allocation canadienne pour l'épicerie et les besoins essentiels (ACEBE) ")
+    para.add_run(benefit_name).bold = True
+    as_follows = get_text(cfg, 'ecgebAsFollows', 'de la façon suivante :')
+    para.add_run(f'{as_follows}\n')
 
     if july_amount > 0:
         para.add_run(f'Juillet {year_plus1} : {format_currency(july_amount)}\n')
@@ -1789,10 +1798,10 @@ def ecgeb_creditFR(doc, return_summary, isNewcomer, year, cfg=None):
         para.add_run(f'Avril {year_plus2} : {format_currency(april_amount)}\n')
 
     if isNewcomer:
-        para.add_run(
-            '\n*Notez que vous allez recevoir une lettre de l\'Agence du Revenu du Canada vous demandant de fournir vos revenus avant votre arrivée au Canada (du 1er janvier jusqu\'à la date d\'arrivée). '
-            'Même si cela a été mentionné sur la déclaration, vous devez quand même répondre à la lettre. Si vous ne répondez pas, ils ne paieront pas le montant de la ACEBE.\n'
-        ).italic = True
+        newcomer_note = get_text(cfg, 'ecgebNewcomerNote',
+            "*Notez que vous allez recevoir une lettre de l'Agence du Revenu du Canada vous demandant de fournir vos revenus avant votre arrivée au Canada (du 1er janvier jusqu'à la date d'arrivée). "
+            "Même si cela a été mentionné sur la déclaration, vous devez quand même répondre à la lettre. Si vous ne répondez pas, ils ne paieront pas le montant de la ACEBE.")
+        para.add_run(f'\n{newcomer_note}\n').italic = True
 
 
 def carryforward_amountsFR(doc, return_summary, cfg=None):

@@ -309,6 +309,16 @@ const SECTIONS: { label: string; keys: string[] }[] = [
     ],
   },
   {
+    label: 'ECGEB / Groceries Benefit Body',
+    keys: [
+      'ecgebReceivePrefix',
+      'ecgebConnector',
+      'ecgebBenefitName',
+      'ecgebAsFollows',
+      'ecgebNewcomerNote',
+    ],
+  },
+  {
     label: 'Conclusion',
     keys: ['conclusionWaiting', 'thankYou', 'disclaimer'],
   },
@@ -362,6 +372,11 @@ const BLOCK_LABELS: Record<string, string> = {
   solidarityTitle: 'Solidarity Credits',
   gstTitle: 'GST/HST Credits',
   ecgebTitle: 'Canada Groceries',
+  ecgebReceivePrefix: 'ECGEB "receive total" prefix',
+  ecgebConnector: "ECGEB connector (for the / pour l')",
+  ecgebBenefitName: 'ECGEB full benefit name',
+  ecgebAsFollows: 'ECGEB "as follows"',
+  ecgebNewcomerNote: 'ECGEB newcomer note',
   carbonRebateTitle: 'Carbon Rebate',
   climateActionTitle: 'Climate Action',
   ontarioTrilliumTitle: 'Ontario Trillium',

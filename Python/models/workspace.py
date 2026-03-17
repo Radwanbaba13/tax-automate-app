@@ -1146,7 +1146,7 @@ def ecgeb_creditFR(doc, return_summary, isNewcomer, year):
     total_run = para.add_run(formatted_total)
     total_run.bold = True
     total_run.font.color.rgb = RGBColor(0, 128, 0)
-    para.add_run(f' pour la ')
+    para.add_run(f' pour l\'')
     para.add_run(f'Allocation canadienne pour l\'épicerie et les besoins essentiels (ACEBE) ').bold = True
     para.add_run(f'de la façon suivante :\n')
 
