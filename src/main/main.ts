@@ -7,7 +7,7 @@ import dotenv from 'dotenv';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import * as db from './database';
-import * as deltecApi from './deltecApi';
+import * as apiServices from './apiServices';
 
 if (app.isPackaged) {
   const envPath = path.join(process.resourcesPath, '.env');
@@ -18,8 +18,8 @@ if (app.isPackaged) {
   log.info('Loaded environment from project root');
 }
 
-if (!process.env.DELTEC_API_URL || !process.env.DELTEC_SANKARI_API_KEY) {
-  log.error('CRITICAL: DELTEC_API_URL or DELTEC_SANKARI_API_KEY not found in environment');
+if (!process.env.API_SERVICES_URL || !process.env.API_SERVICES_SANKARI_API_KEY) {
+  log.error('CRITICAL: API_SERVICES_URL or API_SERVICES_SANKARI_API_KEY not found in environment');
 }
 
 db.initializePool()
@@ -160,7 +160,7 @@ ipcMain.handle('get-app-version', () => {
   return app.getVersion();
 });
 
-function formatComparisonResult(result: import('./deltecApi').CompareResult): string {
+function formatComparisonResult(result: import('./apiServices').CompareResult): string {
   if (result.status === 'PASSED') {
     return '✅ REVIEW PASSED - No discrepancies detected. All entries appear accurate.';
   }
@@ -199,7 +199,7 @@ ipcMain.handle(
   'compare-with-openai',
   async (_event, { dtMaxFiles, clientSlipsFiles, prompt }) => {
     try {
-      const result = await deltecApi.compareDocuments(dtMaxFiles, clientSlipsFiles, prompt);
+      const result = await apiServices.compareDocuments(dtMaxFiles, clientSlipsFiles, prompt);
       return {
         success: true,
         result: formatComparisonResult(result),
@@ -207,7 +207,7 @@ ipcMain.handle(
         timeSeconds: result.timeSeconds,
         usage: result.usage,
         debug: {
-          model: 'deltec-api',
+          model: 'api-services',
           inputTokens: result.usage.inputTokens,
           outputTokens: result.usage.outputTokens,
         },
@@ -235,7 +235,7 @@ ipcMain.handle(
         if (templateContent?.trim()) payload.templateContent = templateContent;
       }
 
-      const result = await deltecApi.generateEmail(payload);
+      const result = await apiServices.generateEmail(payload);
       return { success: true, result };
     } catch (error: any) {
       log.error('Error generating email response:', error);
@@ -246,7 +246,7 @@ ipcMain.handle(
 
 ipcMain.handle('fix-email-template-with-ai', async (_event, templateContent) => {
   try {
-    const result = await deltecApi.refineEmail(templateContent);
+    const result = await apiServices.refineEmail(templateContent);
     return { success: true, result: result.body };
   } catch (error: any) {
     log.error('Error refining email template:', error);
@@ -256,7 +256,7 @@ ipcMain.handle('fix-email-template-with-ai', async (_event, templateContent) => 
 
 ipcMain.handle('rag-suggest-replies', async (_event, query) => {
   try {
-    const result = await deltecApi.suggestReplies(query);
+    const result = await apiServices.suggestReplies(query);
     return { success: true, result };
   } catch (error: any) {
     log.error('Error fetching reply suggestions:', error);

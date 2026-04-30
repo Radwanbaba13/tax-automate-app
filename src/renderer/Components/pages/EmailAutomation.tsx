@@ -429,13 +429,13 @@ function EmailAutomationComponent() {
       // Handle specific API errors
       if (errorMessage.includes('429') || errorMessage.includes('quota')) {
         userMessage =
-          'API quota exceeded. Please check your Deltec API configuration.';
+          'API quota exceeded. Please check your API Services configuration.';
       } else if (
         errorMessage.includes('401') ||
         errorMessage.includes('unauthorized')
       ) {
         userMessage =
-          'Invalid API key. Please check your Deltec API key configuration.';
+          'Invalid API key. Please check your API Services key configuration.';
       } else if (errorMessage.includes('rate limit')) {
         userMessage =
           'Rate limit exceeded. Please wait a moment and try again.';
@@ -518,13 +518,13 @@ function EmailAutomationComponent() {
       // Handle specific API errors
       if (errorMessage.includes('429') || errorMessage.includes('quota')) {
         userMessage =
-          'API quota exceeded. Please check your Deltec API configuration.';
+          'API quota exceeded. Please check your API Services configuration.';
       } else if (
         errorMessage.includes('401') ||
         errorMessage.includes('unauthorized')
       ) {
         userMessage =
-          'Invalid API key. Please check your Deltec API key configuration.';
+          'Invalid API key. Please check your API Services key configuration.';
       } else if (errorMessage.includes('rate limit')) {
         userMessage =
           'Rate limit exceeded. Please wait a moment and try again.';

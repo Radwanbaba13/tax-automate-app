@@ -4,14 +4,14 @@ let cachedToken: string | null = null;
 let tokenExpiry = 0;
 
 function getBaseUrl(): string {
-  const url = process.env.DELTEC_API_URL;
-  if (!url) throw new Error('DELTEC_API_URL is not configured');
+  const url = process.env.API_SERVICES_URL;
+  if (!url) throw new Error('API_SERVICES_URL is not configured');
   return url.replace(/\/$/, '');
 }
 
 function getApiKey(): string {
-  const key = process.env.DELTEC_SANKARI_API_KEY;
-  if (!key) throw new Error('DELTEC_SANKARI_API_KEY is not configured');
+  const key = process.env.API_SERVICES_SANKARI_API_KEY;
+  if (!key) throw new Error('API_SERVICES_SANKARI_API_KEY is not configured');
   return key;
 }
 
@@ -27,13 +27,13 @@ async function getToken(): Promise<string> {
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Deltec auth failed (${res.status}): ${text}`);
+    throw new Error(`API auth failed (${res.status}): ${text}`);
   }
 
   const data = (await res.json()) as { token: string; expiresAt: string };
   cachedToken = data.token;
   tokenExpiry = Date.now() + 55 * 60 * 1000; // cache for 55 min (token lives 1h)
-  log.info('Deltec: obtained new auth token');
+  log.info('API services: obtained new auth token');
   return cachedToken;
 }
 
